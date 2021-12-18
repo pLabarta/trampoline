@@ -1,0 +1,22 @@
+[chain]
+host = "http://localhost"
+host_port = 8114
+container_port = 8114
+local_binding = ".trampoline/network"
+container_mount = "/var/lib/ckb"
+
+[miner]
+host = "http://localhost"
+host_port = 8115
+container_port = 8115
+local_binding = ".trampoline/network"
+container_mount = "/var/lib/ckb"
+
+[indexer]
+host = "http://localhost"
+host_port = 8116
+container_port = 8116
+local_binding = ".trampoline/network/index"
+container_mount = "/indexer/data"
+
+[deployed]
