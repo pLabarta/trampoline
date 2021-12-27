@@ -3,12 +3,13 @@ use crate::{
     TrampolineResource,
     project::VirtualEnv,
 };
+use std::marker::PhantomData;
 use std::{process::Command};
 use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::io::Write;
 
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 use thiserror::Error;
 
@@ -65,6 +66,99 @@ impl std::fmt::Display for Port {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Volume<'a> {
+    host: &'a Path,
+    container: &'a Path,
+}
+
+pub struct DockerPort {
+    pub host: usize,
+    pub container: usize,
+}
+
+
+#[derive(Debug, Clone)]
+pub struct DockerContainer<'a> {
+    name: String,
+    port_bindings: Vec<Port>,
+    volumes: Vec<Volume<'a>>,
+    env_vars: HashMap<String, String>,
+    image: &'a DockerImage
+
+}
+
+#[derive(Debug, Clone)]
+pub struct DockerImage {
+    pub name: String,
+    pub tag: Option<String>,
+    pub file_path: Option<String>,
+    pub host_mappings: Vec<Port>,
+    pub build_args: HashMap<String, String>
+}
+
+
+pub struct DockerCommand<C> {
+    _docker: PhantomData<C>,
+}
+
+impl DockerCommand<DockerImage> {
+    pub fn build(image: &DockerImage, rm: bool, detach: bool) -> DockerResult<()> {
+        let DockerImage {name,
+            tag,
+            file_path,
+            host_mappings,
+            build_args
+        } = image;
+
+        Ok(())
+    }
+
+    pub fn remove(image: &DockerImage) -> DockerResult<()> {
+        Ok(())
+    }
+
+    pub fn prune() -> DockerResult<()> {
+        Ok(())
+    }
+}
+
+impl DockerCommand<DockerContainer<'_>> {
+    pub fn run(container: &DockerContainer) -> DockerResult<()> {
+        Ok(())
+    }
+
+    pub fn exec(container: &DockerContainer) -> DockerResult<()> {
+        Ok(())
+    }
+
+    pub fn cp(container: &DockerContainer) -> DockerResult<()> {
+
+    }
+
+    pub fn start(container: &DockerContainer) -> DockerResult<()> {
+
+    }
+
+    pub fn stop(container: &DockerContainer) -> DockerResult<()> {
+
+    }
+
+    pub fn pause(container: &DockerContainer) -> DockerResult<()> {
+
+    }
+
+    pub fn unpause(container: &DockerContainer) -> DockerResult<()> {
+
+    }
+
+    pub fn restart(container: &DockerContainer) -> DockerResult<()> {
+
+    }
+
+
 }
 
 #[derive(Debug, Default)]
