@@ -1,19 +1,19 @@
+use crate::project::TrampolineProjectError::Tera;
+use crate::{schema::Schema, TrampolineResource, TrampolineResourceType, TEMPLATES};
 use anyhow::{anyhow, Result};
+use ckb_app_config::{AppConfig, CKBAppConfig};
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::convert::From;
 use std::env;
+use std::fmt::Formatter;
 use std::fs;
+use std::io::{Error, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use serde::{Serialize, Deserialize};
-use serde_json;
-use toml;
-use std::convert::From;
-use std::fmt::Formatter;
-use std::io::{Error, Write};
-use tera::{Context as TeraContext};
+use tera::Context as TeraContext;
 use thiserror::Error;
-use ckb_app_config::{AppConfig, CKBAppConfig};
-use crate::{TEMPLATES, TrampolineResourceType, TrampolineResource, schema::Schema};
-use crate::project::TrampolineProjectError::Tera;
+use toml;
 
 pub const TRAMPOLINE_ROOT_CONFIG: &str = "trampoline.toml";
 pub const TRAMPOLINE_FOLDER: &str = ".trampoline";
@@ -25,12 +25,12 @@ pub enum TrampolineProjectError {
     #[error("Error loading CKB Configuration File: {0:?}")]
     CkbAppConfig(ckb_app_config::ExitCode),
     #[error(transparent)]
-    Io (#[from] std::io::Error),
+    Io(#[from] std::io::Error),
 
     #[error(transparent)]
     Tera(#[from] tera::Error),
     #[error(transparent)]
-    DeserializeToml (#[from]toml::de::Error),
+    DeserializeToml(#[from] toml::de::Error),
 
     #[error(transparent)]
     SerializeToml(#[from] toml::ser::Error),
@@ -39,12 +39,8 @@ pub enum TrampolineProjectError {
     ProjectNotFound(String),
 
     #[error("Invalid initialization: Project {} already exists at {}", .name, .path)]
-    ProjectAlreadyExists {
-        path: String,
-        name: String,
-    }
+    ProjectAlreadyExists { path: String, name: String },
 }
-
 
 pub type ProjectResult<T> = std::result::Result<T, TrampolineProjectError>;
 
@@ -59,10 +55,13 @@ pub struct VirtualEnv {
 
 impl std::fmt::Display for VirtualEnv {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Host: {}:{}\nSaving data to local path: {}\n",
-               self.host,
-               self.host_port,
-               self.local_binding.to_str().unwrap())
+        write!(
+            f,
+            "Host: {}:{}\nSaving data to local path: {}\n",
+            self.host,
+            self.host_port,
+            self.local_binding.to_str().unwrap()
+        )
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -75,13 +74,13 @@ pub struct TrampolineEnv {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct TrampolineConfig {
     pub name: String,
-    pub env: Option<TrampolineEnv>
+    pub env: Option<TrampolineEnv>,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct TrampolineProject {
     pub config: TrampolineConfig,
-    pub root_dir: PathBuf
+    pub root_dir: PathBuf,
 }
 
 impl From<TrampolineProject> for TrampolineResourceType {
@@ -100,8 +99,6 @@ impl From<TrampolineResourceType> for TrampolineProject {
     }
 }
 
-
-
 impl TrampolineResource for TrampolineProject {
     type Error = TrampolineProjectError;
     type InitArgs = String;
@@ -119,34 +116,36 @@ impl TrampolineResource for TrampolineProject {
                 trampoline_env = Some(parsed_env);
             }
             let mut config = toml::from_str::<TrampolineConfig>(&raw_conf).unwrap();
-            let mut root_dir = find_ancestor(&mut trampoline_config_path, "trampoline.toml").unwrap();          
+            let mut root_dir =
+                find_ancestor(&mut trampoline_config_path, "trampoline.toml").unwrap();
             root_dir.pop();
             config.env = trampoline_env;
             Ok(TrampolineProject {
                 config,
                 root_dir: root_dir,
-            }.into())
+            }
+            .into())
         } else {
             trampoline_config_path.pop();
             let mut real_path = trampoline_config_path.canonicalize().unwrap();
             let root_trampoline_path = find_ancestor(&mut real_path, "trampoline.toml");
             match root_trampoline_path {
                 Some(mut path) => {
-                    let raw_conf = fs::read_to_string(&path)
-                        .map_err(|e| TrampolineProjectError::Io(e))?;
+                    let raw_conf =
+                        fs::read_to_string(&path).map_err(|e| TrampolineProjectError::Io(e))?;
                     let config = toml::from_str::<TrampolineConfig>(&raw_conf)
                         .map_err(|e| TrampolineProjectError::DeserializeToml(e))?;
                     path.pop();
                     Ok(TrampolineProject {
                         config,
-                        root_dir: path
-                    }.into())
+                        root_dir: path,
+                    }
+                    .into())
                 }
                 None => Err(TrampolineProjectError::ProjectNotFound(
-                    candidate_root.to_str().unwrap().to_string()
-                ))
+                    candidate_root.to_str().unwrap().to_string(),
+                )),
             }
-
         }
     }
 
@@ -169,7 +168,6 @@ impl TrampolineResource for TrampolineProject {
         fs::create_dir(&project_dir.join("indexer"))?;
         project_dir.pop();
         project_dir.pop();
-
 
         project_dir.push("generators");
         fs::create_dir(&project_dir)?;
@@ -202,7 +200,11 @@ impl TrampolineResource for TrampolineProject {
                 project_dir.push(&path);
             }
             let content = TEMPLATES.render(path, &context)?;
-            fs::write(&project_dir, content).expect(&format!("Error writing to {} with template {}", &project_dir.to_str().unwrap(), path));
+            fs::write(&project_dir, content).expect(&format!(
+                "Error writing to {} with template {}",
+                &project_dir.to_str().unwrap(),
+                path
+            ));
             project_dir.pop();
         }
 
@@ -218,11 +220,9 @@ impl TrampolineProject {
         let ckb_toml_path = self.path_to_ckb_config()?;
 
         let raw_conf_str = fs::read_to_string(ckb_toml_path)?;
-        CKBAppConfig::load_from_slice(raw_conf_str.as_bytes()).map_err(|e| {
-            TrampolineProjectError::CkbAppConfig(e)
-        })
+        CKBAppConfig::load_from_slice(raw_conf_str.as_bytes())
+            .map_err(|e| TrampolineProjectError::CkbAppConfig(e))
     }
-
 
     pub fn save_ckb_config(&self, c: CKBAppConfig) -> ProjectResult<()> {
         let config_toml = toml::Value::try_from(c)?;
@@ -230,26 +230,23 @@ impl TrampolineProject {
         println!("CONFIG STRING: {}", config_string);
 
         let ckb_toml_path = self.path_to_ckb_config()?;
-        let mut file =  fs::OpenOptions::new()
+        let mut file = fs::OpenOptions::new()
             .write(true)
             .truncate(true)
             .open(ckb_toml_path)?;
 
         file.write_all(config_string.as_bytes())?;
         Ok(())
-
     }
 
     pub fn path_to_ckb_config(&self) -> ProjectResult<PathBuf> {
-        let path_to_conf = fs::read_to_string(
-            self.root_dir.join("trampoline-env.toml")
-        )?;
+        let path_to_conf = fs::read_to_string(self.root_dir.join("trampoline-env.toml"))?;
 
         let env = toml::from_str::<TrampolineEnv>(path_to_conf.as_str())?;
 
-
         let ckb_toml_path = PathBuf::from(env.chain.local_binding)
-            .join("ckb.toml").canonicalize()?;
+            .join("ckb.toml")
+            .canonicalize()?;
         Ok(ckb_toml_path)
     }
 }
@@ -257,10 +254,10 @@ impl TrampolineProject {
 fn find_ancestor(curr_path: &mut PathBuf, target: &str) -> Option<PathBuf> {
     let target_path = curr_path.join(target);
     if target_path.exists() {
-       Some(target_path)
+        Some(target_path)
     } else if curr_path.pop() {
         find_ancestor(curr_path, target)
     } else {
-       None
+        None
     }
 }

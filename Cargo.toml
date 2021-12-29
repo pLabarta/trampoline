@@ -37,5 +37,5 @@ walkdir = "2.3.2"
 [build-dependencies]
 includedir_codegen = "0.6"
 
-[workspace]
-members = ["sdk"]
+# [workspace]
+# members = ["sdk"]

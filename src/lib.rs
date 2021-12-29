@@ -1,14 +1,14 @@
+pub mod docker;
 pub mod opts;
 pub mod project;
 pub mod schema;
-pub mod docker;
 mod utils;
 
-pub use utils::*;
-use std::path::Path;
-use lazy_static::lazy_static;
-use tera::{self, Tera};
 use anyhow::{anyhow, Result};
+use lazy_static::lazy_static;
+use std::path::Path;
+use tera::{self, Tera};
+pub use utils::*;
 
 include!(concat!(env!("OUT_DIR"), "/templates.rs"));
 
@@ -33,7 +33,7 @@ lazy_static! {
 
 pub enum TrampolineResourceType {
     Project(project::TrampolineProject),
-    Schema(schema::Schema)
+    Schema(schema::Schema),
 }
 
 pub trait TrampolineResource {
@@ -55,4 +55,3 @@ pub fn parse_hex(mut input: &str) -> Result<Vec<u8>> {
         .map_err(|err| anyhow!(format!("parse hex string failed: {:?}", err)))?;
     Ok(bytes)
 }
-
