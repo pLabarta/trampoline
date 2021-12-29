@@ -13,11 +13,11 @@ coherent development environment.
 - [x] Start and stop local indexer(s) with ease.
 - [x] Add your own miner(s).
 - [x] Autogenerate Rust bindings for custom schemas for use on and off chain.
-- []  Manage accounts and addresses across developer, staging, and deployment environments.
-- []  Indexer extensions to index custom schemas.
-- []  Trampoline server API powered by Rocket-rs for transaction generation & querying.
-- []  Declaratively define transaction patterns for easy transaction creation.
-- []  Compile transaction patterns to CKB scripts 
+- [ ]  Manage accounts and addresses across developer, staging, and deployment environments.
+- [ ]  Indexer extensions to index custom schemas.
+- [ ]  Trampoline server API powered by Rocket-rs for transaction generation & querying.
+- [ ]  Declaratively define transaction patterns for easy transaction creation.
+- [ ]  Compile transaction patterns to CKB scripts 
 
 
 # Installation
