@@ -1,16 +1,13 @@
 use crate::project::TrampolineProject;
 use crate::{TrampolineResource, TrampolineResourceType};
 use anyhow::Result;
-use ckb_types::bytes::Bytes;
-use ckb_types::core::cell::{CellMeta, ResolvedDep, ResolvedTransaction, SystemCellMap};
-use ckb_types::{
-    packed::{CellDep, TransactionInfo, TransactionView},
-    prelude::*,
-};
-use molecule::prelude::{Builder, Entity, Reader};
+
+
+
+use molecule::prelude::{Builder, Entity};
 use molecule_codegen::{Compiler, Language};
-use serde::{Deserialize, Serialize};
-use std::error::Error;
+
+
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -61,7 +58,7 @@ impl TrampolineResource for Schema {
 
     fn init(args: Self::InitArgs) -> Result<TrampolineResourceType, Self::Error> {
         let (proj, name, content) = args;
-        let mut schema_dir = proj.root_dir.clone();
+        let mut schema_dir = proj.root_dir;
         schema_dir.push("schemas");
 
         let mut gen_bindings_flag = content.is_some();
@@ -107,7 +104,7 @@ impl TrampolineResource for Schema {
 
         Ok(Schema {
             path: molecule_file_path,
-            name: name.to_string(),
+            name,
         }
         .into())
     }
@@ -122,5 +119,5 @@ pub fn gen_bindings(input: impl Into<PathBuf>, output: impl Into<PathBuf>) -> Sc
     compiler.input_schema_file(input.into().as_path());
     compiler.output_dir(output.into().as_path());
     compiler.generate_code(Language::Rust);
-    compiler.run().map_err(|e| SchemaError::Molecule(e))
+    compiler.run().map_err(SchemaError::Molecule)
 }

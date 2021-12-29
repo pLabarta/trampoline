@@ -1,24 +1,24 @@
 use anyhow::anyhow;
 use anyhow::Result;
-use ckb_app_config::{AppConfig, BlockAssemblerConfig, CKBAppConfig};
+use ckb_app_config::{BlockAssemblerConfig};
 use ckb_hash::blake2b_256;
-use ckb_system_scripts::*;
-use ckb_types::prelude::Pack;
-use ckb_types::{h160, h256, H160, H256};
-use std::fs;
-use std::path::Path;
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::str::FromStr;
+
+
+use ckb_types::{h256, H256};
+
+
+
+
+
 use structopt::StructOpt;
-use tera::{self, Context as TeraContext};
+
 use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::project::*;
-use trampoline::schema::{Schema, SchemaError, SchemaInitArgs};
+use trampoline::schema::{Schema, SchemaInitArgs};
 use trampoline::TrampolineResource;
-use trampoline::{hex_decode, hex_encode, hex_string, parse_hex};
-use trampoline::{TrampolineResourceType, TEMPLATES};
+use trampoline::{parse_hex};
+use trampoline::{TrampolineResourceType};
 
 const SECP_TYPE_HASH: H256 =
     h256!("0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8");
@@ -46,10 +46,10 @@ fn main() -> Result<()> {
                     return Err(TrampolineProjectError::ProjectAlreadyExists {
                         name: project.config.name.to_string(),
                         path: project.root_dir.as_path().to_str().unwrap().to_string(),
-                    })?;
+                    }.into());
                 }
             }
-            Err(e) => {
+            Err(_e) => {
                 let project = TrampolineProject::from(TrampolineProject::init(name)?);
                 std::env::set_current_dir(&project.root_dir)?;
                 Docker::default().build()?;
@@ -66,12 +66,12 @@ fn main() -> Result<()> {
                     }
 
                     //println!("{:?}", schema_args);
-                    let result = Schema::init(schema_args)?;
+                    let _result = Schema::init(schema_args)?;
                 }
                 SchemaCommand::Build { name } => {
-                    let mut schema_args: SchemaInitArgs =
+                    let schema_args: SchemaInitArgs =
                         (TrampolineProject::from(project?), name, None);
-                    let result = Schema::init(schema_args)?;
+                    let _result = Schema::init(schema_args)?;
                 }
             }
         }
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
                         config.block_assembler = Some(block_assembler);
                         project.save_ckb_config(config)?;
                     } else if let Some(lock_arg) = lock_arg {
-                        let lock_arg_bytes = parse_hex(&lock_arg.as_str())?;
+                        let lock_arg_bytes = parse_hex(lock_arg.as_str())?;
                         let block_assembler = create_block_assembler_from_pkhash(&lock_arg_bytes);
                         config.block_assembler = Some(block_assembler);
                         project.save_ckb_config(config)?;

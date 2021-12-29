@@ -1,4 +1,4 @@
-use crate::{project::VirtualEnv, TrampolineResource, TrampolineResourceType};
+use crate::{project::VirtualEnv};
 use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::io::Write;
@@ -124,12 +124,12 @@ impl std::fmt::Display for DockerImage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut fmt_string = "".to_string();
         if self.file_path.is_some() {
-            fmt_string.push_str(&format!("{}", self.file_path.as_ref().unwrap()));
+            fmt_string.push_str(self.file_path.as_ref().unwrap());
         }
         if self.tag.is_some() {
             fmt_string.push_str(&format!(" -t {}:{}", self.name, self.tag.as_ref().unwrap()));
         } else {
-            fmt_string.push_str(&format!("{}", self.name));
+            fmt_string.push_str(&self.name.to_string());
         }
 
         write!(f, "{}", fmt_string)
@@ -175,7 +175,7 @@ impl DockerCommand<DockerImage> {
             .collect::<Vec<String>>()
             .join(" ");
 
-        if (&flags).len() > 0 {
+        if !(&flags).is_empty() {
             format!("docker image {} {} {}", command_string, flags_string, image)
         } else {
             format!("docker image {} {}", command_string, image)
@@ -220,7 +220,7 @@ impl DockerCommand<DockerContainer<'_>> {
             .collect::<Vec<String>>()
             .join(" ");
 
-        if (&flags).len() > 0 {
+        if !(&flags).is_empty() {
             format!(
                 "docker container {} {} {}",
                 command_string, flags_string, container
@@ -250,31 +250,31 @@ impl DockerCommand<DockerContainer<'_>> {
         })
     }
 
-    pub fn exec(container: &DockerContainer) -> DockerResult<()> {
+    pub fn exec(_container: &DockerContainer) -> DockerResult<()> {
         Ok(())
     }
 
-    pub fn cp(container: &DockerContainer) -> DockerResult<()> {
+    pub fn cp(_container: &DockerContainer) -> DockerResult<()> {
         todo!()
     }
 
-    pub fn start(container: &DockerContainer) -> DockerResult<()> {
+    pub fn start(_container: &DockerContainer) -> DockerResult<()> {
         todo!()
     }
 
-    pub fn stop(container: &DockerContainer) -> DockerResult<()> {
+    pub fn stop(_container: &DockerContainer) -> DockerResult<()> {
         todo!()
     }
 
-    pub fn pause(container: &DockerContainer) -> DockerResult<()> {
+    pub fn pause(_container: &DockerContainer) -> DockerResult<()> {
         todo!()
     }
 
-    pub fn unpause(container: &DockerContainer) -> DockerResult<()> {
+    pub fn unpause(_container: &DockerContainer) -> DockerResult<()> {
         todo!()
     }
 
-    pub fn restart(container: &DockerContainer) -> DockerResult<()> {
+    pub fn restart(_container: &DockerContainer) -> DockerResult<()> {
         todo!()
     }
 }
@@ -302,7 +302,7 @@ impl Docker {
         let local_binding = local_binding.canonicalize()?;
         self.volumes
             .insert(local_binding.into(), container_mount.into());
-        self.virtuals.push(env.clone());
+        self.virtuals.push(env);
 
         Ok(self)
     }
@@ -333,12 +333,12 @@ impl Docker {
         self
     }
 
-    pub fn exec(container_name: &str, exec_args: Vec<&str>, work_dir: &str) -> DockerResult<()> {
+    pub fn exec(container_name: &str, exec_args: Vec<&str>, _work_dir: &str) -> DockerResult<()> {
         let mut cmd = Command::new(DOCKER_BIN);
         cmd.args(&["exec", "-d", container_name, "bash", "-c"]);
 
         let args_string = exec_args.join(" ");
-        let args_string = format!(r#"{}"#, args_string);
+        let args_string = args_string;
         println!("Args string: {}", args_string);
         cmd.arg(args_string.as_str());
 
@@ -372,7 +372,7 @@ impl Docker {
         if let Some(name) = self.name.as_ref() {
             if let Some(name_mod) = name_mod {
                 let display_name = format!("{}-{}", &name, name_mod);
-                container_name = Some(display_name.clone());
+                container_name = Some(display_name);
                 cmd.arg("--name").arg(container_name.as_ref().unwrap());
             } else {
                 container_name = Some(name.clone());
@@ -411,9 +411,9 @@ mod tests {
     use super::*;
     fn image() -> DockerImage {
         DockerImage {
-            name: "trampoline".to_string().to_string(),
-            tag: Some("latest".to_string().to_string()),
-            file_path: Some("./docker".to_string().to_string()),
+            name: "trampoline".to_string(),
+            tag: Some("latest".to_string()),
+            file_path: Some("./docker".to_string()),
             host_mappings: vec![],
             build_args: HashMap::new(),
         }
@@ -421,7 +421,7 @@ mod tests {
 
     fn image_2() -> DockerImage {
         DockerImage {
-            name: "trampoline".to_string().to_string(),
+            name: "trampoline".to_string(),
             tag: None,
             file_path: None,
             host_mappings: vec![],
