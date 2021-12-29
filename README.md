@@ -33,9 +33,8 @@ You also need to have Docker installed.
 `trampoline new <project_name>`
 
 ## Manage local network
-To initialize the network: `trampoline network new`
 
-To start the node: `trampoline network launch`
+To initialize and start a new network: `trampoline network launch`
 
 To set a miner: `trampoline network set-miner [lock_arg | pubkey]`
 
