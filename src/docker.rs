@@ -1,5 +1,4 @@
 use crate::project::VirtualEnv;
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::io::Write;
@@ -165,9 +164,16 @@ pub struct DockerCommand<C> {
     pub command_string: Option<String>,
 }
 
-impl<T> Into<String> for DockerCommand<T> {
-    fn into(self) -> String {
-        self.command_string.unwrap_or_default()
+// impl<T> Into<String> for DockerCommand<T> {
+//     fn into(self) -> String {
+//         self.command_string.unwrap_or_default()
+//     }
+// }
+
+// Changed above to impl From
+impl<T> From<DockerCommand<T>> for String {
+    fn from(command: DockerCommand<T>) -> String {
+        command.command_string.unwrap_or_default()
     }
 }
 
@@ -175,11 +181,11 @@ impl<T> DockerCommand<T> {
     pub fn execute(&self, args: Option<Vec<String>>) -> DockerResult<()> {
         if let Some(cmd_str) = &self.command_string {
             let mut cmd = Command::new("docker");
-            cmd_str.split(" ").for_each(|arg| {
+            cmd_str.split(' ').for_each(|arg| {
                 cmd.arg(arg);
             });
             if let Some(args) = args {
-                cmd.args(args.clone());
+                cmd.args(args);
                 //println!("{}{}", cmd_str, args.join(" "));
             }
             //println!("{}", cmd_str);
@@ -468,7 +474,7 @@ mod tests {
         let command = DockerCommand::default().build(&image, true).unwrap();
         assert_eq!(
             command.command_string.as_ref().unwrap().as_str(),
-            "docker image build --rm ./docker -t trampoline:latest"
+            "image build --rm ./docker -t trampoline:latest"
         );
     }
 
@@ -478,7 +484,7 @@ mod tests {
         let command = DockerCommand::default().remove(&image).unwrap();
         assert_eq!(
             command.command_string.as_ref().unwrap().as_str(),
-            "docker image rm trampoline"
+            "image rm trampoline"
         );
     }
 }

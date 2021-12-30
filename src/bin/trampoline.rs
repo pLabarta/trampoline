@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
-use std::str::FromStr;
 
 use anyhow::anyhow;
 use anyhow::Result;
@@ -125,7 +123,7 @@ fn main() -> Result<()> {
                         }],
                         volumes: vec![docker_volume],
                         env_vars: HashMap::default(),
-                        image: image.clone(),
+                        image: image,
                     };
                     let run: DockerCommand<DockerContainer> = DockerCommand::default()
                         .run(&container, false, true)

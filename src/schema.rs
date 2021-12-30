@@ -1,8 +1,6 @@
 use crate::project::TrampolineProject;
 use crate::{TrampolineResource, TrampolineResourceType};
 use anyhow::Result;
-
-use molecule::prelude::{Builder, Entity};
 use molecule_codegen::{Compiler, Language};
 
 use std::io::Write;
@@ -22,8 +20,8 @@ pub enum SchemaError {
 
 #[derive(Debug, Clone, Default)]
 pub struct Schema {
-    path: PathBuf,
     name: String,
+    path: PathBuf,
 }
 
 impl From<Schema> for TrampolineResourceType {
@@ -69,7 +67,7 @@ impl TrampolineResource for Schema {
             gen_bindings_flag = true;
         } else {
             println!("Creating {}", &schema_dir.as_path().to_str().unwrap());
-            std::fs::write(&schema_dir, content.unwrap_or("".to_string()))?;
+            std::fs::write(&schema_dir, content.unwrap_or_else(|| "".to_string()))?;
         }
 
         let molecule_file_path = schema_dir.clone().canonicalize()?;
