@@ -4,25 +4,20 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 use anyhow::Result;
-use ckb_app_config::{BlockAssemblerConfig};
+use ckb_app_config::BlockAssemblerConfig;
 use ckb_hash::blake2b_256;
 
-
 use ckb_types::{h256, H256};
-
-
-
-
 
 use structopt::StructOpt;
 
 use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
+use trampoline::parse_hex;
 use trampoline::project::*;
 use trampoline::schema::{Schema, SchemaInitArgs};
 use trampoline::TrampolineResource;
-use trampoline::{parse_hex};
-use trampoline::{TrampolineResourceType};
+use trampoline::TrampolineResourceType;
 
 const SECP_TYPE_HASH: H256 =
     h256!("0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8");
@@ -50,7 +45,8 @@ fn main() -> Result<()> {
                     return Err(TrampolineProjectError::ProjectAlreadyExists {
                         name: project.config.name.to_string(),
                         path: project.root_dir.as_path().to_str().unwrap().to_string(),
-                    }.into());
+                    }
+                    .into());
                 }
             }
             Err(_e) => {
@@ -82,7 +78,6 @@ fn main() -> Result<()> {
         TrampolineCommand::Network { command } => {
             let project = TrampolineProject::from(project?);
             match command {
-                // TODO: Init and Run as separate so that set miner does not require launching network first
                 NetworkCommands::Launch {} => {
                     let image = DockerImage {
                         name: "iamm/trampoline-env".to_string(),
@@ -92,20 +87,30 @@ fn main() -> Result<()> {
                         build_args: HashMap::new(),
                     };
 
-                    let cmd: DockerCommand<DockerImage> = DockerCommand::default()
-                        .build(&image, true).unwrap();
+                    let cmd: DockerCommand<DockerImage> =
+                        DockerCommand::default().build(&image, true).unwrap();
                     cmd.execute(None)?;
 
-                    let container_port = project.config.env.as_ref()
-                        .unwrap().chain.container_port;
-                    let host_port = project.config.env.as_ref()
-                        .unwrap().chain.host_port;
+                    let container_port = project.config.env.as_ref().unwrap().chain.container_port;
+                    let host_port = project.config.env.as_ref().unwrap().chain.host_port;
 
-                    let host_volume = project.config.env.as_ref()
-                    .unwrap().chain.local_binding.as_path();
+                    let host_volume = project
+                        .config
+                        .env
+                        .as_ref()
+                        .unwrap()
+                        .chain
+                        .local_binding
+                        .as_path();
 
-                    let container_volume = project.config.env.as_ref()
-                    .unwrap().chain.container_mount.as_str();
+                    let container_volume = project
+                        .config
+                        .env
+                        .as_ref()
+                        .unwrap()
+                        .chain
+                        .container_mount
+                        .as_str();
 
                     let docker_volume = Volume {
                         host: &host_volume,
@@ -114,13 +119,17 @@ fn main() -> Result<()> {
 
                     let container = DockerContainer {
                         name: project.config.name.clone(),
-                        port_bindings: vec![DockerPort{host: host_port, container: container_port}],
+                        port_bindings: vec![DockerPort {
+                            host: host_port,
+                            container: container_port,
+                        }],
                         volumes: vec![docker_volume],
                         env_vars: HashMap::default(),
                         image: image.clone(),
                     };
                     let run: DockerCommand<DockerContainer> = DockerCommand::default()
-                    .run(&container, false, true).unwrap();
+                        .run(&container, false, true)
+                        .unwrap();
 
                     run.execute(Some(vec!["run".to_string()]))?;
                     // Docker::default()

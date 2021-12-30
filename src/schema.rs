@@ -2,11 +2,8 @@ use crate::project::TrampolineProject;
 use crate::{TrampolineResource, TrampolineResourceType};
 use anyhow::Result;
 
-
-
 use molecule::prelude::{Builder, Entity};
 use molecule_codegen::{Compiler, Language};
-
 
 use std::io::Write;
 use std::path::Path;

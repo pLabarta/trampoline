@@ -1,14 +1,13 @@
-
 use crate::{TrampolineResource, TrampolineResourceType, TEMPLATES};
-use anyhow::{Result};
-use ckb_app_config::{CKBAppConfig};
+use anyhow::Result;
+use ckb_app_config::CKBAppConfig;
 use serde::{Deserialize, Serialize};
 
 use std::convert::From;
 
 use std::fmt::Formatter;
 use std::fs;
-use std::io::{Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use tera::Context as TeraContext;
@@ -120,19 +119,14 @@ impl TrampolineResource for TrampolineProject {
                 find_ancestor(&mut trampoline_config_path, "trampoline.toml").unwrap();
             root_dir.pop();
             config.env = trampoline_env;
-            Ok(TrampolineProject {
-                config,
-                root_dir,
-            }
-            .into())
+            Ok(TrampolineProject { config, root_dir }.into())
         } else {
             trampoline_config_path.pop();
             let mut real_path = trampoline_config_path.canonicalize().unwrap();
             let root_trampoline_path = find_ancestor(&mut real_path, "trampoline.toml");
             match root_trampoline_path {
                 Some(mut path) => {
-                    let raw_conf =
-                        fs::read_to_string(&path).map_err(TrampolineProjectError::Io)?;
+                    let raw_conf = fs::read_to_string(&path).map_err(TrampolineProjectError::Io)?;
                     let config = toml::from_str::<TrampolineConfig>(&raw_conf)
                         .map_err(TrampolineProjectError::DeserializeToml)?;
                     path.pop();
@@ -200,9 +194,13 @@ impl TrampolineResource for TrampolineProject {
                 project_dir.push(&path);
             }
             let content = TEMPLATES.render(path, &context)?;
-            fs::write(&project_dir, content).unwrap_or_else(|_| panic!("Error writing to {} with template {}",
-                &project_dir.to_str().unwrap(),
-                path));
+            fs::write(&project_dir, content).unwrap_or_else(|_| {
+                panic!(
+                    "Error writing to {} with template {}",
+                    &project_dir.to_str().unwrap(),
+                    path
+                )
+            });
             project_dir.pop();
         }
 
@@ -242,9 +240,7 @@ impl TrampolineProject {
 
         let env = toml::from_str::<TrampolineEnv>(path_to_conf.as_str())?;
 
-        let ckb_toml_path = env.chain.local_binding
-            .join("ckb.toml")
-            .canonicalize()?;
+        let ckb_toml_path = env.chain.local_binding.join("ckb.toml").canonicalize()?;
         Ok(ckb_toml_path)
     }
 }

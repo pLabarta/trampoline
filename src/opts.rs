@@ -74,6 +74,11 @@ pub enum NetworkCommands {
         about = "Start continuously mining blocks or mine a single block"
     )]
     Miner { one_block: Option<bool> },
+    #[structopt(
+        name = "init",
+        about = "Initialize new network configuration without starting"
+    )]
+    Init {},
 }
 #[derive(Debug, StructOpt)]
 pub enum SchemaCommand {

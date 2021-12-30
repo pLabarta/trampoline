@@ -1,4 +1,4 @@
-use crate::{project::VirtualEnv};
+use crate::project::VirtualEnv;
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::fmt::Formatter;
@@ -71,9 +71,17 @@ pub struct Volume<'a> {
 
 impl std::fmt::Display for Volume<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        
-        write!(f, "{}:{}", self.host.canonicalize().unwrap().as_os_str().to_str().unwrap(), 
-        self.container.as_os_str().to_str().unwrap())
+        write!(
+            f,
+            "{}:{}",
+            self.host
+                .canonicalize()
+                .unwrap()
+                .as_os_str()
+                .to_str()
+                .unwrap(),
+            self.container.as_os_str().to_str().unwrap()
+        )
     }
 }
 #[derive(Debug, Clone)]
@@ -115,9 +123,7 @@ impl std::fmt::Display for DockerContainer<'_> {
         let volumes_string = self
             .volumes
             .iter()
-            .map(|vol| {
-                format!("-v{}", vol)
-            })
+            .map(|vol| format!("-v{}", vol))
             .collect::<Vec<String>>()
             .join(" ");
         write!(
@@ -169,7 +175,7 @@ impl<T> DockerCommand<T> {
     pub fn execute(&self, args: Option<Vec<String>>) -> DockerResult<()> {
         if let Some(cmd_str) = &self.command_string {
             let mut cmd = Command::new("docker");
-                cmd_str.split(" ").for_each(|arg| {
+            cmd_str.split(" ").for_each(|arg| {
                 cmd.arg(arg);
             });
             if let Some(args) = args {
