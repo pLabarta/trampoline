@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use anyhow::anyhow;
 use anyhow::Result;
 use ckb_app_config::{BlockAssemblerConfig};
@@ -80,19 +84,53 @@ fn main() -> Result<()> {
             match command {
                 // TODO: Init and Run as separate so that set miner does not require launching network first
                 NetworkCommands::Launch {} => {
-                    let miner_config = &project.config.env.as_ref().unwrap().miner;
-                    let miner_ports = (
-                        miner_config.host_port.into(),
-                        miner_config.container_port.into(),
-                    );
-                    Docker::default()
-                        .name(project.config.name.as_str())
-                        .add_service(project.config.env.unwrap().chain)?
-                        .run(
-                            Some(vec!["run".to_string()]),
-                            Some("node"),
-                            vec![miner_ports],
-                        )?;
+                    let image = DockerImage {
+                        name: "iamm/trampoline-env".to_string(),
+                        tag: Some("latest".to_string()),
+                        file_path: Some(".".to_string()),
+                        host_mappings: vec![],
+                        build_args: HashMap::new(),
+                    };
+
+                    let cmd: DockerCommand<DockerImage> = DockerCommand::default()
+                        .build(&image, true).unwrap();
+                    cmd.execute(None)?;
+
+                    let container_port = project.config.env.as_ref()
+                        .unwrap().chain.container_port;
+                    let host_port = project.config.env.as_ref()
+                        .unwrap().chain.host_port;
+
+                    let host_volume = project.config.env.as_ref()
+                    .unwrap().chain.local_binding.as_path();
+
+                    let container_volume = project.config.env.as_ref()
+                    .unwrap().chain.container_mount.as_str();
+
+                    let docker_volume = Volume {
+                        host: &host_volume,
+                        container: std::path::Path::new(container_volume),
+                    };
+
+                    let container = DockerContainer {
+                        name: project.config.name.clone(),
+                        port_bindings: vec![DockerPort{host: host_port, container: container_port}],
+                        volumes: vec![docker_volume],
+                        env_vars: HashMap::default(),
+                        image: image.clone(),
+                    };
+                    let run: DockerCommand<DockerContainer> = DockerCommand::default()
+                    .run(&container, false, true).unwrap();
+
+                    run.execute(Some(vec!["run".to_string()]))?;
+                    // Docker::default()
+                    //     .name(project.config.name.as_str())
+                    //     .add_service(project.config.env.unwrap().chain)?
+                    //     .run(
+                    //         Some(vec!["run".to_string()]),
+                    //         Some("node"),
+                    //         vec![miner_ports],
+                    //     )?;
                 }
                 NetworkCommands::SetMiner { pubkey, lock_arg } => {
                     let mut config = project.load_ckb_config()?;

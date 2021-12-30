@@ -1,4 +1,5 @@
 use crate::{project::VirtualEnv};
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::io::Write;
@@ -64,8 +65,16 @@ impl std::fmt::Display for Port {
 
 #[derive(Debug, Clone)]
 pub struct Volume<'a> {
-    host: &'a Path,
-    container: &'a Path,
+    pub host: &'a Path,
+    pub container: &'a Path,
+}
+
+impl std::fmt::Display for Volume<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        
+        write!(f, "{}:{}", self.host.canonicalize().unwrap().as_os_str().to_str().unwrap(), 
+        self.container.as_os_str().to_str().unwrap())
+    }
 }
 #[derive(Debug, Clone)]
 pub struct DockerPort {
@@ -79,13 +88,13 @@ impl std::fmt::Display for DockerPort {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DockerContainer<'a> {
     pub name: String,
     pub port_bindings: Vec<DockerPort>,
     pub volumes: Vec<Volume<'a>>,
     pub env_vars: HashMap<String, String>,
-    pub image: &'a DockerImage,
+    pub image: DockerImage,
 }
 
 impl std::fmt::Display for DockerContainer<'_> {
@@ -93,7 +102,7 @@ impl std::fmt::Display for DockerContainer<'_> {
         let port_bindings_string = self
             .port_bindings
             .iter()
-            .map(|port| format!("-p {}", port))
+            .map(|port| format!("-p{}", port))
             .collect::<Vec<String>>()
             .join(" ");
         let image_string = {
@@ -103,10 +112,18 @@ impl std::fmt::Display for DockerContainer<'_> {
                 self.image.name.clone()
             }
         };
+        let volumes_string = self
+            .volumes
+            .iter()
+            .map(|vol| {
+                format!("-v{}", vol)
+            })
+            .collect::<Vec<String>>()
+            .join(" ");
         write!(
             f,
-            "{} --name {} {}",
-            port_bindings_string, self.name, image_string
+            "{} --name {} {} {}",
+            port_bindings_string, self.name, volumes_string, image_string
         )
     }
 }
@@ -149,9 +166,19 @@ impl<T> Into<String> for DockerCommand<T> {
 }
 
 impl<T> DockerCommand<T> {
-    pub fn execute(&self) -> DockerResult<()> {
+    pub fn execute(&self, args: Option<Vec<String>>) -> DockerResult<()> {
         if let Some(cmd_str) = &self.command_string {
-            let mut cmd = Command::new(cmd_str);
+            let mut cmd = Command::new("docker");
+                cmd_str.split(" ").for_each(|arg| {
+                cmd.arg(arg);
+            });
+            if let Some(args) = args {
+                cmd.args(args.clone());
+                //println!("{}{}", cmd_str, args.join(" "));
+            }
+            //println!("{}", cmd_str);
+            //cmd.arg(cmd_str);
+            //println!("{}", cmd_str);
             cmd.stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .stdin(Stdio::null())
@@ -176,9 +203,9 @@ impl DockerCommand<DockerImage> {
             .join(" ");
 
         if !(&flags).is_empty() {
-            format!("docker image {} {} {}", command_string, flags_string, image)
+            format!("image {} {} {}", command_string, flags_string, image)
         } else {
-            format!("docker image {} {}", command_string, image)
+            format!("image {} {}", command_string, image)
         }
     }
 
@@ -222,19 +249,19 @@ impl DockerCommand<DockerContainer<'_>> {
 
         if !(&flags).is_empty() {
             format!(
-                "docker container {} {} {}",
+                "container {} {} {}",
                 command_string, flags_string, container
             )
         } else {
-            format!("docker container {} {}", command_string, container)
+            format!("container {} {}", command_string, container)
         }
     }
-    pub fn run(
-        &self,
-        container: &DockerContainer,
+    pub fn run<'a>(
+        self,
+        container: &'a DockerContainer,
         rm: bool,
         detach: bool,
-    ) -> DockerResult<DockerCommand<DockerContainer>> {
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
         let mut flags = vec![];
         if rm {
             flags.push("rm".into());
