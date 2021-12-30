@@ -474,7 +474,7 @@ mod tests {
         let command = DockerCommand::default().build(&image, true).unwrap();
         assert_eq!(
             command.command_string.as_ref().unwrap().as_str(),
-            "docker image build --rm ./docker -t trampoline:latest"
+            "image build --rm ./docker -t trampoline:latest"
         );
     }
 
@@ -484,7 +484,7 @@ mod tests {
         let command = DockerCommand::default().remove(&image).unwrap();
         assert_eq!(
             command.command_string.as_ref().unwrap().as_str(),
-            "docker image rm trampoline"
+            "image rm trampoline"
         );
     }
 }
