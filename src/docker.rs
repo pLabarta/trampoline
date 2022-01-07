@@ -1,3 +1,4 @@
+use crate::docker;
 use crate::project::VirtualEnv;
 use std::collections::HashMap;
 use std::fmt::Formatter;
@@ -6,15 +7,18 @@ use std::marker::PhantomData;
 use std::process::Command;
 
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use thiserror::Error;
 
 use std::process::Stdio;
 
+use anyhow::anyhow;
 use std::string::ToString;
 
 pub const DOCKER_BIN: &str = "docker";
 pub const IMAGE_NAME: &str = "iamm/trampoline-env:latest";
+
 #[derive(Debug, Error)]
 pub enum DockerError {
     #[error(transparent)]
@@ -24,6 +28,7 @@ pub enum DockerError {
     #[error("No image set")]
     NoImage,
 }
+
 type DockerResult<T> = std::result::Result<T, DockerError>;
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
@@ -83,6 +88,7 @@ impl std::fmt::Display for Volume<'_> {
         )
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct DockerPort {
     pub host: usize,
@@ -119,17 +125,25 @@ impl std::fmt::Display for DockerContainer<'_> {
                 self.image.name.clone()
             }
         };
-        let volumes_string = self
-            .volumes
-            .iter()
-            .map(|vol| format!("-v{}", vol))
-            .collect::<Vec<String>>()
-            .join(" ");
-        write!(
-            f,
-            "{} --name {} {} {}",
-            port_bindings_string, self.name, volumes_string, image_string
-        )
+        if self.volumes.is_empty() {
+            write!(
+                f,
+                "{} --name {} {}",
+                port_bindings_string, self.name, image_string
+            )
+        } else {
+            let volumes_string = self
+                .volumes
+                .iter()
+                .map(|vol| format!("-v{}", vol))
+                .collect::<Vec<String>>()
+                .join(" ");
+            write!(
+                f,
+                "{} --name {} {} {}",
+                port_bindings_string, self.name, volumes_string, image_string
+            )
+        }
     }
 }
 
@@ -164,13 +178,6 @@ pub struct DockerCommand<C> {
     pub command_string: Option<String>,
 }
 
-// impl<T> Into<String> for DockerCommand<T> {
-//     fn into(self) -> String {
-//         self.command_string.unwrap_or_default()
-//     }
-// }
-
-// Changed above to impl From
 impl<T> From<DockerCommand<T>> for String {
     fn from(command: DockerCommand<T>) -> String {
         command.command_string.unwrap_or_default()
@@ -186,21 +193,42 @@ impl<T> DockerCommand<T> {
             });
             if let Some(args) = args {
                 cmd.args(args);
-                //println!("{}{}", cmd_str, args.join(" "));
             }
-            //println!("{}", cmd_str);
-            //cmd.arg(cmd_str);
-            //println!("{}", cmd_str);
-            cmd.stdout(Stdio::null())
+
+            let _cmd_dis = cmd.get_program().to_str().unwrap();
+            let mut child = cmd
+                .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .stdin(Stdio::null())
                 .spawn()?;
-            Ok(())
+            let res = loop {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        if status.success() {
+                            break Ok(());
+                        } else {
+                            let err = anyhow!("Docker exited with status {:?}", status.code());
+                            break Err(docker::DockerError::Any(err));
+                        }
+                    }
+                    Ok(None) => {
+                        println!("Waiting 500ms");
+                        std::thread::sleep(Duration::from_millis(500));
+                        continue;
+                    }
+                    Err(e) => {
+                        panic!("Error executing docker command: {}", e);
+                    }
+                }
+            };
+
+            res
         } else {
             Err(DockerError::NoImage)
         }
     }
 }
+
 impl DockerCommand<DockerImage> {
     fn format_command(
         &self,
@@ -289,32 +317,100 @@ impl DockerCommand<DockerContainer<'_>> {
         })
     }
 
-    pub fn exec(_container: &DockerContainer) -> DockerResult<()> {
-        Ok(())
+    pub fn exec(
+        &self,
+        container: &DockerContainer,
+        flags: Vec<String>,
+    ) -> DockerResult<DockerCommand<DockerContainer>> {
+        let cmd = self.format_command(container, "exec", flags);
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
     }
 
-    pub fn cp(_container: &DockerContainer) -> DockerResult<()> {
-        todo!()
+    pub fn cp_from<'a>(
+        container: &'a DockerContainer,
+        file_path: &Path,
+        dest_path: &Path,
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
+        let cmd = format!(
+            "container cp {}:{} {}",
+            &container.name,
+            &file_path.to_str().unwrap(),
+            &dest_path.to_str().unwrap()
+        );
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
     }
 
-    pub fn start(_container: &DockerContainer) -> DockerResult<()> {
-        todo!()
+    pub fn cp_to<'a>(
+        container: &'a DockerContainer,
+        file_path: &Path,
+        dest_path: &Path,
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
+        let cmd = format!(
+            "container cp {} {}:{}",
+            &file_path.to_str().unwrap(),
+            &container.name,
+            &dest_path.to_str().unwrap()
+        );
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
     }
 
-    pub fn stop(_container: &DockerContainer) -> DockerResult<()> {
-        todo!()
+    pub fn start<'a>(
+        container: &'a DockerContainer,
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
+        let cmd = format!("container start {}", &container.name);
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
     }
 
-    pub fn pause(_container: &DockerContainer) -> DockerResult<()> {
-        todo!()
+    pub fn stop<'a>(
+        container: &'a DockerContainer,
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
+        let cmd = format!("container stop {}", &container.name);
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
     }
 
-    pub fn unpause(_container: &DockerContainer) -> DockerResult<()> {
-        todo!()
+    pub fn pause<'a>(
+        container: &'a DockerContainer,
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
+        let cmd = format!("container pause {}", &container.name);
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
     }
 
-    pub fn restart(_container: &DockerContainer) -> DockerResult<()> {
-        todo!()
+    pub fn unpause<'a>(
+        container: &'a DockerContainer,
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
+        let cmd = format!("container unpause {}", &container.name);
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
+    }
+
+    pub fn restart<'a>(
+        container: &'a DockerContainer,
+    ) -> DockerResult<DockerCommand<DockerContainer<'a>>> {
+        let cmd = format!("container restart {}", &container.name);
+        Ok(DockerCommand::<DockerContainer> {
+            command_string: Some(cmd),
+            _docker: PhantomData::<DockerContainer>,
+        })
     }
 }
 
@@ -429,8 +525,8 @@ impl Docker {
         });
 
         cmd.arg(IMAGE_NAME);
-        if exec_args.is_some() {
-            cmd.args(exec_args.unwrap().as_slice());
+        if let Some(exec_args) = exec_args {
+            cmd.args(exec_args.as_slice());
         }
 
         let _child = cmd.stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
@@ -468,6 +564,101 @@ mod tests {
         }
     }
 
+    fn dummy_container() -> DockerContainer<'static> {
+        let image = image();
+
+        let docker_volume = Volume {
+            host: Path::new("/test/path/host"),
+            container: Path::new("/test/path/container"),
+        };
+
+        DockerContainer {
+            name: String::from("test-container"),
+            port_bindings: vec![DockerPort {
+                host: 7357,
+                container: 7357,
+            }],
+            volumes: vec![docker_volume],
+            env_vars: HashMap::default(),
+            image,
+        }
+    }
+
+    #[test]
+    fn test_container_cp_to() {
+        let container = dummy_container();
+        let file_path = Path::new("./file.test");
+        let dest_path = Path::new("/var/lib/ckb");
+        let cmd =
+            DockerCommand::<DockerContainer>::cp_to(&container, file_path, dest_path).unwrap();
+        assert_eq!(
+            cmd.command_string.as_ref().unwrap().as_str(),
+            format!("container cp ./file.test {}:/var/lib/ckb", container.name)
+        );
+    }
+
+    fn test_container_cp_from() {
+        let container = dummy_container();
+        let file_path = Path::new("/var/lib/ckb/file.test");
+        let dest_path = Path::new(".");
+        let cmd =
+            DockerCommand::<DockerContainer>::cp_from(&container, file_path, dest_path).unwrap();
+        assert_eq!(
+            cmd.command_string.as_ref().unwrap().as_str(),
+            format!("container cp {}:/var/lib/ckb/file.test .", container.name)
+        );
+    }
+
+    #[test]
+    fn test_container_start() {
+        let container = dummy_container();
+        let cmd = DockerCommand::<DockerContainer>::start(&container).unwrap();
+        assert_eq!(
+            cmd.command_string.as_ref().unwrap().as_str(),
+            format!("container start {}", container.name)
+        );
+    }
+
+    #[test]
+    fn test_container_stop() {
+        let container = dummy_container();
+        let cmd = DockerCommand::<DockerContainer>::stop(&container).unwrap();
+        assert_eq!(
+            cmd.command_string.as_ref().unwrap().as_str(),
+            format!("container stop {}", container.name)
+        );
+    }
+
+    #[test]
+    fn test_container_pause() {
+        let container = dummy_container();
+        let cmd = DockerCommand::<DockerContainer>::pause(&container).unwrap();
+        assert_eq!(
+            cmd.command_string.as_ref().unwrap().as_str(),
+            format!("container pause {}", container.name)
+        );
+    }
+
+    #[test]
+    fn test_container_unpause() {
+        let container = dummy_container();
+        let cmd = DockerCommand::<DockerContainer>::unpause(&container).unwrap();
+        assert_eq!(
+            cmd.command_string.as_ref().unwrap().as_str(),
+            format!("container unpause {}", container.name)
+        );
+    }
+
+    #[test]
+    fn test_container_restart() {
+        let container = dummy_container();
+        let cmd = DockerCommand::<DockerContainer>::restart(&container).unwrap();
+        assert_eq!(
+            cmd.command_string.as_ref().unwrap().as_str(),
+            format!("container restart {}", container.name)
+        );
+    }
+
     #[test]
     fn test_build_format_command() {
         let image = image();
@@ -486,5 +677,37 @@ mod tests {
             command.command_string.as_ref().unwrap().as_str(),
             "image rm trampoline"
         );
+    }
+
+    #[test]
+    fn test_run_format_command() {
+        let image = image_2();
+        let host_path = Path::new("./").canonicalize().unwrap();
+        let cwd = std::env::current_dir().unwrap();
+        let container = DockerContainer {
+            name: "test-container".to_string(),
+            port_bindings: vec![DockerPort {
+                host: 80,
+                container: 80,
+            }],
+            volumes: vec![Volume {
+                host: &host_path,
+                container: Path::new("/data"),
+            }],
+            env_vars: HashMap::new(),
+            image,
+        };
+        let expected_host_path_string = cwd.display();
+        let expected_docker_command = format!(
+            "container run --rm --detach -p80:80 --name test-container -v{}:/data trampoline",
+            expected_host_path_string
+        );
+        let command = DockerCommand::default()
+            .run(&container, true, true)
+            .unwrap();
+        assert_eq!(
+            command.command_string.as_ref().unwrap().as_str(),
+            expected_docker_command.as_str()
+        )
     }
 }
