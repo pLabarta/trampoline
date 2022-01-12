@@ -5,7 +5,6 @@ use ckb_types::{
 };
 
 use crate::contract::*;
-
 pub struct SudtDataSchema {}
 pub struct SudtArgsSchema {}
 
