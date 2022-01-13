@@ -7,6 +7,7 @@ use generator::GeneratorMiddleware;
 
 use std::fs;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use self::chain::CellOutputWithData;
 use self::generator::CellQuery;
@@ -209,7 +210,11 @@ impl<A, D> GeneratorMiddleware for Contract<A, D>
 where
     D: Clone,
 {
-    fn pipe(&self, tx: TransactionView) -> TransactionView {
+    fn pipe(
+        &self,
+        tx: TransactionView,
+        query_queue: Arc<Mutex<Vec<CellQuery>>>,
+    ) -> TransactionView {
         type OutputWithData = (CellOutput, Bytes);
         let mut idx = 0;
         let outputs = tx.clone().outputs().into_iter().filter_map(|output| {
@@ -264,16 +269,10 @@ where
             })
             .collect::<Vec<OutputWithData>>();
 
-        // let new_tx = TransactionBuilder::default()
-        //     .outputs(outputs.iter().map(|out| out.0.clone()).collect::<Vec<CellOutput>>().pack())
-        //     .outputs_data(outputs.iter().map(|out| out.1.clone()).collect::<Vec<Bytes>>().pack())
-        //     .cell_deps(tx.cell_deps())
-        //     .header_deps(tx.header_deps())
-        //     .inputs(tx.inputs())
-        //     .witnesses(tx.witnesses())
-        //     .build();
-        // new_tx
-        // let mut new_tx = tx.clone();
+        let queries = self.input_rules.iter().map(|rule| rule(tx.clone()));
+
+        query_queue.lock().unwrap().extend(queries);
+
         tx.as_advanced_builder()
             .set_outputs(
                 outputs
@@ -299,7 +298,7 @@ mod tests {
     use ckb_jsonrpc_types::JsonBytes;
     use ckb_types::{
         core::TransactionBuilder,
-        packed::{Byte32, CellInputBuilder, Uint128},
+        packed::{Byte32, Uint128},
     };
     use generator::*;
     use std::path::Path;
@@ -375,9 +374,6 @@ mod tests {
             .lock
             .clone()
             .unwrap_or(generate_always_success_lock(None).into());
-        // let mut capacity_buf = [0u8; 16];
-        // capacity_buf.copy_from_slice(sudt_contract.read_data().as_slice());
-        // let capacity = u128::from_le_bytes(capacity_buf);
         CellOutput::new_builder()
             .capacity(100_u64.pack())
             .type_(
@@ -401,7 +397,7 @@ mod tests {
     }
 
     #[test]
-    fn test_sudt_issuance_tx_with_contract_pipeline() {
+    fn test_failed_issuance_tx_no_permissions() {
         let mut chain = MockChain::default();
 
         // Create always success lock cell and add to chain
@@ -410,17 +406,9 @@ mod tests {
         let minter_lock_cell = chain.deploy_cell_with_data(minter_lock_code_cell_data);
         let minter_lock_script = chain.build_script(&minter_lock_cell, vec![1_u8].into());
         let non_minter_lock = chain.build_script(&minter_lock_cell, vec![200_u8].into());
+        let non_minter_lock_hash = non_minter_lock.clone().unwrap().calc_script_hash();
 
-        // Create two cells locked with always success but w/ different script args
-        let minter_owned_cell = chain.create_cell(
-            CellOutput::new_builder()
-                .capacity(2000_u64.pack())
-                .lock(minter_lock_script.clone().unwrap())
-                .build(),
-            Default::default(),
-        );
-
-        let non_minter_owned_cell = chain.create_cell(
+        chain.create_cell(
             CellOutput::new_builder()
                 .capacity(2000_u64.pack())
                 .lock(non_minter_lock.unwrap())
@@ -433,38 +421,15 @@ mod tests {
         let sudt_code_cell = sudt_contract.as_code_cell();
         let sudt_code_cell_outpoint = chain.create_cell(sudt_code_cell.0, sudt_code_cell.1);
 
-        // Create Cell Inputs
-        let minter_owned_cell_input = CellInputBuilder::default()
-            .previous_output(minter_owned_cell)
-            .build();
-
-        let non_minter_owned_cell_input = CellInputBuilder::default()
-            .previous_output(non_minter_owned_cell)
-            .build();
-
-        // Create Mint SUDT transaction, using as input a cell locked with the minter's lock script
-        let tx = TransactionBuilder::default()
-            .input(minter_owned_cell_input)
-            .cell_dep(
-                sudt_contract
-                    .as_cell_dep(sudt_code_cell_outpoint.clone().into())
-                    .into(),
-            )
-            .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.clone().unwrap()))
-            .output(generate_simple_udt_cell(&sudt_contract))
-            .outputs_data(vec![0_u128.to_le_bytes().pack()])
-            .build();
-
         // Create Mint SUDT transaction, using as input a cell locked with a different user's lock script
         // Should fail because the user does not have mint permissions
         let fail_tx = TransactionBuilder::default()
-            .input(non_minter_owned_cell_input)
             .cell_dep(
                 sudt_contract
                     .as_cell_dep(sudt_code_cell_outpoint.into())
                     .into(),
             )
-            .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.unwrap()))
+            .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.clone().unwrap()))
             .output(generate_simple_udt_cell(&sudt_contract))
             .outputs_data(vec![0_u128.to_le_bytes().pack()])
             .build();
@@ -484,15 +449,95 @@ mod tests {
             },
         );
 
+        sudt_contract.add_input_rule(move |_tx| -> CellQuery {
+            CellQuery {
+                _query: QueryStatement::Single(CellQueryAttribute::LockHash(
+                    non_minter_lock_hash.clone().into(),
+                )),
+                _limit: 1,
+            }
+        });
+
         // Instantiate chain rpc and tx generator
         let chain_rpc = ChainRpc::new(chain);
         let generator = Generator::new()
             .chain_service(&chain_rpc)
+            .query_service(&chain_rpc)
             .pipeline(vec![&sudt_contract]);
 
-        // Generate two transactions
-        let new_tx = generator.pipe(tx);
-        let new_fail_tx = generator.pipe(fail_tx);
+        let new_fail_tx = generator.pipe(fail_tx, Arc::new(Mutex::new(vec![])));
+        // Test that failure transaction failed
+        let is_valid = chain_rpc.verify_tx(new_fail_tx.into());
+        assert!(!is_valid);
+    }
+
+    #[test]
+    fn test_sudt_issuance_tx_with_contract_pipeline() {
+        let mut chain = MockChain::default();
+
+        // Create always success lock cell and add to chain
+        let minter_lock_code_cell_data: Bytes =
+            ckb_always_success_script::ALWAYS_SUCCESS.to_vec().into();
+        let minter_lock_cell = chain.deploy_cell_with_data(minter_lock_code_cell_data);
+        let minter_lock_script = chain.build_script(&minter_lock_cell, vec![1_u8].into());
+        let minter_lock_hash = minter_lock_script.clone().unwrap().calc_script_hash();
+        chain.create_cell(
+            CellOutput::new_builder()
+                .capacity(2000_u64.pack())
+                .lock(minter_lock_script.clone().unwrap())
+                .build(),
+            Default::default(),
+        );
+
+        // Deploy SUDT to chain
+        let mut sudt_contract = gen_sudt_contract(minter_lock_script.clone(), Some(1500));
+        let sudt_code_cell = sudt_contract.as_code_cell();
+        let sudt_code_cell_outpoint = chain.create_cell(sudt_code_cell.0, sudt_code_cell.1);
+
+        // Create Mint SUDT transaction, using as input a cell locked with the minter's lock script
+        let tx = TransactionBuilder::default()
+            .cell_dep(
+                sudt_contract
+                    .as_cell_dep(sudt_code_cell_outpoint.clone().into())
+                    .into(),
+            )
+            .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.clone().unwrap()))
+            .output(generate_simple_udt_cell(&sudt_contract))
+            .outputs_data(vec![0_u128.to_le_bytes().pack()])
+            .build();
+
+        // Add rule to sudt output generation to increase the amount field.
+        sudt_contract.add_output_rule(
+            ContractCellFieldSelector::Data,
+            |amount: ContractCellField<Byte32, Uint128>| -> ContractCellField<Byte32, Uint128> {
+                if let ContractCellField::Data(amount) = amount {
+                    let mut amt_bytes = [0u8; 16];
+                    amt_bytes.copy_from_slice(amount.as_slice());
+                    let amt = u128::from_le_bytes(amt_bytes) + 2000;
+                    ContractCellField::Data(amt.pack())
+                } else {
+                    amount
+                }
+            },
+        );
+        sudt_contract.add_input_rule(move |_tx| -> CellQuery {
+            CellQuery {
+                _query: QueryStatement::Single(CellQueryAttribute::LockHash(
+                    minter_lock_hash.clone().into(),
+                )),
+                _limit: 1,
+            }
+        });
+
+        // Instantiate chain rpc and tx generator
+        let chain_rpc = ChainRpc::new(chain);
+        let generator = Generator::new()
+            .chain_service(&chain_rpc)
+            .query_service(&chain_rpc)
+            .pipeline(vec![&sudt_contract]);
+
+        // Generate transaction
+        let new_tx = generator.pipe(tx, Arc::new(Mutex::new(vec![])));
 
         // Test that success transaction succeeded & has correct sudt amount minted
         let new_tx_amt = new_tx.output_with_data(0).unwrap().1;
@@ -501,10 +546,6 @@ mod tests {
 
         let is_valid = chain_rpc.verify_tx(new_tx.into());
         assert!(is_valid);
-
-        // Test that failure transaction failed
-        let is_valid = chain_rpc.verify_tx(new_fail_tx.into());
-        assert!(!is_valid);
     }
 
     #[test]
@@ -547,7 +588,7 @@ mod tests {
         );
 
         // Pipe transaction into sudt contract
-        let new_tx = sudt_contract.pipe(transaction);
+        let new_tx = sudt_contract.pipe(transaction, Arc::new(Mutex::new(vec![])));
 
         // Check that sudt contract updated correctly with a total balance increase of 37 (17 + 20)
         let new_tx_amt = new_tx.output_with_data(0).unwrap().1;
