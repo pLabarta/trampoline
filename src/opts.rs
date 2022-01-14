@@ -39,6 +39,12 @@ pub enum TrampolineCommand {
 #[derive(Debug, StructOpt)]
 pub enum NetworkCommands {
     #[structopt(
+        name = "launchcompose",
+        about = "Launch local development network using Docker compose",
+        alias = "lc"
+    )]
+    LaunchCompose {},
+    #[structopt(
         name = "launch",
         about = "Launch local development network",
         alias = "l"

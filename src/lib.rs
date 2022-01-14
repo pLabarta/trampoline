@@ -1,3 +1,4 @@
+pub mod compose;
 pub mod contract;
 pub mod docker;
 pub mod opts;

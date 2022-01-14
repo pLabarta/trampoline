@@ -9,6 +9,7 @@ use ckb_types::{h256, H256};
 
 use structopt::StructOpt;
 
+use trampoline::compose::*;
 use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
@@ -75,6 +76,17 @@ fn main() -> Result<()> {
         TrampolineCommand::Network { command } => {
             let project = TrampolineProject::from(project?);
             match command {
+                NetworkCommands::LaunchCompose {} => {
+                    println!("Launching using Docker Compose");
+                    let hello = Service::hello();
+                    let node = Service::node("default", None, None);
+                    let miner = Service::miner("one", None, &node, "./ckb-miner.toml");
+                    let service_list = vec![hello, node, miner];
+                    let file = File::from(service_list);
+                    let yaml_string = serde_yaml::to_string(&file).unwrap();
+                    std::fs::write("docker-compose.yml", yaml_string)
+                        .expect("Unable to write file.");
+                }
                 NetworkCommands::Launch {} => {
                     let image = DockerImage {
                         name: "iamm/trampoline-env".to_string(),
