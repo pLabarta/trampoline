@@ -9,13 +9,11 @@ model, is a generalization of the UTXO model to enhance programmability. Nervos 
 
 There are myriad tradeoffs between UTXO and Account model - the choice depends on the use case and priorities of the developer.
 
-One powerful feature of the UTXO model is that significant composition of smart contract behavior can be realized in a single transaction, where the end result of the transaction is known a priori (before the transaction is submitted). This is because a transaction is a *complete* description of the proposed state change. This is in contrast to an Account model wherein the transaction, post-submission, can have unexpected results depending on what state changes occur prior to its execution while it's still sitting in the mempool.
+One powerful feature of the UTXO model is that sophisticated composition of smart contract behavior can be realized in a single transaction, where the end result of the transaction is known a priori (before the transaction is submitted). This is because a transaction is a *complete* description of the proposed state change. This is in contrast to an Account model wherein the transaction, post-submission, can have unexpected results depending on what state changes occur prior to its execution while it's still sitting in the mempool.
 
-Yet, this comes at a cost: *transaction generation* in a UTXO model is a lot more cumbersome. It takes a lot of custom code because all of the custom smart contract logic essentially needs to be reimplemented off-chain a second time.
+Yet, this comes at a cost: *transaction generation* in a UTXO model is a lot more cumbersome. It takes a lot of custom code to *interact* with smart contracts because all of the custom smart contract logic requires a second reimplementation off-chain. The same goes for "composing" smart contract interactions. This is in contrast to the account model, wherein the other contracts with which a single smart contract interacts does not require additional implementation work for the off-chain client software.
 
-After implementing all of that logic, a developer would still have to implement even more code in order to create composable transactions, or transactions which include not just their own smart contract actions, but also the actions of 3rd party smart contracts (i.e., building the software that allows your contracts to interact with another system's contracts is just as cumbersome an undertaking as is building all of your dapp's logic in the first place).
-
-The difficulty of building transaction generation logic is also consequential when testing: it is difficult to test the multitude of ways in which your smart contracts may interact (or not) with others, since building that interaction logic takes so much boilerplate.
+The difficulty of building transaction generation logic affects testing as well: it is difficult to test the multitude of ways in which your smart contracts may interact (or not) with others, since building that interaction logic takes so much boilerplate.
 
 Reducing the labor required to take advantage of composability on Nervos Network (the largest UTXO-based smart contract platform currently) is a primary goal of Trampoline.
 
