@@ -1,8 +1,6 @@
-pub mod contract;
 pub mod docker;
 pub mod opts;
 pub mod project;
-pub mod rpc;
 pub mod schema;
 mod utils;
 

@@ -14,7 +14,7 @@ use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
 use trampoline::project::*;
-use trampoline::rpc;
+use trampoline_sdk::rpc;
 use trampoline::schema::{Schema, SchemaInitArgs};
 use trampoline::TrampolineResource;
 use trampoline::TrampolineResourceType;

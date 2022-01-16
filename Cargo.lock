@@ -2669,6 +2669,46 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml",
+ "trampoline-sdk",
+ "walkdir",
+]
+
+[[package]]
+name = "trampoline-sdk"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "blake2b-rs",
+ "bytes",
+ "ckb-always-success-script",
+ "ckb-app-config",
+ "ckb-chain-spec",
+ "ckb-crypto",
+ "ckb-error",
+ "ckb-hash",
+ "ckb-jsonrpc-types",
+ "ckb-resource",
+ "ckb-script",
+ "ckb-system-scripts",
+ "ckb-traits",
+ "ckb-types",
+ "ckb-util",
+ "ckb-verification",
+ "hex",
+ "includedir",
+ "jsonrpc-core",
+ "lazy_static",
+ "molecule",
+ "molecule-codegen",
+ "phf 0.8.0",
+ "rand 0.8.4",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "structopt",
+ "thiserror",
+ "tokio",
+ "toml",
  "walkdir",
 ]
 
