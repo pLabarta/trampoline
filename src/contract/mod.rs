@@ -11,16 +11,12 @@ use std::sync::{Arc, Mutex};
 
 use self::chain::CellOutputWithData;
 use self::generator::CellQuery;
+use serde::{Serialize, Deserialize};
 pub mod chain;
 pub mod generator;
 pub mod sudt;
+use ckb_jsonrpc_types;
 
-pub trait ContractSchema {
-    type Output;
-
-    fn pack(&self, input: Self::Output) -> packed::Bytes;
-    fn unpack(&self, bytes: Bytes) -> Self::Output;
-}
 
 #[derive(Debug, Clone)]
 pub enum ContractSource {
@@ -35,6 +31,34 @@ impl ContractSource {
         Ok(Bytes::from(file))
     }
 }
+
+pub trait JsonByteConversion {
+
+    fn to_json_bytes(&self) -> JsonBytes;
+    fn from_json_bytes(bytes: JsonBytes) -> Self;
+}
+
+pub trait JsonConversion {
+    type JsonType;
+    fn to_json(&self) -> Self::JsonType;
+
+    fn from_json(json: Self::JsonType) -> Self;
+}
+
+pub trait MolConversion {
+    type MolType: Entity;
+
+    fn to_mol(&self) -> Self::MolType;
+
+    fn from_mol(entity: Self::MolType) -> Self;
+}
+
+pub trait BytesConversion {
+    fn from_bytes(bytes: Bytes) -> Self;
+
+    fn to_bytes(&self) -> Bytes;
+}
+
 
 pub enum ContractCellFieldSelector {
     Args,
@@ -51,12 +75,11 @@ pub enum ContractCellField<A, D> {
     Capacity(Uint64),
 }
 
+#[derive(Default)]
 pub struct Contract<A, D> {
     pub source: Option<ContractSource>,
-    args_schema: Box<dyn ContractSchema<Output = A>>,
-    data_schema: Box<dyn ContractSchema<Output = D>>,
-    pub data: Option<JsonBytes>,
-    pub args: Option<JsonBytes>,
+    pub data: D,
+    pub args: A,
     pub lock: Option<Script>,
     pub type_: Option<Script>,
     pub code: Option<JsonBytes>,
@@ -68,17 +91,11 @@ pub struct Contract<A, D> {
     pub input_rules: Vec<Box<dyn Fn(TransactionView) -> CellQuery>>,
 }
 
-impl<A, D> Contract<A, D> {
-    pub fn args_schema(mut self, schema: Box<dyn ContractSchema<Output = A>>) -> Self {
-        self.args_schema = schema;
-        self
-    }
-
-    pub fn data_schema(mut self, schema: Box<dyn ContractSchema<Output = D>>) -> Self {
-        self.data_schema = schema;
-        self
-    }
-
+impl<A, D> Contract<A, D>
+where
+    D: JsonByteConversion + MolConversion + BytesConversion + Clone,
+    A: JsonByteConversion + MolConversion + BytesConversion + Clone
+{
     // The lock script of the cell containing contract code
     pub fn lock(mut self, lock: Script) -> Self {
         self.lock = Some(lock);
@@ -109,12 +126,7 @@ impl<A, D> Contract<A, D> {
             Script::from(
                 packed::ScriptBuilder::default()
                     .args(
-                        self.args
-                            .as_ref()
-                            .unwrap_or(&JsonBytes::from_vec(vec![]))
-                            .clone()
-                            .into_bytes()
-                            .pack(),
+                        self.args.to_bytes().pack()
                     )
                     .code_hash(data_hash.pack())
                     .hash_type(ckb_types::core::ScriptHashType::Data1.into())
@@ -157,38 +169,36 @@ impl<A, D> Contract<A, D> {
 
     // Set data of a cell that will *reference* (i.e., use) this contract
     pub fn set_raw_data(&mut self, data: impl Into<JsonBytes>) {
-        self.data = Some(data.into());
+        self.data = D::from_json_bytes(data.into());
     }
 
     pub fn set_data(&mut self, data: D) {
-        self.data = Some(self.data_schema.pack(data).into());
+        self.data = data;
     }
 
     // Set args of a cell that will *reference* (i.e., use) this contract
     pub fn set_raw_args(&mut self, args: impl Into<JsonBytes>) {
-        self.args = Some(args.into());
+        self.args = A::from_json_bytes(args.into());
     }
 
     pub fn set_args(&mut self, args: A) {
-        self.args = Some(self.args_schema.pack(args).into());
+        self.args = args;
     }
 
     pub fn read_data(&self) -> D {
-        self.data_schema
-            .unpack(self.data.as_ref().unwrap().clone().into_bytes())
+        self.data.clone()
     }
 
     pub fn read_args(&self) -> A {
-        self.args_schema
-            .unpack(self.args.as_ref().unwrap().clone().into_bytes())
+       self.args.clone()
     }
 
     pub fn read_raw_data(&self, data: Bytes) -> D {
-        self.data_schema.unpack(data)
+        D::from_bytes(data)
     }
 
     pub fn read_raw_args(&self, args: Bytes) -> A {
-        self.args_schema.unpack(args)
+        A::from_bytes(args)
     }
 
     pub fn add_output_rule<F>(&mut self, field: ContractCellFieldSelector, transform_func: F)
@@ -208,7 +218,8 @@ impl<A, D> Contract<A, D> {
 
 impl<A, D> GeneratorMiddleware for Contract<A, D>
 where
-    D: Clone,
+    D: JsonByteConversion + MolConversion + BytesConversion + Clone,
+    A: JsonByteConversion + MolConversion + BytesConversion + Clone
 {
     fn pipe(
         &self,
@@ -245,16 +256,16 @@ where
                                 let data = self.read_raw_data(output.1.clone());
                                 println!(
                                     "Data before update {:?}",
-                                    self.data_schema.pack(data.clone())
+                                    data.to_mol()
                                 );
                                 let updated_field = rule.1(ContractCellField::Data(data));
                                 if let ContractCellField::Data(new_data) = updated_field {
                                     println!(
                                         "Data after update {:?}",
-                                        self.data_schema.pack(new_data.clone())
+                                        new_data.to_mol()
                                     );
 
-                                    (output.0, self.data_schema.pack(new_data).unpack())
+                                    (output.0, new_data.to_bytes())
                                 } else {
                                     output
                                 }
@@ -339,16 +350,11 @@ mod tests {
 
         let path_to_sudt_bin = Path::new(path_to_sudt_bin).canonicalize().unwrap();
         let sudt_src = ContractSource::load_from_path(path_to_sudt_bin).unwrap();
-        let arg_schema_ptr =
-            Box::new(SudtArgsSchema {}) as Box<dyn ContractSchema<Output = Byte32>>;
-        let data_schema_ptr =
-            Box::new(SudtDataSchema {}) as Box<dyn ContractSchema<Output = Uint128>>;
+
         SudtContract {
-            args: lock,
-            data: init_supply,
+            args: OwnerLockHash::from_json_bytes(lock.unwrap()),
+            data: SudtAmount::from_json_bytes(init_supply.unwrap()),
             source: Some(ContractSource::Immediate(sudt_src.clone())),
-            args_schema: arg_schema_ptr,
-            data_schema: data_schema_ptr,
             lock: None,
             type_: None,
             code: Some(JsonBytes::from_bytes(sudt_src)),
@@ -437,12 +443,10 @@ mod tests {
         // Add rule to sudt output generation to increase the amount field.
         sudt_contract.add_output_rule(
             ContractCellFieldSelector::Data,
-            |amount: ContractCellField<Byte32, Uint128>| -> ContractCellField<Byte32, Uint128> {
+            |amount: ContractCellField<OwnerLockHash, SudtAmount>| -> ContractCellField<OwnerLockHash, SudtAmount> {
                 if let ContractCellField::Data(amount) = amount {
-                    let mut amt_bytes = [0u8; 16];
-                    amt_bytes.copy_from_slice(amount.as_slice());
-                    let amt = u128::from_le_bytes(amt_bytes) + 2000;
-                    ContractCellField::Data(amt.pack())
+                    let amt: u128 = amount.into();
+                    ContractCellField::Data(SudtAmount::from(amt + 2000))
                 } else {
                     amount
                 }
@@ -509,12 +513,10 @@ mod tests {
         // Add rule to sudt output generation to increase the amount field.
         sudt_contract.add_output_rule(
             ContractCellFieldSelector::Data,
-            |amount: ContractCellField<Byte32, Uint128>| -> ContractCellField<Byte32, Uint128> {
+            |amount: ContractCellField<OwnerLockHash, SudtAmount>| -> ContractCellField<OwnerLockHash, SudtAmount> {
                 if let ContractCellField::Data(amount) = amount {
-                    let mut amt_bytes = [0u8; 16];
-                    amt_bytes.copy_from_slice(amount.as_slice());
-                    let amt = u128::from_le_bytes(amt_bytes) + 2000;
-                    ContractCellField::Data(amt.pack())
+                    let amt: u128 = amount.into();
+                    ContractCellField::Data(SudtAmount::from(amt + 2000))
                 } else {
                     amount
                 }
@@ -541,7 +543,7 @@ mod tests {
 
         // Test that success transaction succeeded & has correct sudt amount minted
         let new_tx_amt = new_tx.output_with_data(0).unwrap().1;
-        let new_tx_amt: u128 = sudt_contract.read_raw_data(new_tx_amt).unpack();
+        let new_tx_amt: u128 = sudt_contract.read_raw_data(new_tx_amt).to_mol().unpack();
         assert_eq!(new_tx_amt, 2000_u128);
 
         let is_valid = chain_rpc.verify_tx(new_tx.into());
@@ -560,12 +562,10 @@ mod tests {
         // Add output rule to sudt contract to increase balance by 17
         sudt_contract.add_output_rule(
             ContractCellFieldSelector::Data,
-            |amount: ContractCellField<Byte32, Uint128>| -> ContractCellField<Byte32, Uint128> {
+            |amount: ContractCellField<OwnerLockHash, SudtAmount>| -> ContractCellField<OwnerLockHash, SudtAmount> {
                 if let ContractCellField::Data(amount) = amount {
-                    let mut amt_bytes = [0u8; 16];
-                    amt_bytes.copy_from_slice(amount.as_slice());
-                    let amt = u128::from_le_bytes(amt_bytes) + 17;
-                    ContractCellField::Data(amt.pack())
+                    let amt: u128 = amount.into();
+                    ContractCellField::Data(SudtAmount::from(amt + 17))
                 } else {
                     amount
                 }
@@ -575,12 +575,10 @@ mod tests {
         // Add output rule to sudt contract to increase balance by 20
         sudt_contract.add_output_rule(
             ContractCellFieldSelector::Data,
-            |amount: ContractCellField<Byte32, Uint128>| -> ContractCellField<Byte32, Uint128> {
+            |amount: ContractCellField<OwnerLockHash, SudtAmount>| -> ContractCellField<OwnerLockHash, SudtAmount> {
                 if let ContractCellField::Data(amount) = amount {
-                    let mut amt_bytes = [0u8; 16];
-                    amt_bytes.copy_from_slice(amount.as_slice());
-                    let amt = u128::from_le_bytes(amt_bytes) + 20;
-                    ContractCellField::Data(amt.pack())
+                    let amt: u128 = amount.into();
+                    ContractCellField::Data(SudtAmount::from(amt + 20))
                 } else {
                     amount
                 }
@@ -593,7 +591,7 @@ mod tests {
         // Check that sudt contract updated correctly with a total balance increase of 37 (17 + 20)
         let new_tx_amt = new_tx.output_with_data(0).unwrap().1;
         println!("New tx amt as bytes: {:?}", new_tx_amt.pack());
-        let new_tx_amt: u128 = sudt_contract.read_raw_data(new_tx_amt).unpack();
+        let new_tx_amt: u128 = sudt_contract.read_raw_data(new_tx_amt).into();
         assert_eq!(new_tx_amt, 2037_u128);
     }
     #[test]
@@ -602,26 +600,25 @@ mod tests {
 
         sudt_contract.add_output_rule(
             ContractCellFieldSelector::Data,
-            |amount: ContractCellField<Byte32, Uint128>| -> ContractCellField<Byte32, Uint128> {
+            |amount: ContractCellField<OwnerLockHash, SudtAmount>| -> ContractCellField<OwnerLockHash, SudtAmount> {
                 if let ContractCellField::Data(amount) = amount {
-                    let mut amt_bytes = [0u8; 16];
-                    amt_bytes.copy_from_slice(amount.as_slice());
-                    let amt = u128::from_le_bytes(amt_bytes) + 17;
-                    ContractCellField::Data(amt.pack())
+                    let amt: u128 = amount.into();
+                    ContractCellField::Data(SudtAmount::from(amt + 17))
                 } else {
                     amount
                 }
             },
         );
     }
+    
     #[test]
     fn test_contract_pack_and_unpack_data() {
         let mut sudt_contract = gen_sudt_contract(None, None);
 
-        sudt_contract.set_args(Byte32::default());
-        sudt_contract.set_data(1200_u128.pack());
+        sudt_contract.set_args(OwnerLockHash::from_mol(Byte32::default()));
+        sudt_contract.set_data(SudtAmount::from_mol(1200_u128.pack()));
 
-        let uint128_data: u128 = sudt_contract.read_data().unpack();
+        let uint128_data: u128 = sudt_contract.read_data().to_mol().unpack();
         assert_eq!(uint128_data, 1200_u128);
     }
 

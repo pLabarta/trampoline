@@ -8,6 +8,8 @@ use ckb_types::{
 
 use std::sync::{Arc, Mutex};
 
+use super::ContractCellField;
+
 // Note: Uses ckb_jsonrpc_types
 pub trait TransactionProvider {
     fn send_tx(&self, tx: JsonTransaction) -> Option<Byte32>;
