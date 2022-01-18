@@ -1,0 +1,15 @@
+
+
+array Uint8 [byte; 1];
+array Uint16 [byte; 2];
+array Uint32 [byte; 4];
+vector Bytes <byte>;
+
+struct Issuer {
+    version: Uint8,
+    class_count: Uint32,
+    set_count: Uint32,
+    info_size: Uint16,
+}
+
+vector Info <Bytes>;
