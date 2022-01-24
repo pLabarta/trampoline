@@ -1,9 +1,7 @@
+use crate::config::default_miner_config;
 use std::collections::BTreeMap;
-use std::io::Write;
 use std::path::Path;
 
-use ckb_app_config::CKBAppConfig;
-use ckb_app_config::MinerAppConfig;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -74,8 +72,6 @@ impl File {
 
         File::from(services)
     }
-
-    pub fn write_yaml(file_name: String) {}
 
     pub fn test_module() {
         println!("This is printing from the compose module!");
@@ -149,7 +145,7 @@ impl Service {
         }
     }
 
-    pub fn miner(name: &str, dev: Option<bool>, from_node: &Service, cfg_path: &str) -> Self {
+    pub fn miner(name: &str, dev: Option<bool>, from_node: &Service) -> Self {
         let development_mode = dev.unwrap_or(true);
         let chain_data = Volume {
             volume_type: VolumeType::Volume,
@@ -157,10 +153,12 @@ impl Service {
             target: format!("/var/lib/ckb"),
         };
 
+        setup_miner_config(&name, &from_node);
+
         let config_file = Volume {
             volume_type: VolumeType::Bind,
-            source: cfg_path.to_string(),
-            target: format!("/var/lib/ckb/ckb-miner.toml"),
+            source: format!("./.trampoline/{}/ckb-miner.toml", name),
+            target: "/var/lib/ckb/ckb-miner.toml".to_string(),
         };
 
         Service {
@@ -178,13 +176,13 @@ impl Service {
                 false => None,
             },
             ports: None,
-            entrypoint: Some("cat /var/lib/ckb/ckb-miner.toml".to_string()),
+            entrypoint: None,
             depends_on: Some(vec![from_node.name.clone()]),
         }
     }
 }
 
-fn setup_miner_config(miner_name: &str, node_name: &str) {
+fn setup_miner_config(miner_name: &str, node: &Service) {
     let folder_string = format!(".trampoline/{}", &miner_name);
     let folder = Path::new(&folder_string);
     let file_string = format!("{}/ckb-miner.toml", &folder_string);
@@ -200,30 +198,14 @@ fn setup_miner_config(miner_name: &str, node_name: &str) {
             );
         }
         _ => {
+            if folder.exists() == false {
+                std::fs::create_dir(folder).unwrap();
+            }
             println!("Creating new config for miner at {}", &file_string);
-            // load config template
-            let template_path_string = format!(".trampoline/network/{}", &miner_name);
-            let template_path = Path::new(&template_path_string);
-            let template = std::fs::read_to_string(template_path).unwrap();
-            let mut config = MinerAppConfig::load_from_slice(template.as_bytes())
-                .expect("Error loading template config.");
-            // make changes, this only changes the url to use the docker one
-            config.miner.client.rpc_url = format!("http://{}:8114", &node_name);
-
-            // save config
-            let config_toml =
-                toml::Value::try_from(config).expect("Failed converting config to TOML");
-            let config_string =
-                toml::to_string(&config_toml).expect("Failed converting config TOML to string");
-            let mut new_config_file = std::fs::OpenOptions::new()
-                .write(true)
-                .truncate(true)
-                .open(file)
-                .expect("Error opening new config file");
-
-            new_config_file
-                .write_all(config_string.as_bytes())
-                .expect("Failed writing new config to file");
+            let mut miner_config = default_miner_config();
+            miner_config.miner.client.rpc_url = format!("http://{}:8114", node.name);
+            let toml = toml::to_string(&miner_config).unwrap();
+            std::fs::write(file, toml).expect("Unable to write miner config toml");
         }
     }
 }

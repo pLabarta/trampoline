@@ -10,6 +10,7 @@ use ckb_types::{h256, H256};
 use structopt::StructOpt;
 
 use trampoline::compose::*;
+use trampoline::config::*;
 use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
@@ -77,10 +78,15 @@ fn main() -> Result<()> {
             let project = TrampolineProject::from(project?);
             match command {
                 NetworkCommands::LaunchCompose {} => {
+                    // miner config test
+                    let miner_config = default_miner_config();
+                    let toml = toml::to_string(&miner_config).unwrap();
+                    std::fs::write("generated-miner.toml", toml).expect("Unable to write toml");
+
                     println!("Launching using Docker Compose");
                     let hello = Service::hello();
                     let node = Service::node("default", None, None);
-                    let miner = Service::miner("one", None, &node, "./ckb-miner.toml");
+                    let miner = Service::miner("one", None, &node);
                     let service_list = vec![hello, node, miner];
                     let file = File::from(service_list);
                     let yaml_string = serde_yaml::to_string(&file).unwrap();
