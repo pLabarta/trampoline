@@ -40,7 +40,7 @@ pub type SetCount = SchemaPrimitiveType<u32, Uint32>;
 pub type InfoSize = SchemaPrimitiveType<u16, Uint16>;
 
 
-pub struct NftInfo(Vec<Bytes>);
+pub struct NftInfo<T: AsRef<Bytes>>(Vec<T>);
 
 // Serializes to two different entities that are then packed together:
 // Fixed size data (version, class count, set count, info size)

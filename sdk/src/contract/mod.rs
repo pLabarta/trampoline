@@ -11,6 +11,7 @@ use ckb_types::{bytes::Bytes, packed, prelude::*, H256};
 use generator::GeneratorMiddleware;
 
 use std::fs;
+use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -52,7 +53,7 @@ pub trait MolConversion {
     fn from_mol(entity: Self::MolType) -> Self;
 }
 
-pub trait BytesConversion {
+pub trait BytesConversion: MolConversion {
     fn from_bytes(bytes: Bytes) -> Self;
 
     fn to_bytes(&self) -> Bytes;
@@ -95,7 +96,13 @@ impl<T,M> SchemaPrimitiveType<T, M> {
 }
 // Requires iterable
 pub struct SchemaFixedCollectionType<T>(T);
-pub struct SchemaDynamicSizedType<T>(T);
+
+pub struct SchemaDynamicSizedType<T, M> {
+    pub inner: T,
+    _entity_type: std::marker::PhantomData<M>,
+}
+
+
 
 impl<T, M> MolConversion for SchemaPrimitiveType<T, M> 
 where M: Entity + Unpack<T>,
@@ -115,7 +122,51 @@ where M: Entity + Unpack<T>,
 
 }
 
+impl<T,M> BytesConversion for SchemaPrimitiveType<T, M> 
+where M: Entity + Unpack<T>,
+      T: Pack<M>
+{
+    fn from_bytes(bytes: Bytes) -> Self {
+        Self {
+            inner: M::from_compatible_slice(bytes.as_ref()).expect("Unable to build primitive type from bytes").unpack(),
+           _entity_type: PhantomData::<M>,
+        }
+    }
 
+    fn to_bytes(&self) -> Bytes {
+        self.to_mol().as_bytes()
+    }
+}
+
+
+impl<T,M> JsonByteConversion for SchemaPrimitiveType<T, M> 
+where M: Entity + Unpack<T>,
+      T: Pack<M>
+{
+    fn to_json_bytes(&self) -> JsonBytes {
+        self.to_mol().as_bytes().pack().into()
+    }
+
+    fn from_json_bytes(bytes: JsonBytes) -> Self {
+        Self::from_bytes(bytes.into_bytes())
+    }
+}
+
+
+impl<T,M> JsonConversion for SchemaPrimitiveType<T, M> 
+where M: Entity + Unpack<T>,
+      T: Pack<M>
+{
+    type JsonType = JsonBytes;
+
+    fn to_json(&self) -> Self::JsonType {
+        self.to_json_bytes()
+    }
+
+    fn from_json(json: Self::JsonType) -> Self {
+        Self::from_json_bytes(json)
+    }
+}
 
 #[derive(Default)]
 pub struct Contract<A, D> {
