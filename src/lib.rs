@@ -1,5 +1,4 @@
 pub mod compose;
-pub mod config;
 pub mod contract;
 pub mod docker;
 pub mod opts;
