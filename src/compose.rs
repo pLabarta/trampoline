@@ -122,7 +122,7 @@ impl VolumeSetup {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-enum VolumeType {
+pub enum VolumeType {
     #[serde(rename(serialize = "volume", deserialize = "volume"))]
     Volume,
     #[serde(rename(serialize = "bind", deserialize = "bind"))]
@@ -130,7 +130,7 @@ enum VolumeType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-struct Volume {
+pub struct Volume {
     #[serde(rename(serialize = "type", deserialize = "type"))]
     volume_type: VolumeType,
     source: String,
