@@ -15,7 +15,7 @@ use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
 use trampoline::project::*;
-use trampoline_sdk::rpc;
+// use trampoline_sdk::rpc;
 use trampoline::schema::{Schema, SchemaInitArgs};
 use trampoline::TrampolineResource;
 use trampoline::TrampolineResourceType;
@@ -78,13 +78,16 @@ fn main() -> Result<()> {
             let project = TrampolineProject::from(project?);
             match command {
                 NetworkCommands::LaunchCompose {} => {
-                    println!("Launching using Docker Compose");
-                    let hello = Service::hello();
-                    let service_list = vec![hello];
-                    let file = File::from(service_list);
-                    let yaml_string = serde_yaml::to_string(&file).unwrap();
-                    std::fs::write("docker-compose.yml", yaml_string)
-                        .expect("Unable to write file.");
+                    println!("WARNING: Launching using experimental Docker Compose features");
+                    trampoline::ckb_service::init_ckb_volume("ckb-template");
+                    // Run ckb init into a volume
+
+                    // let hello = Service::hello();
+                    // let service_list = vec![hello];
+                    // let file = File::from(service_list);
+                    // let yaml_string = serde_yaml::to_string(&file).unwrap();
+                    // std::fs::write("docker-compose.yml", yaml_string)
+                    //     .expect("Unable to write file.");
                 }
                 NetworkCommands::Launch {} => {
                     let image = DockerImage {
@@ -245,17 +248,17 @@ fn main() -> Result<()> {
                         "http://172.17.0.2:8114".into(),
                     ]))?;
                 }
-                NetworkCommands::Rpc { hash } => {
-                    let hash = H256::from_str(hash.as_str())?;
-                    let mut rpc_client = rpc::RpcClient::new();
-                    let url = format!(
-                        "{}:{}",
-                        project.config.env.as_ref().unwrap().chain.host,
-                        project.config.env.as_ref().unwrap().chain.host_port
-                    );
-                    let result = rpc_client.get_transaction(hash, url)?;
-                    println!("Transaction with status: {}", serde_json::json!(result));
-                }
+                // NetworkCommands::Rpc { hash } => {
+                //     // let hash = H256::from_str(hash.as_str())?;
+                //     // let mut rpc_client = rpc::RpcClient::new();
+                //     // let url = format!(
+                //     //     "{}:{}",
+                //     //     project.config.env.as_ref().unwrap().chain.host,
+                //     //     project.config.env.as_ref().unwrap().chain.host_port
+                //     // );
+                //     // let result = rpc_client.get_transaction(hash, url)?;
+                //     // println!("Transaction with status: {}", serde_json::json!(result));
+                // }
                 _ => {
                     println!("Command not yet implemented!");
                     std::process::exit(0);
