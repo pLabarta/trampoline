@@ -132,7 +132,7 @@ pub enum VolumeType {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Volume {
     #[serde(rename(serialize = "type", deserialize = "type"))]
-    volume_type: VolumeType,
-    source: String,
-    target: String,
+    pub volume_type: VolumeType,
+    pub source: String,
+    pub target: String,
 }
