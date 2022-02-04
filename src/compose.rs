@@ -77,22 +77,22 @@ impl File {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Service {
     #[serde(skip)]
-    name: String,
-    image: String,
+    pub name: String,
+    pub image: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    volumes: Option<Vec<Volume>>,
+    pub volumes: Option<Vec<Volume>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    expose: Option<Vec<String>>,
+    pub expose: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    command: Option<String>,
+    pub command: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    environment: Option<Vec<String>>,
+    pub environment: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ports: Option<Vec<String>>,
+    pub ports: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    entrypoint: Option<String>,
+    pub entrypoint: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    depends_on: Option<Vec<String>>,
+    pub depends_on: Option<Vec<String>>,
 }
 
 // Premade services
