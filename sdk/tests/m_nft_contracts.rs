@@ -19,6 +19,7 @@ use ckb_jsonrpc_types::JsonBytes;
 use ckb_types::packed::{CellInput, CellInputBuilder, CellOutputBuilder};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use ckb_verification::HeaderErrorKind::Version;
 
 fn gen_issuer_contract(seed_input: Option<CellInput>) -> MultiNFTIssuerContract {
     let out_dir = std::env::var_os("OUT_DIR").unwrap();
@@ -105,9 +106,13 @@ fn test_issuer_create() {
         |issuer_data: ContractCellField<NftIssuerArgs, mNFTIssuer>|
             -> ContractCellField<NftIssuerArgs, mNFTIssuer> {
             if let ContractCellField::Data(issuer) = issuer_data {
-                let data =
-                    mNFTIssuer::from_bytes(Bytes::copy_from_slice([0u8;11].as_slice()));
-                ContractCellField::Data(data)
+                ContractCellField::Data(mNFTIssuer::new(NftIssuer {
+                    version: trampoline_sdk::contract::builtins::m_nft::Version::new(0_u8),
+                    class_count: ClassCount::new(0),
+                    set_count: SetCount::new(0),
+                    info_size: InfoSize::new(0),
+                    info: Default::default()
+                }))
             } else {
                 issuer_data
             }
