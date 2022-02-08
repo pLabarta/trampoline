@@ -4,29 +4,32 @@ use ckb_types::{
     prelude::*,
 };
 
-use ckb_jsonrpc_types::{Byte32 as JsonByte32, Uint128 as JsonUint128};
 use crate::contract::*;
+use ckb_jsonrpc_types::{Byte32 as JsonByte32, Uint128 as JsonUint128};
 
 // To do: Some of these should be try_from
 // TO DO: Implement From<u128>, From<JsonBytes>, From<Bytes>, From<Uint128>, From<JsonUint128> for SudtAmount
-// TO DO: Implement From<[u8;32]>, From<JsonBytes>, From<Bytes>, From<Byte32>, From<JsonByte32> 
+// TO DO: Implement From<[u8;32]>, From<JsonBytes>, From<Bytes>, From<Byte32>, From<JsonByte32>
 // TO DO: TryFrom and AsRef
 // TO DO: ckb script (no-std) compatible implementation as well.
 
-
 // Situations
 // Newtype with inner type that implements Pack<Entity> and for which the entity implements Unpack<inner_type>
-// Compound type where various fields are new_types as the above, and the compound type's fields are equivalent to the attributes of a 
+// Compound type where various fields are new_types as the above, and the compound type's fields are equivalent to the attributes of a
 // Molecule-generated table
 #[derive(Debug, Clone, Default)]
-pub struct OwnerLockHash([u8;32]);
+pub struct OwnerLockHash([u8; 32]);
 
 #[derive(Debug, Clone, Default)]
 pub struct SudtAmount(u128);
 
 impl BytesConversion for OwnerLockHash {
     fn from_bytes(bytes: Bytes) -> Self {
-        Self(Byte32::from_compatible_slice(bytes.as_ref()).expect("Unable to build Byte32 from bytes").unpack())
+        Self(
+            Byte32::from_compatible_slice(bytes.as_ref())
+                .expect("Unable to build Byte32 from bytes")
+                .unpack(),
+        )
     }
 
     fn to_bytes(&self) -> Bytes {
@@ -67,7 +70,6 @@ impl MolConversion for OwnerLockHash {
         Self(entity.unpack())
     }
 }
-
 
 impl BytesConversion for SudtAmount {
     fn from_bytes(bytes: Bytes) -> Self {
@@ -137,7 +139,7 @@ impl From<SudtAmount> for u128 {
         n.0
     }
 }
-impl From<[u8;32]> for OwnerLockHash {
+impl From<[u8; 32]> for OwnerLockHash {
     fn from(s: [u8; 32]) -> Self {
         Self(s)
     }
@@ -164,7 +166,7 @@ impl From<[u8;32]> for OwnerLockHash {
 
 // impl OwnerLockHash {
 
-//     // Self::PackedType needs to impl Into<JsonType> 
+//     // Self::PackedType needs to impl Into<JsonType>
 //     pub fn to_json(&self) -> JsonByte32 {
 //         self.to_mol().into()
 //     }
@@ -201,7 +203,7 @@ impl From<[u8;32]> for OwnerLockHash {
 //     pub fn to_bytes(&self) -> Bytes {
 //         self.to_mol().as_bytes()
 //     }
-    
+
 // }
 
 // impl SudtAmount {

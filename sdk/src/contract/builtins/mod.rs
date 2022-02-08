@@ -1,2 +1,2 @@
-pub mod sudt;
 pub mod m_nft;
+pub mod sudt;

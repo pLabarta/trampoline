@@ -1,7 +1,7 @@
 pub mod builtins;
 pub mod generator;
-use crate::chain::CellOutputWithData;
 use self::generator::CellQuery;
+use crate::chain::CellOutputWithData;
 
 use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
@@ -14,8 +14,6 @@ use std::fs;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-
-
 
 #[derive(Debug, Clone)]
 pub enum ContractSource {
@@ -33,7 +31,6 @@ impl ContractSource {
 }
 
 pub trait JsonByteConversion {
-
     fn to_json_bytes(&self) -> JsonBytes;
     fn from_json_bytes(bytes: JsonBytes) -> Self;
 }
@@ -59,7 +56,6 @@ pub trait BytesConversion: MolConversion {
     fn to_bytes(&self) -> Bytes;
 }
 
-
 pub enum ContractCellFieldSelector {
     Args,
     Data,
@@ -75,7 +71,6 @@ pub enum ContractCellField<A, D> {
     Capacity(Uint64),
 }
 
-
 // TO DO: Think about the tradeoffs of deriving these traits?
 // This is a wrapper type for schema primitive types that works
 // for all primitives that have conversion trait implemented.
@@ -86,11 +81,11 @@ pub struct SchemaPrimitiveType<T, M> {
     _entity_type: std::marker::PhantomData<M>,
 }
 
-impl<T,M> SchemaPrimitiveType<T, M> {
+impl<T, M> SchemaPrimitiveType<T, M> {
     pub fn new(inner: T) -> Self {
         Self {
             inner,
-            _entity_type: std::marker::PhantomData::<M> 
+            _entity_type: std::marker::PhantomData::<M>,
         }
     }
 }
@@ -102,12 +97,10 @@ pub struct SchemaDynamicSizedType<T, M> {
     _entity_type: std::marker::PhantomData<M>,
 }
 
-
-
-
-impl<T, M> MolConversion for SchemaPrimitiveType<T, M> 
-where M: Entity + Unpack<T>,
-      T: Pack<M>
+impl<T, M> MolConversion for SchemaPrimitiveType<T, M>
+where
+    M: Entity + Unpack<T>,
+    T: Pack<M>,
 {
     type MolType = M;
     fn to_mol(&self) -> Self::MolType {
@@ -115,22 +108,24 @@ where M: Entity + Unpack<T>,
     }
 
     fn from_mol(entity: Self::MolType) -> Self {
-        Self { 
+        Self {
             inner: entity.unpack(),
             _entity_type: std::marker::PhantomData::<M>,
         }
     }
-
 }
 
-impl<T,M> BytesConversion for SchemaPrimitiveType<T, M> 
-where M: Entity + Unpack<T>,
-      T: Pack<M>
+impl<T, M> BytesConversion for SchemaPrimitiveType<T, M>
+where
+    M: Entity + Unpack<T>,
+    T: Pack<M>,
 {
     fn from_bytes(bytes: Bytes) -> Self {
         Self {
-            inner: M::from_compatible_slice(bytes.as_ref()).expect("Unable to build primitive type from bytes").unpack(),
-           _entity_type: PhantomData::<M>,
+            inner: M::from_compatible_slice(bytes.as_ref())
+                .expect("Unable to build primitive type from bytes")
+                .unpack(),
+            _entity_type: PhantomData::<M>,
         }
     }
 
@@ -139,10 +134,10 @@ where M: Entity + Unpack<T>,
     }
 }
 
-
-impl<T,M> JsonByteConversion for SchemaPrimitiveType<T, M> 
-where M: Entity + Unpack<T>,
-      T: Pack<M>
+impl<T, M> JsonByteConversion for SchemaPrimitiveType<T, M>
+where
+    M: Entity + Unpack<T>,
+    T: Pack<M>,
 {
     fn to_json_bytes(&self) -> JsonBytes {
         self.to_mol().as_bytes().pack().into()
@@ -153,10 +148,10 @@ where M: Entity + Unpack<T>,
     }
 }
 
-
-impl<T,M> JsonConversion for SchemaPrimitiveType<T, M> 
-where M: Entity + Unpack<T>,
-      T: Pack<M>
+impl<T, M> JsonConversion for SchemaPrimitiveType<T, M>
+where
+    M: Entity + Unpack<T>,
+    T: Pack<M>,
 {
     type JsonType = JsonBytes;
 
@@ -219,15 +214,26 @@ where
         self.data_hash().map(|data_hash| {
             Script::from(
                 packed::ScriptBuilder::default()
-                    .args(
-                        self.args.to_bytes().pack()
-                    )
+                    .args(self.args.to_bytes().pack())
                     .code_hash(data_hash.pack())
                     .hash_type(ckb_types::core::ScriptHashType::Data1.into())
                     .build(),
             )
         })
     }
+
+    // pub fn as_script_with_type_hash(&self) -> Option<ckb_jsonrpc_types::Script> {
+    //     // To do: check is hash_type_type
+    //     let script_hash = self.as_code_cell().0.type_().to_opt().unwrap().calc_script_hash().into();
+    //
+    //     Some(Script::from(
+    //         packed::ScriptBuilder::default()
+    //             .args(self.args.to_bytes().pack())
+    //             .code_hash(script_hash.pack())
+    //             .hash_type(ckb_types::core::ScriptHashType::Type.into())
+    //             .build()
+    //     ))
+    // }
 
     // Return a CellOutputWithData which is the code cell storing this contract's logic
     pub fn as_code_cell(&self) -> CellOutputWithData {
@@ -284,7 +290,7 @@ where
     }
 
     pub fn read_args(&self) -> A {
-       self.args.clone()
+        self.args.clone()
     }
 
     pub fn read_raw_data(&self, data: Bytes) -> D {
@@ -313,7 +319,7 @@ where
 impl<A, D> GeneratorMiddleware for Contract<A, D>
 where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
-    A: JsonByteConversion + MolConversion + BytesConversion + Clone
+    A: JsonByteConversion + MolConversion + BytesConversion + Clone,
 {
     fn pipe(
         &self,
@@ -348,16 +354,10 @@ where
                         .fold(output, |output, rule| match rule.0 {
                             ContractCellFieldSelector::Data => {
                                 let data = self.read_raw_data(output.1.clone());
-                                println!(
-                                    "Data before update {:?}",
-                                    data.to_mol()
-                                );
+                                println!("Data before update {:?}", data.to_mol());
                                 let updated_field = rule.1(ContractCellField::Data(data));
                                 if let ContractCellField::Data(new_data) = updated_field {
-                                    println!(
-                                        "Data after update {:?}",
-                                        new_data.to_mol()
-                                    );
+                                    println!("Data after update {:?}", new_data.to_mol());
 
                                     (output.0, new_data.to_bytes())
                                 } else {

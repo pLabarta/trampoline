@@ -14,10 +14,10 @@ use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
 use trampoline::project::*;
-use trampoline_sdk::rpc;
 use trampoline::schema::{Schema, SchemaInitArgs};
 use trampoline::TrampolineResource;
 use trampoline::TrampolineResourceType;
+use trampoline_sdk::rpc;
 const SECP_TYPE_HASH: H256 =
     h256!("0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8");
 fn create_block_assembler_from_pkhash(hash: &[u8]) -> BlockAssemblerConfig {

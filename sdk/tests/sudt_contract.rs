@@ -1,24 +1,20 @@
-extern crate trampoline_sdk;
 extern crate ckb_always_success_script;
+extern crate trampoline_sdk;
 
 use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
 use trampoline_sdk::contract::*;
-use trampoline_sdk::contract::{
-    builtins::sudt::*,
-    generator::*,
-};
+use trampoline_sdk::contract::{builtins::sudt::*, generator::*};
 
 use ckb_types::{
+    bytes::Bytes,
     core::{TransactionBuilder, TransactionView},
     packed::{Byte32, CellOutput},
-    bytes::Bytes,
     prelude::*,
     H256,
 };
 
 use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types::JsonBytes;
-
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -31,9 +27,8 @@ fn gen_sudt_contract(
     minter_lock: Option<ckb_types::packed::Script>,
     initial_supply: Option<u128>,
 ) -> SudtContract {
-    
     let out_dir = std::env::var_os("OUT_DIR").unwrap();
-    
+
     let path_to_sudt_bin = Path::new(&out_dir).join("simple_udt");
 
     let lock = {
@@ -60,7 +55,6 @@ fn gen_sudt_contract(
         }
     };
 
-    
     let sudt_src = ContractSource::load_from_path(path_to_sudt_bin).unwrap();
 
     SudtContract {
@@ -338,8 +332,7 @@ fn test_contract_pack_and_unpack_data() {
 fn test_sudt_data_hash_gen_json() {
     let sudt_contract = gen_sudt_contract(None, None);
 
-    let json_code_hash =
-        ckb_jsonrpc_types::Byte32::from(sudt_contract.data_hash().unwrap().pack());
+    let json_code_hash = ckb_jsonrpc_types::Byte32::from(sudt_contract.data_hash().unwrap().pack());
 
     let as_json_hex_str = serde_json::to_string(&json_code_hash).unwrap();
 
@@ -357,4 +350,3 @@ fn test_sudt_data_hash_gen() {
     let hash_hex_str = format!("0x{}", hex::encode(&code_hash.raw_data().to_vec()));
     assert_eq!(EXPECTED_SUDT_HASH, hash_hex_str.as_str());
 }
-

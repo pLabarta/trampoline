@@ -1,9 +1,6 @@
-
 use ckb_types::{
     bytes::Bytes,
-    core::{
-        TransactionView,
-    },
+    core::TransactionView,
     packed::{Byte32, CellOutput},
     prelude::*,
 };
@@ -14,8 +11,6 @@ pub use mock_chain::*;
 
 // Most of this is taken from https://github.com/nervosnetwork/ckb-tool.
 // Reimplementation here due to slight changes in the API & version conflicts
-
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
@@ -45,4 +40,3 @@ impl<'a> OutputsDataVerifier<'a> {
         Ok(())
     }
 }
-

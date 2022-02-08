@@ -1,5 +1,7 @@
-use crate::contract::generator::{CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider};
 use crate::chain::*;
+use crate::contract::generator::{
+    CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,
+};
 use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder, TYPE_ID_CODE_HASH};
 use ckb_error::Error as CKBError;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -31,7 +33,6 @@ pub fn random_hash() -> Byte32 {
 pub fn random_out_point() -> OutPoint {
     OutPoint::new_builder().tx_hash(random_hash()).build()
 }
-
 
 pub type CellOutputWithData = (CellOutput, Bytes);
 

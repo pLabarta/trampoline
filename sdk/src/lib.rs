@@ -1,7 +1,6 @@
-pub mod contract;
 pub mod chain;
+pub mod contract;
 pub mod rpc;
-
 
 // From ckb_types::conversion
 #[macro_export]
@@ -43,7 +42,7 @@ macro_rules! impl_pack_for_primitive {
                 $entity::new_unchecked(Bytes::from(self.to_le_bytes().to_vec()))
             }
         }
-    }
+    };
 }
 #[cfg(test)]
 mod tests {
