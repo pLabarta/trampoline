@@ -166,6 +166,35 @@ impl Service {
     }
 }
 
+impl Service {
+    pub fn indexer(node_dep_name: &str) -> Self {
+        // Define indexer data volume
+        let data_volume = Volume {
+            volume_type: VolumeType::Volume,
+            source: format!("{}-indexer-data", &node_dep_name),
+            target: "/data/".to_string(),
+            external: None,
+        };
+
+        Service {
+            name: format!("{}-indexer", &node_dep_name).to_string(),
+            image: "nervos/ckb-indexer:latest".to_string(),
+            volumes: Some(vec![data_volume]),
+            expose: Some(vec!["8116".to_string()]),
+            command: Some(format!(
+                "-c http://{}:8114 -s /data -l 0.0.0.0:8116",
+                &node_dep_name
+            )),
+            // command: None,
+            environment: None,
+            ports: Some(vec!["8116:8116".to_string()]),
+            // entrypoint: Some("ls && stat ckb.toml && stat ckb-miner.toml".to_string()),
+            entrypoint: None,
+            depends_on: Some(vec![node_dep_name.to_string()]),
+        }
+    }
+}
+
 // create_ckb_config creates a default ckb.toml configuration
 // based on a given lockhash used for setting up the
 // block assembler.

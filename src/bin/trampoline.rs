@@ -87,7 +87,7 @@ fn main() -> Result<()> {
                         .status()
                         .unwrap();
                 }
-                NetworkCommands::Init {} => {
+                NetworkCommands::Init { indexer } => {
                     println!("WARNING: Launching using experimental Docker Compose features");
 
                     // Init CKB
@@ -117,7 +117,17 @@ fn main() -> Result<()> {
                     );
                     // Create CKB Indexer service
                     // Generate Compose YAML
-                    let service_list = vec![node, miner];
+                    let mut service_list = vec![node, miner];
+
+                    // Check for indexer
+                    if indexer {
+                        println!("Using --indexer flag, Indexer was included in the network.yml");
+                        // Define indexer
+                        let indexer = trampoline::compose::Service::indexer("default-node");
+                        // Add to service list
+                        service_list.push(indexer);
+                    }
+
                     let file = trampoline::compose::File::from(service_list);
                     let yaml_string = serde_yaml::to_string(&file).unwrap();
                     std::fs::write("network.yml", yaml_string).expect("Unable to write file.");

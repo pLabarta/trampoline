@@ -43,7 +43,10 @@ pub enum NetworkCommands {
         about = "Init local development network using Docker compose",
         // alias = "lc"
     )]
-    Init {},
+    Init {
+        #[structopt(short, long)]
+        indexer: bool,
+    },
     #[structopt(
         name = "start",
         about = "Launch local development network using Docker compose",
