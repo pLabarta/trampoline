@@ -82,31 +82,35 @@ fn main() -> Result<()> {
 
                     // Init CKB
                     trampoline::ckb_service::init_ckb_volume("ckb-template");
-                    // Edit and save config
+                    // Generate custom config
                     let default_lockarg = "0xc8328aabcd9b9e8e64fbc566c4385c3bdeb219d7";
                     let ckb_config = trampoline::ckb_service::setup_ckb_config(
                         ".trampoline/network/ckb.template",
                         default_lockarg,
                     );
-                    // let new_block_assembler = create_block_assembler_from_pkhash
-                    // ckb_config.block_assembler = new_block_assembler;
-                    // write ckb_config
-
-                    // let mut ckb_config =
-                    //     trampoline::ckb_service::load_ckb_config("ckb-dev.template");
-                    // let default_lockarg = "0xc8328aabcd9b9e8e64fbc566c4385c3bdeb219d7";
-                    // let block_assembler =
-                    //     create_block_assembler_from_pkhash(&parse_hex(default_lockarg).unwrap());
-                    // ckb_config.block_assembler = Some(block_assembler);
-                    let node = trampoline::compose::Service::node("ckb-template", ckb_config);
-                    // // Run ckb init into a volume
-
-                    // // let hello = Service::hello();
-                    let service_list = vec![node];
+                    // Create CKB Node service
+                    let node = trampoline::compose::Service::node(
+                        "default-node",
+                        "ckb-template",
+                        ckb_config,
+                    );
+                    // Generate custom miner config
+                    let miner_config = trampoline::ckb_service::setup_miner_config(
+                        ".trampoline/network/ckb-miner.template",
+                        "default-node",
+                    );
+                    // Create CKB Miner service
+                    let miner = trampoline::compose::Service::miner(
+                        "ckb-template",
+                        miner_config,
+                        "default-node", // Node name
+                    );
+                    // Create CKB Indexer service
+                    // Generate Compose YAML
+                    let service_list = vec![node, miner];
                     let file = trampoline::compose::File::from(service_list);
                     let yaml_string = serde_yaml::to_string(&file).unwrap();
-                    std::fs::write("docker-compose.yml", yaml_string)
-                        .expect("Unable to write file.");
+                    std::fs::write("network.yml", yaml_string).expect("Unable to write file.");
                 }
                 NetworkCommands::Launch {} => {
                     let image = DockerImage {

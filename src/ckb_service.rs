@@ -1,4 +1,4 @@
-use ckb_app_config::CKBAppConfig;
+use ckb_app_config::{CKBAppConfig, MinerAppConfig};
 use ckb_types::{h256, H256};
 
 use crate::compose::{Service, Volume, VolumeType};
@@ -71,13 +71,23 @@ pub fn setup_ckb_config(from: &str, lockarg: &str) -> CKBAppConfig {
     // Edit config
     let block_assembler = create_block_assembler_from_pkhash(&parse_hex(lockarg).unwrap());
     config.block_assembler = Some(block_assembler);
+    config
+}
+
+pub fn setup_miner_config(path: &str, node_name: &str) -> MinerAppConfig {
+    // Load config from path
+    let file = fs::read_to_string(path).expect("Could not load ckb config file");
+    let mut config = MinerAppConfig::load_from_slice(file.as_bytes())
+        .expect("Error loading CKBConfig from slice");
+    // Edit config
+    config.miner.client.rpc_url = format!("http://{}:8114", &node_name);
+
     // Write config to path
-    // write_ckb_config(to, config).unwrap();
     config
 }
 
 impl Service {
-    pub fn node(template_volume: &str, ckb_config: CKBAppConfig) -> Self {
+    pub fn node(name: &str, template_volume: &str, ckb_config: CKBAppConfig) -> Self {
         // Define pre-init CKB volume
         let template_volume = Volume {
             volume_type: VolumeType::Volume,
@@ -101,7 +111,7 @@ impl Service {
         };
 
         Service {
-            name: "default-ckb-node".to_string(),
+            name: name.to_string(),
             image: "nervos/ckb:latest".to_string(),
             volumes: Some(vec![template_volume, config_volume]),
             expose: Some(vec!["8114".to_string(), "8115".to_string()]),
@@ -112,6 +122,46 @@ impl Service {
             // entrypoint: Some("ls && stat ckb.toml && stat ckb-miner.toml".to_string()),
             entrypoint: None,
             depends_on: None,
+        }
+    }
+}
+
+impl Service {
+    pub fn miner(template_volume: &str, miner_config: MinerAppConfig, node_dep_name: &str) -> Self {
+        // Setup miner config
+        // Define pre-init CKB volume
+        let template_volume = Volume {
+            volume_type: VolumeType::Volume,
+            source: "ckb".to_string(),
+            target: "/var/lib/ckb".to_string(),
+            external: Some(template_volume.to_string()),
+        };
+        // Create ckb-miner.toml config volume
+        setup_config(
+            &miner_config,
+            Path::new("./.trampoline/network/ckb"),
+            "ckb-miner.toml",
+        )
+        .expect("failed to setup ckb.toml config");
+        let config_volume = Volume {
+            volume_type: VolumeType::Bind,
+            source: "./.trampoline/network/ckb/ckb-miner.toml".to_string(),
+            target: "/var/lib/ckb/ckb-miner.toml".to_string(),
+            external: None,
+        };
+
+        Service {
+            name: format!("{}-miner", &node_dep_name).to_string(),
+            image: "nervos/ckb:latest".to_string(),
+            volumes: Some(vec![template_volume, config_volume]),
+            expose: None,
+            command: Some("miner".to_string()),
+            // command: None,
+            environment: None,
+            ports: None,
+            // entrypoint: Some("ls && stat ckb.toml && stat ckb-miner.toml".to_string()),
+            entrypoint: None,
+            depends_on: Some(vec![node_dep_name.to_string()]),
         }
     }
 }
