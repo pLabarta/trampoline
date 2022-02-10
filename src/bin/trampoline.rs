@@ -77,7 +77,7 @@ fn main() -> Result<()> {
         TrampolineCommand::Network { command } => {
             let project = TrampolineProject::from(project?);
             match command {
-                NetworkCommands::LaunchCompose {} => {
+                NetworkCommands::Init {} => {
                     println!("WARNING: Launching using experimental Docker Compose features");
 
                     // Init CKB

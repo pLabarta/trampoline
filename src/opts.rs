@@ -39,11 +39,17 @@ pub enum TrampolineCommand {
 #[derive(Debug, StructOpt)]
 pub enum NetworkCommands {
     #[structopt(
-        name = "launchcompose",
-        about = "Launch local development network using Docker compose",
-        alias = "lc"
+        name = "init",
+        about = "Init local development network using Docker compose",
+        // alias = "lc"
     )]
-    LaunchCompose {},
+    Init {},
+    #[structopt(
+        name = "start",
+        about = "Launch local development network using Docker compose",
+        alias = "s"
+    )]
+    Start {},
     #[structopt(
         name = "launch",
         about = "Launch local development network",
@@ -80,11 +86,11 @@ pub enum NetworkCommands {
         about = "Start continuously mining blocks or mine a single block"
     )]
     Miner { one_block: Option<bool> },
-    #[structopt(
-        name = "init",
-        about = "Initialize new network configuration without starting"
-    )]
-    Init {},
+    // #[structopt(
+    //     name = "init",
+    //     about = "Initialize new network configuration without starting"
+    // )]
+    // Init {},
     #[structopt(name = "rpc", about = "Make Rpc calls")]
     Rpc { hash: String },
 }
