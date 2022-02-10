@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::process::Command;
 use std::str::FromStr;
 
 use anyhow::anyhow;
@@ -77,6 +78,15 @@ fn main() -> Result<()> {
         TrampolineCommand::Network { command } => {
             let project = TrampolineProject::from(project?);
             match command {
+                NetworkCommands::Start {} => {
+                    let _start = Command::new("docker")
+                        .arg("compose")
+                        .arg("-f")
+                        .arg("network.yml")
+                        .arg("up")
+                        .status()
+                        .unwrap();
+                }
                 NetworkCommands::Init {} => {
                     println!("WARNING: Launching using experimental Docker Compose features");
 
