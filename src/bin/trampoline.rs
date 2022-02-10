@@ -4,13 +4,13 @@ use std::str::FromStr;
 use anyhow::anyhow;
 use anyhow::Result;
 use ckb_app_config::BlockAssemblerConfig;
+use ckb_app_config::CKBAppConfig;
 use ckb_hash::blake2b_256;
 
 use ckb_types::{h256, H256};
 
 use structopt::StructOpt;
 
-use trampoline::compose::*;
 use trampoline::docker::*;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
@@ -79,15 +79,34 @@ fn main() -> Result<()> {
             match command {
                 NetworkCommands::LaunchCompose {} => {
                     println!("WARNING: Launching using experimental Docker Compose features");
-                    trampoline::ckb_service::init_ckb_volume("ckb-template");
-                    // Run ckb init into a volume
 
-                    // let hello = Service::hello();
-                    // let service_list = vec![hello];
-                    // let file = File::from(service_list);
-                    // let yaml_string = serde_yaml::to_string(&file).unwrap();
-                    // std::fs::write("docker-compose.yml", yaml_string)
-                    //     .expect("Unable to write file.");
+                    // Init CKB
+                    trampoline::ckb_service::init_ckb_volume("ckb-template");
+                    // Edit and save config
+                    let default_lockarg = "0xc8328aabcd9b9e8e64fbc566c4385c3bdeb219d7";
+                    let ckb_config = trampoline::ckb_service::setup_ckb_config(
+                        ".trampoline/network/ckb.template",
+                        default_lockarg,
+                    );
+                    // let new_block_assembler = create_block_assembler_from_pkhash
+                    // ckb_config.block_assembler = new_block_assembler;
+                    // write ckb_config
+
+                    // let mut ckb_config =
+                    //     trampoline::ckb_service::load_ckb_config("ckb-dev.template");
+                    // let default_lockarg = "0xc8328aabcd9b9e8e64fbc566c4385c3bdeb219d7";
+                    // let block_assembler =
+                    //     create_block_assembler_from_pkhash(&parse_hex(default_lockarg).unwrap());
+                    // ckb_config.block_assembler = Some(block_assembler);
+                    let node = trampoline::compose::Service::node("ckb-template", ckb_config);
+                    // // Run ckb init into a volume
+
+                    // // let hello = Service::hello();
+                    let service_list = vec![node];
+                    let file = trampoline::compose::File::from(service_list);
+                    let yaml_string = serde_yaml::to_string(&file).unwrap();
+                    std::fs::write("docker-compose.yml", yaml_string)
+                        .expect("Unable to write file.");
                 }
                 NetworkCommands::Launch {} => {
                     let image = DockerImage {

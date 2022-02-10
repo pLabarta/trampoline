@@ -35,7 +35,17 @@ impl File {
         if vols.len() > 0 {
             let mut volumes = BTreeMap::new();
             for vol in vols {
-                volumes.insert(vol.source, VolumeSetup::default());
+                let setup = match vol.external {
+                    Some(name) => VolumeSetup {
+                        name: Some(name),
+                        external: Some(true),
+                    },
+                    None => VolumeSetup {
+                        name: None,
+                        external: None,
+                    },
+                };
+                volumes.insert(vol.source, setup);
             }
             File {
                 version,
@@ -113,11 +123,19 @@ impl Service {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct VolumeSetup {}
+struct VolumeSetup {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    external: Option<bool>,
+}
 
 impl VolumeSetup {
     pub fn default() -> Self {
-        VolumeSetup {}
+        VolumeSetup {
+            name: None,
+            external: None,
+        }
     }
 }
 
@@ -135,4 +153,6 @@ pub struct Volume {
     pub volume_type: VolumeType,
     pub source: String,
     pub target: String,
+    #[serde(skip)]
+    pub external: Option<String>,
 }
