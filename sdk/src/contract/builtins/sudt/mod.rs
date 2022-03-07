@@ -1,14 +1,11 @@
 use std::prelude::v1::*;
 
 use crate::ckb_types::{
-    bytes::Bytes,
-    packed::{self, Byte32, Uint128},
-    prelude::*,
+    packed::{Byte32, Uint128},
 };
 #[cfg(not(feature = "script"))]
 use crate::contract::Contract;
-#[cfg(not(feature = "script"))]
-use ckb_jsonrpc_types::{Byte32 as JsonByte32, Uint128 as JsonUint128};
+
 
 use crate::contract::schema::SchemaPrimitiveType;
 

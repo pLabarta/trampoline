@@ -141,7 +141,7 @@ fn test_failed_issuance_tx_no_permissions() {
                 .as_cell_dep(sudt_code_cell_outpoint.into())
                 .into(),
         )
-        .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.clone().unwrap()))
+        .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.unwrap()))
         .output(generate_simple_udt_cell(&sudt_contract))
         .outputs_data(vec![0_u128.to_le_bytes().pack()])
         .build();
@@ -207,10 +207,10 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     let tx = TransactionBuilder::default()
         .cell_dep(
             sudt_contract
-                .as_cell_dep(sudt_code_cell_outpoint.clone().into())
+                .as_cell_dep(sudt_code_cell_outpoint.into())
                 .into(),
         )
-        .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.clone().unwrap()))
+        .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.unwrap()))
         .output(generate_simple_udt_cell(&sudt_contract))
         .outputs_data(vec![0_u128.to_le_bytes().pack()])
         .build();
@@ -342,6 +342,6 @@ fn test_sudt_data_hash_gen() {
     let sudt_contract = gen_sudt_contract(None, None);
 
     let code_hash = sudt_contract.data_hash().unwrap().pack();
-    let hash_hex_str = format!("0x{}", hex::encode(&code_hash.raw_data().to_vec()));
+    let hash_hex_str = format!("0x{}", hex::encode(&code_hash.raw_data()));
     assert_eq!(EXPECTED_SUDT_HASH, hash_hex_str.as_str());
 }

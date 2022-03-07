@@ -29,7 +29,7 @@ impl From<ckb_standalone_types::packed::Bytes> for JsonBytes {
     }
 }
 
-use crate::ckb_types::{self, bytes::Bytes, prelude::*};
+use crate::ckb_types::{bytes::Bytes, prelude::*};
 
 pub trait JsonByteConversion {
     fn to_json_bytes(&self) -> JsonBytes;

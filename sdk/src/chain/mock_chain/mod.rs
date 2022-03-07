@@ -19,7 +19,7 @@ use ckb_types::{
 };
 use ckb_util::LinkedHashSet;
 use rand::{thread_rng, Rng};
-use std::prelude::v1::*;
+
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, collections::HashMap};
 

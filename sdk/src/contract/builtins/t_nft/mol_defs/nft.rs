@@ -217,7 +217,7 @@ impl<'r> ::core::fmt::Debug for Byte32Reader<'r> {
 impl<'r> ::core::fmt::Display for Byte32Reader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
-        let raw_data = hex_string(&self.raw_data());
+        let raw_data = hex_string(self.raw_data());
         write!(f, "{}(0x{})", Self::NAME, raw_data)
     }
 }
@@ -594,8 +594,8 @@ impl ::core::fmt::Debug for NFT {
 impl ::core::fmt::Display for NFT {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
-        write!(f, "{}: {}", "genesis_id", self.genesis_id())?;
-        write!(f, ", {}: {}", "content_id", self.content_id())?;
+        write!(f, "genesis_id: {}", self.genesis_id())?;
+        write!(f, ", content_id: {}", self.content_id())?;
         write!(f, " }}")
     }
 }
@@ -669,8 +669,8 @@ impl<'r> ::core::fmt::Debug for NFTReader<'r> {
 impl<'r> ::core::fmt::Display for NFTReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
-        write!(f, "{}: {}", "genesis_id", self.genesis_id())?;
-        write!(f, ", {}: {}", "content_id", self.content_id())?;
+        write!(f, "genesis_id: {}", self.genesis_id())?;
+        write!(f, ", content_id: {}", self.content_id())?;
         write!(f, " }}")
     }
 }

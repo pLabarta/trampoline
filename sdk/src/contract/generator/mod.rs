@@ -115,9 +115,7 @@ impl GeneratorMiddleware for Generator<'_, '_> {
         let inputs = query_register
             .lock()
             .unwrap()
-            .iter()
-            .map(|query| self.query(query.to_owned()).unwrap())
-            .flatten()
+            .iter().flat_map(|query| self.query(query.to_owned()).unwrap())
             .map(|outp| {
                 CellInputBuilder::default()
                     .previous_output(outp.into())

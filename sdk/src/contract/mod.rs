@@ -200,7 +200,7 @@ where
     where
         F: Fn(ContractCellField<A, D>) -> ContractCellField<A, D> + 'static,
     {
-        self.output_rules.push((Box::new(transform_func)));
+        self.output_rules.push(Box::new(transform_func));
     }
 
     pub fn add_input_rule<F>(&mut self, query_func: F)

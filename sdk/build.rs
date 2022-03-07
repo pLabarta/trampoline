@@ -8,7 +8,7 @@ fn main() {
         let dest_bytes = fs::read(format!("./binaries/{}", bin)).unwrap();
         assert!(!dest_bytes.is_empty());
         fs::write(&dest_path, dest_bytes)
-            .expect(format!("Unable to write {} to output during build", bin).as_str());
+            .unwrap_or_else(|_| panic!("Unable to write {} to output during build", bin));
     });
     println!("cargo:rerun-if-changed=contract/builtins/simple_udt");
 }

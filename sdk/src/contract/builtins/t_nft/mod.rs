@@ -3,21 +3,16 @@ use std::prelude::v1::*;
 pub mod mol_defs;
 use crate::ckb_types::{
     bytes::Bytes,
-    packed::{self, Uint128},
-    prelude::*,
 };
-use mol_defs::{Byte32, Byte32Reader, NFTBuilder, NFTReader, NFT};
+use mol_defs::{Byte32, Byte32Reader};
 
 #[cfg(not(feature = "script"))]
 use crate::contract::Contract;
 use crate::{
-    contract::schema::SchemaPrimitiveType, impl_entity_unpack, impl_pack_for_fixed_byte_array,
-    impl_pack_for_primitive, impl_primitive_reader_unpack,
+    contract::schema::SchemaPrimitiveType, impl_entity_unpack, impl_pack_for_fixed_byte_array, impl_primitive_reader_unpack,
 };
-#[cfg(not(feature = "script"))]
-use ckb_hash::{blake2b_256, new_blake2b};
-#[cfg(not(feature = "script"))]
-use ckb_jsonrpc_types::{Byte32 as JsonByte32, Uint128 as JsonUint128};
+
+
 #[cfg(not(feature = "script"))]
 pub trait NftContentHasher {
     fn hash(content: impl AsRef<[u8]>) -> mol_defs::Byte32;
