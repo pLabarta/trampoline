@@ -1,3 +1,4 @@
+use std::prelude::v1::*;
 use crate::chain::*;
 use crate::contract::generator::{
     CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,

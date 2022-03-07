@@ -1,27 +1,45 @@
+
 pub mod builtins;
+pub mod schema;
+use self::schema::*;
+
+use crate::ckb_types::packed::{CellOutput, CellOutputBuilder, Uint64};
+use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
+
+
+#[cfg(not(feature = "script"))]
 pub mod generator;
-use self::generator::CellQuery;
+#[cfg(not(feature = "script"))]
+use self::generator::{CellQuery, GeneratorMiddleware};
+#[cfg(not(feature = "script"))]
 use crate::chain::CellOutputWithData;
-
+#[cfg(not(feature = "script"))]
 use ckb_hash::blake2b_256;
+#[cfg(not(feature = "script"))]
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
-use ckb_types::core::TransactionView;
-use ckb_types::packed::{CellOutput, CellOutputBuilder, Uint64};
-use ckb_types::{bytes::Bytes, packed, prelude::*, H256};
-use generator::GeneratorMiddleware;
-
+use std::prelude::v1::*;
+#[cfg(not(feature = "script"))]
 use std::fs;
-use std::marker::PhantomData;
+#[cfg(not(feature = "script"))]
 use std::path::PathBuf;
+#[cfg(not(feature = "script"))]
 use std::sync::{Arc, Mutex};
+#[cfg(not(feature = "script"))]
+use crate::ckb_types::H256;
+#[cfg(not(feature = "script"))]
+use crate::ckb_types::core::TransactionView;
 
+
+
+
+#[cfg(not(feature = "script"))]
 #[derive(Debug, Clone)]
 pub enum ContractSource {
     LocalPath(PathBuf),
     Immediate(Bytes),
     Chain(OutPoint),
 }
-
+#[cfg(not(feature = "script"))]
 impl ContractSource {
     pub fn load_from_path(path: PathBuf) -> std::io::Result<Bytes> {
         let file = fs::read(path)?;
@@ -30,32 +48,7 @@ impl ContractSource {
     }
 }
 
-pub trait JsonByteConversion {
-    fn to_json_bytes(&self) -> JsonBytes;
-    fn from_json_bytes(bytes: JsonBytes) -> Self;
-}
-
-pub trait JsonConversion {
-    type JsonType;
-    fn to_json(&self) -> Self::JsonType;
-
-    fn from_json(json: Self::JsonType) -> Self;
-}
-
-pub trait MolConversion {
-    type MolType: Entity;
-
-    fn to_mol(&self) -> Self::MolType;
-
-    fn from_mol(entity: Self::MolType) -> Self;
-}
-
-pub trait BytesConversion: MolConversion {
-    fn from_bytes(bytes: Bytes) -> Self;
-
-    fn to_bytes(&self) -> Bytes;
-}
-
+#[cfg(not(feature = "script"))]
 pub enum ContractCellFieldSelector {
     Args,
     Data,
@@ -63,6 +56,7 @@ pub enum ContractCellFieldSelector {
     TypeScript,
     Capacity,
 }
+#[cfg(not(feature = "script"))]
 pub enum ContractCellField<A, D> {
     Args(A),
     Data(D),
@@ -70,101 +64,9 @@ pub enum ContractCellField<A, D> {
     TypeScript(ckb_types::packed::Script),
     Capacity(Uint64),
 }
-
-// TO DO: Think about the tradeoffs of deriving these traits?
-// This is a wrapper type for schema primitive types that works
-// for all primitives that have conversion trait implemented.
-// Saves from having to implement mol conversion traits etc
-#[derive(Clone, Debug, Default)]
-pub struct SchemaPrimitiveType<T, M> {
-    pub inner: T,
-    _entity_type: std::marker::PhantomData<M>,
-}
-
-impl<T, M> SchemaPrimitiveType<T, M> {
-    pub fn new(inner: T) -> Self {
-        Self {
-            inner,
-            _entity_type: std::marker::PhantomData::<M>,
-        }
-    }
-}
-// Requires iterable
-pub struct SchemaFixedCollectionType<T>(T);
-
-pub struct SchemaDynamicSizedType<T, M> {
-    pub inner: T,
-    _entity_type: std::marker::PhantomData<M>,
-}
-
-impl<T, M> MolConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    type MolType = M;
-    fn to_mol(&self) -> Self::MolType {
-        self.inner.pack()
-    }
-
-    fn from_mol(entity: Self::MolType) -> Self {
-        Self {
-            inner: entity.unpack(),
-            _entity_type: std::marker::PhantomData::<M>,
-        }
-    }
-}
-
-impl<T, M> BytesConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    fn from_bytes(bytes: Bytes) -> Self {
-        Self {
-            inner: M::from_compatible_slice(bytes.as_ref())
-                .expect("Unable to build primitive type from bytes")
-                .unpack(),
-            _entity_type: PhantomData::<M>,
-        }
-    }
-
-    fn to_bytes(&self) -> Bytes {
-        self.to_mol().as_bytes()
-    }
-}
-
-impl<T, M> JsonByteConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    fn to_json_bytes(&self) -> JsonBytes {
-        self.to_mol().as_bytes().pack().into()
-    }
-
-    fn from_json_bytes(bytes: JsonBytes) -> Self {
-        Self::from_bytes(bytes.into_bytes())
-    }
-}
-
-impl<T, M> JsonConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    type JsonType = JsonBytes;
-
-    fn to_json(&self) -> Self::JsonType {
-        self.to_json_bytes()
-    }
-
-    fn from_json(json: Self::JsonType) -> Self {
-        Self::from_json_bytes(json)
-    }
-}
-
+#[cfg(not(feature = "script"))]
 #[derive(Default)]
+#[cfg(not(feature = "script"))]
 pub struct Contract<A, D> {
     pub source: Option<ContractSource>,
     pub data: D,
@@ -173,13 +75,11 @@ pub struct Contract<A, D> {
     pub type_: Option<Script>,
     pub code: Option<JsonBytes>,
     #[allow(clippy::type_complexity)]
-    pub output_rules: Vec<(
-        ContractCellFieldSelector,
-        Box<dyn Fn(ContractCellField<A, D>) -> ContractCellField<A, D>>,
-    )>,
+    pub output_rules: Vec<Box<dyn Fn(ContractCellField<A, D>) -> ContractCellField<A, D>>>,
     pub input_rules: Vec<Box<dyn Fn(TransactionView) -> CellQuery>>,
 }
 
+#[cfg(not(feature = "script"))]
 impl<A, D> Contract<A, D>
 where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
@@ -301,11 +201,11 @@ where
         A::from_bytes(args)
     }
 
-    pub fn add_output_rule<F>(&mut self, field: ContractCellFieldSelector, transform_func: F)
+    pub fn add_output_rule<F>(&mut self, transform_func: F)
     where
         F: Fn(ContractCellField<A, D>) -> ContractCellField<A, D> + 'static,
     {
-        self.output_rules.push((field, Box::new(transform_func)));
+        self.output_rules.push((Box::new(transform_func)));
     }
 
     pub fn add_input_rule<F>(&mut self, query_func: F)
@@ -315,7 +215,7 @@ where
         self.input_rules.push(Box::new(query_func))
     }
 }
-
+#[cfg(not(feature = "script"))]
 impl<A, D> GeneratorMiddleware for Contract<A, D>
 where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
@@ -351,11 +251,10 @@ where
                 let processed =
                     self.output_rules
                         .iter()
-                        .fold(output, |output, rule| match rule.0 {
-                            ContractCellFieldSelector::Data => {
+                        .fold(output, |output, rule| {
                                 let data = self.read_raw_data(output.1.clone());
                                 println!("Data before update {:?}", data.to_mol());
-                                let updated_field = rule.1(ContractCellField::Data(data));
+                                let updated_field = rule(ContractCellField::Data(data));
                                 if let ContractCellField::Data(new_data) = updated_field {
                                     println!("Data after update {:?}", new_data.to_mol());
 
@@ -364,11 +263,7 @@ where
                                     output
                                 }
                             }
-                            ContractCellFieldSelector::LockScript => todo!(),
-                            ContractCellFieldSelector::TypeScript => todo!(),
-                            ContractCellFieldSelector::Capacity => todo!(),
-                            ContractCellFieldSelector::Args => todo!(),
-                        });
+                         );
                 println!("Output bytes of processed output: {:?}", processed.1.pack());
                 processed
             })
