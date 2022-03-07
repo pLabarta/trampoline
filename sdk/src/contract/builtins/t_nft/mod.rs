@@ -4,16 +4,18 @@ use std::prelude::v1::*;
 pub mod mol_defs;
 use crate::ckb_types::{
     bytes::Bytes,
+    prelude::*,
 };
-use ckb_types::prelude::Builder;
+
 use mol_defs::{Byte32, Byte32Reader, NFT, NFTBuilder, NFTReader};
 
 #[cfg(not(feature = "script"))]
 use crate::contract::Contract;
 use crate::{
     contract::schema::SchemaPrimitiveType, impl_entity_unpack, impl_pack_for_fixed_byte_array, impl_primitive_reader_unpack,
-    contract::schema::{BytesConversion, JsonByteConversion, MolConversion}
+    contract::schema::{BytesConversion, JsonByteConversion, MolConversion, JsonBytes}
 };
+
 
 
 #[cfg(not(feature = "script"))]
@@ -53,11 +55,11 @@ impl BytesConversion for TrampolineNFT {
 }
 
 impl JsonByteConversion for TrampolineNFT {
-    fn to_json_bytes(&self) -> ckb_jsonrpc_types::JsonBytes {
+    fn to_json_bytes(&self) -> JsonBytes {
         todo!()
     }
 
-    fn from_json_bytes(bytes: ckb_jsonrpc_types::JsonBytes) -> Self {
+    fn from_json_bytes(bytes: JsonBytes) -> Self {
         todo!()
     }
 }

@@ -1,8 +1,9 @@
 #[cfg(not(feature = "script"))]
-use ckb_jsonrpc_types::JsonBytes;
-use std::marker::PhantomData;
-use std::prelude::v1::*;
+pub use ckb_jsonrpc_types::JsonBytes;
 
+
+use std::prelude::v1::*;
+use std::marker::PhantomData;
 #[cfg(feature = "script")]
 pub struct JsonBytes(crate::ckb_types::bytes::Bytes);
 #[cfg(feature = "script")]
