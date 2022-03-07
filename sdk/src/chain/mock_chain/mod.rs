@@ -1,4 +1,3 @@
-use std::prelude::v1::*;
 use crate::chain::*;
 use crate::contract::generator::{
     CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,
@@ -20,6 +19,7 @@ use ckb_types::{
 };
 use ckb_util::LinkedHashSet;
 use rand::{thread_rng, Rng};
+use std::prelude::v1::*;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, collections::HashMap};
 

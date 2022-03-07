@@ -1,9 +1,7 @@
 use std::path::Path;
 use std::{env, fs};
 fn main() {
-    let bins = [
-        "simple_udt",
-    ];
+    let bins = ["simple_udt"];
     let out_dir = env::var_os("OUT_DIR").unwrap();
     bins.into_iter().for_each(|bin| {
         let dest_path = Path::new(&out_dir).join(bin);

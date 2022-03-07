@@ -1,8 +1,7 @@
-use std::prelude::v1::*;
-use std::marker::PhantomData;
 #[cfg(not(feature = "script"))]
-use ckb_jsonrpc_types::{JsonBytes};
-
+use ckb_jsonrpc_types::JsonBytes;
+use std::marker::PhantomData;
+use std::prelude::v1::*;
 
 #[cfg(feature = "script")]
 pub struct JsonBytes(crate::ckb_types::bytes::Bytes);
@@ -24,16 +23,13 @@ impl From<JsonBytes> for ckb_standalone_types::packed::Bytes {
 }
 
 #[cfg(feature = "script")]
-impl From<ckb_standalone_types::packed::Bytes> for JsonBytes  {
+impl From<ckb_standalone_types::packed::Bytes> for JsonBytes {
     fn from(bytes: ckb_standalone_types::packed::Bytes) -> Self {
         Self(bytes.unpack())
     }
 }
 
-
-
 use crate::ckb_types::{self, bytes::Bytes, prelude::*};
-
 
 pub trait JsonByteConversion {
     fn to_json_bytes(&self) -> JsonBytes;
@@ -60,8 +56,6 @@ pub trait BytesConversion: MolConversion {
 
     fn to_bytes(&self) -> Bytes;
 }
-
-
 
 // TO DO: Think about the tradeoffs of deriving these traits?
 // This is a wrapper type for schema primitive types that works

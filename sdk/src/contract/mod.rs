@@ -1,11 +1,9 @@
-
 pub mod builtins;
 pub mod schema;
 use self::schema::*;
 
 use crate::ckb_types::packed::{CellOutput, CellOutputBuilder, Uint64};
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
-
 
 #[cfg(not(feature = "script"))]
 pub mod generator;
@@ -14,23 +12,20 @@ use self::generator::{CellQuery, GeneratorMiddleware};
 #[cfg(not(feature = "script"))]
 use crate::chain::CellOutputWithData;
 #[cfg(not(feature = "script"))]
+use crate::ckb_types::core::TransactionView;
+#[cfg(not(feature = "script"))]
+use crate::ckb_types::H256;
+#[cfg(not(feature = "script"))]
 use ckb_hash::blake2b_256;
 #[cfg(not(feature = "script"))]
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
-use std::prelude::v1::*;
 #[cfg(not(feature = "script"))]
 use std::fs;
 #[cfg(not(feature = "script"))]
 use std::path::PathBuf;
+use std::prelude::v1::*;
 #[cfg(not(feature = "script"))]
 use std::sync::{Arc, Mutex};
-#[cfg(not(feature = "script"))]
-use crate::ckb_types::H256;
-#[cfg(not(feature = "script"))]
-use crate::ckb_types::core::TransactionView;
-
-
-
 
 #[cfg(not(feature = "script"))]
 #[derive(Debug, Clone)]
@@ -248,22 +243,18 @@ where
         let outputs = outputs
             .into_iter()
             .map(|output| {
-                let processed =
-                    self.output_rules
-                        .iter()
-                        .fold(output, |output, rule| {
-                                let data = self.read_raw_data(output.1.clone());
-                                println!("Data before update {:?}", data.to_mol());
-                                let updated_field = rule(ContractCellField::Data(data));
-                                if let ContractCellField::Data(new_data) = updated_field {
-                                    println!("Data after update {:?}", new_data.to_mol());
+                let processed = self.output_rules.iter().fold(output, |output, rule| {
+                    let data = self.read_raw_data(output.1.clone());
+                    println!("Data before update {:?}", data.to_mol());
+                    let updated_field = rule(ContractCellField::Data(data));
+                    if let ContractCellField::Data(new_data) = updated_field {
+                        println!("Data after update {:?}", new_data.to_mol());
 
-                                    (output.0, new_data.to_bytes())
-                                } else {
-                                    output
-                                }
-                            }
-                         );
+                        (output.0, new_data.to_bytes())
+                    } else {
+                        output
+                    }
+                });
                 println!("Output bytes of processed output: {:?}", processed.1.pack());
                 processed
             })

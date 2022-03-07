@@ -48,3 +48,4 @@ includedir_codegen = "0.6"
 
  [workspace]
  members = ["sdk"]
+ #members = ["sdk", "validity-lang"]

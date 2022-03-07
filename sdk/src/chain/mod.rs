@@ -1,4 +1,3 @@
-use std::prelude::v1::*;
 use ckb_types::{
     bytes::Bytes,
     core::TransactionView,
@@ -6,6 +5,7 @@ use ckb_types::{
     prelude::*,
 };
 use ckb_verification::TransactionError;
+use std::prelude::v1::*;
 pub type CellOutputWithData = (CellOutput, Bytes);
 mod mock_chain;
 pub use mock_chain::*;
