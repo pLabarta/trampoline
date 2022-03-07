@@ -61,7 +61,7 @@ pub trait BytesConversion: MolConversion {
 // This is a wrapper type for schema primitive types that works
 // for all primitives that have conversion trait implemented.
 // Saves from having to implement mol conversion traits etc
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct SchemaPrimitiveType<T, M> {
     pub inner: T,
     _entity_type: std::marker::PhantomData<M>,

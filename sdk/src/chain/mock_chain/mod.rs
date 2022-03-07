@@ -35,6 +35,7 @@ pub fn random_out_point() -> OutPoint {
     OutPoint::new_builder().tx_hash(random_hash()).build()
 }
 
+
 pub type CellOutputWithData = (CellOutput, Bytes);
 
 #[derive(Default)]
