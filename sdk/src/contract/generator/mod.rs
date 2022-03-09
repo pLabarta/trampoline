@@ -3,7 +3,7 @@ use std::prelude::v1::*;
 
 use ckb_types::{
     core::{TransactionBuilder, TransactionView},
-    packed::CellInputBuilder,
+    packed::{CellInputBuilder, CellDep, CellDepBuilder, CellDepVec},
     prelude::*,
 };
 
@@ -123,7 +123,26 @@ impl GeneratorMiddleware for Generator<'_, '_> {
             })
             .collect::<Vec<_>>();
 
-        println!("GENERATED INPUTS: {:?}", inputs);
-        res.as_advanced_builder().set_inputs(inputs).build()
+        // TO DO: Will have to accommodate some cells being deptype of depgroup
+        // let inputs_cell_deps = query_register.lock()
+        //     .unwrap()
+        //     .iter()
+        //     .flat_map(|query| self.query(query.to_owned()).unwrap())
+        //     .map(|outp| {
+        //         CellInputBuilder::default()
+        //             .previous_output(outp.into())
+        //             .build()
+        //     })
+        //     .collect::<Vec<_>>();
+
+       // println!("GENERATED INPUTS: {:?}", inputs);
+        let tx = res.as_advanced_builder()
+            .set_inputs(inputs)
+            //.set_cell_deps(res.cell_deps().as_builder().extend(inputs_cell_deps).build().into_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
+            .build();
+
+        println!("FINAL TX GENERATED: {:#?}", ckb_jsonrpc_types::TransactionView::from(tx.clone()));
+        tx
+
     }
 }

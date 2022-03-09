@@ -68,6 +68,15 @@ pub struct SchemaPrimitiveType<T, M> {
     _entity_type: std::marker::PhantomData<M>,
 }
 
+impl<T,M> SchemaPrimitiveType<T, M> 
+where
+    M: Entity + Unpack<T>,
+    T: Pack<M>,
+{
+    pub fn byte_size(&self) -> usize {
+        self.to_mol().as_builder().expected_length()
+    }
+}
 impl<T, M> SchemaPrimitiveType<T, M> {
     pub fn new(inner: T) -> Self {
         Self {

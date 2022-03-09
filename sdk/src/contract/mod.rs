@@ -1,3 +1,4 @@
+use std::prelude::v1::*;
 pub mod builtins;
 pub mod schema;
 use self::schema::*;
@@ -19,6 +20,7 @@ use crate::ckb_types::H256;
 use ckb_hash::blake2b_256;
 #[cfg(not(feature = "script"))]
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
+use ckb_types::core::TransactionBuilder;
 #[cfg(not(feature = "script"))]
 use std::fs;
 #[cfg(not(feature = "script"))]
@@ -209,6 +211,31 @@ where
     {
         self.input_rules.push(Box::new(query_func))
     }
+
+    pub fn tx_template(&self) -> TransactionView {
+        let arg_size = self.args.to_mol().as_builder().expected_length() as u64;
+        let data_size = self.data.to_mol().as_builder().expected_length() as u64;
+        println!("DATA SIZE EXPECTED: {:?}", data_size);
+        let mut data = Vec::with_capacity(data_size as usize);
+        (0..data_size as usize).into_iter().for_each(|i| {
+            data.push(0u8);
+        });
+        let mut tx = TransactionBuilder::default()
+            .output(
+                CellOutput::new_builder()
+                  .capacity((data_size + arg_size).pack())
+                  .type_(Some(ckb_types::packed::Script::from(self.as_script().unwrap())).pack())
+                  .build()
+            )
+            .output_data(data.pack());
+
+        if let Some(ContractSource::Chain(outp)) = self.source.clone() {
+            tx = tx.cell_dep(self.as_cell_dep(outp.clone()).into());
+        }
+
+        tx.build()
+            
+    }
 }
 #[cfg(not(feature = "script"))]
 impl<A, D> GeneratorMiddleware for Contract<A, D>
@@ -222,6 +249,20 @@ where
         query_queue: Arc<Mutex<Vec<CellQuery>>>,
     ) -> TransactionView {
         type OutputWithData = (CellOutput, Bytes);
+
+
+        let tx_template = self.tx_template();
+
+        let total_deps = tx.cell_deps().as_builder().extend(tx_template.cell_deps_iter()).build();
+        let total_outputs = tx.outputs().as_builder().extend(tx_template.outputs()).build();
+        let total_inputs = tx.inputs().as_builder().extend(tx_template.inputs()).build();
+        let total_outputs_data = tx.outputs_data().as_builder().extend(tx_template.outputs_data()).build();
+        let tx = tx.clone().as_advanced_builder()
+            .set_cell_deps(total_deps.into_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
+            .set_outputs(total_outputs.into_iter().collect::<Vec<crate::ckb_types::packed::CellOutput>>())
+            .set_inputs(total_inputs.into_iter().collect::<Vec<crate::ckb_types::packed::CellInput>>())
+            .set_outputs_data(total_outputs_data.into_iter().collect::<Vec<crate::ckb_types::packed::Bytes>>())
+            .build();
         let mut idx = 0;
         let outputs = tx.clone().outputs().into_iter().filter_map(|output| {
             let self_script_hash: ckb_types::packed::Byte32 = self.script_hash().unwrap().into();

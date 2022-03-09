@@ -22,8 +22,10 @@ use rand::{thread_rng, Rng};
 
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, collections::HashMap};
-
+use ckb_always_success_script::ALWAYS_SUCCESS;
 const MAX_CYCLES: u64 = 500_0000;
+
+
 pub fn random_hash() -> Byte32 {
     let mut rng = thread_rng();
     let mut buf = [0u8; 32];
@@ -36,9 +38,11 @@ pub fn random_out_point() -> OutPoint {
 }
 
 
+
+
 pub type CellOutputWithData = (CellOutput, Bytes);
 
-#[derive(Default)]
+
 pub struct MockChain {
     pub cells: HashMap<OutPoint, CellOutputWithData>,
     pub outpoint_txs: HashMap<OutPoint, TransactionInfo>,
@@ -49,6 +53,25 @@ pub struct MockChain {
     pub cells_by_type_hash: HashMap<Byte32, Vec<OutPoint>>,
     pub debug: bool,
     messages: Arc<Mutex<Vec<Message>>>,
+}
+
+impl Default for MockChain {
+    fn default() -> Self {
+      let mut chain =  Self { 
+          cells: Default::default(), 
+          outpoint_txs: Default::default(), 
+          headers: Default::default(), 
+          epoches: Default::default(), 
+          cells_by_data_hash: Default::default(), 
+          cells_by_lock_hash: Default::default(), 
+          cells_by_type_hash: Default::default(), 
+          debug: Default::default(), 
+          messages: Default::default() 
+        };
+
+        chain.deploy_cell_with_data(Bytes::from(ALWAYS_SUCCESS.to_vec()));
+        chain
+    }
 }
 
 impl MockChain {
@@ -66,6 +89,11 @@ impl MockChain {
         self.cells.insert(out_point.clone(), (cell, data));
         self.cells_by_data_hash.insert(data_hash, out_point.clone());
         out_point
+    }
+
+    pub fn get_default_script_outpoint(&self) -> OutPoint {
+        let always_success_data_hash = CellOutput::calc_data_hash(&ALWAYS_SUCCESS.to_vec());
+        self.cells_by_data_hash.get(&always_success_data_hash).unwrap().clone()
     }
 
     pub fn insert_header(&mut self, header: HeaderView) {
@@ -192,16 +220,16 @@ impl MockChain {
             }
         }
 
-        for (cell, _data) in tx.outputs_with_data_iter() {
-            if let Some(script) = cell.type_().to_opt() {
-                if script.code_hash() != TYPE_ID_CODE_HASH.pack()
-                    || script.hash_type() != ScriptHashType::Type.into()
-                {
-                    let dep = self.find_cell_dep_for_script(&script);
-                    cell_deps.insert(dep);
-                }
-            }
-        }
+        // for (cell, _data) in tx.outputs_with_data_iter() {
+        //     if let Some(script) = cell.type_().to_opt() {
+        //         if script.code_hash() != TYPE_ID_CODE_HASH.pack()
+        //             || script.hash_type() != ScriptHashType::Type.into()
+        //         {
+        //             let dep = self.find_cell_dep_for_script(&script);
+        //             cell_deps.insert(dep);
+        //         }
+        //     }
+        // }
 
         tx.as_advanced_builder()
             .set_cell_deps(Vec::new())
@@ -245,6 +273,7 @@ impl MockChain {
                 b.build()
             })
             .collect();
+        println!("RESOLVED CELL DEPS: {:#?}", resolved_cell_deps);
         ResolvedTransaction {
             transaction: tx.clone(),
             resolved_cell_deps,
@@ -413,6 +442,7 @@ impl TransactionProvider for MockChainTxProvider {
         let inner_tx = ckb_types::packed::Transaction::from(inner_tx);
         let converted_tx_view = inner_tx.as_advanced_builder().build();
         let tx = chain.complete_tx(converted_tx_view);
+        println!("TX AFTER CHAIN COMPLETE {:#?}", ckb_jsonrpc_types::TransactionView::from(tx.clone()));
         let result = chain.verify_tx(&tx, MAX_CYCLES);
         match result {
             Ok(_) => true,

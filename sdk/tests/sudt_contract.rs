@@ -135,16 +135,8 @@ fn test_failed_issuance_tx_no_permissions() {
 
     // Create Mint SUDT transaction, using as input a cell locked with a different user's lock script
     // Should fail because the user does not have mint permissions
-    let fail_tx = TransactionBuilder::default()
-        .cell_dep(
-            sudt_contract
-                .as_cell_dep(sudt_code_cell_outpoint.into())
-                .into(),
-        )
-        .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.unwrap()))
-        .output(generate_simple_udt_cell(&sudt_contract))
-        .outputs_data(vec![0_u128.to_le_bytes().pack()])
-        .build();
+    sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.clone().into()));
+    //let fail_tx = TransactionBuilder::default().build();
 
     // Add rule to sudt output generation to increase the amount field.
     sudt_contract.add_output_rule(
@@ -174,7 +166,8 @@ fn test_failed_issuance_tx_no_permissions() {
         .query_service(&chain_rpc)
         .pipeline(vec![&sudt_contract]);
 
-    let new_fail_tx = generator.pipe(fail_tx, Arc::new(Mutex::new(vec![])));
+  
+    let new_fail_tx = generator.generate(); //generator.pipe(fail_tx, Arc::new(Mutex::new(vec![])));
     // Test that failure transaction failed
     let is_valid = chain_rpc.verify_tx(new_fail_tx.into());
     assert!(!is_valid);
@@ -202,18 +195,18 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     let mut sudt_contract = gen_sudt_contract(minter_lock_script.clone(), Some(1500));
     let sudt_code_cell = sudt_contract.as_code_cell();
     let sudt_code_cell_outpoint = chain.create_cell(sudt_code_cell.0, sudt_code_cell.1);
-
+    sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.clone().into()));
     // Create Mint SUDT transaction, using as input a cell locked with the minter's lock script
-    let tx = TransactionBuilder::default()
-        .cell_dep(
-            sudt_contract
-                .as_cell_dep(sudt_code_cell_outpoint.into())
-                .into(),
-        )
-        .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.unwrap()))
-        .output(generate_simple_udt_cell(&sudt_contract))
-        .outputs_data(vec![0_u128.to_le_bytes().pack()])
-        .build();
+    // let tx = TransactionBuilder::default()
+    //     .cell_dep(
+    //         sudt_contract
+    //             .as_cell_dep(sudt_code_cell_outpoint.into())
+    //             .into(),
+    //     )
+    //     .cell_dep(chain.find_cell_dep_for_script(&minter_lock_script.unwrap()))
+    //     .output(generate_simple_udt_cell(&sudt_contract))
+    //     .outputs_data(vec![0_u128.to_le_bytes().pack()])
+    //     .build();
 
     // Add rule to sudt output generation to increase the amount field.
     sudt_contract.add_output_rule(
@@ -243,7 +236,7 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
         .pipeline(vec![&sudt_contract]);
 
     // Generate transaction
-    let new_tx = generator.pipe(tx, Arc::new(Mutex::new(vec![])));
+    let new_tx = generator.generate(); //generator.pipe(tx, Arc::new(Mutex::new(vec![])));
 
     // Test that success transaction succeeded & has correct sudt amount minted
     let new_tx_amt = new_tx.output_with_data(0).unwrap().1;
