@@ -20,7 +20,7 @@ use crate::ckb_types::H256;
 use ckb_hash::blake2b_256;
 #[cfg(not(feature = "script"))]
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
-use ckb_types::core::TransactionBuilder;
+use crate::ckb_types::core::TransactionBuilder;
 #[cfg(not(feature = "script"))]
 use std::fs;
 #[cfg(not(feature = "script"))]

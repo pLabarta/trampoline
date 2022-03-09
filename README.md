@@ -134,3 +134,11 @@ Optionally, schema definition (in Molecule) can be passed in: `trampoline schema
 
 Generate rust bindings to build and decode schema: `trampoline schema build <schema_name>`
 
+
+# Trampoline Projects
+Trampoline projects provide a structure to manage on- and off-chain code. A Trampoline project makes code reuse and collaboration easy by automatically exporting libraries for use by other contracts and other applications.
+- scripts
+- schemas
+- tests
+- generators
+
