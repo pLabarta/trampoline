@@ -1,4 +1,5 @@
 #![no_std]
+
 extern crate no_std_compat as std;
 
 #[cfg(not(feature = "script"))]

@@ -91,11 +91,40 @@ impl MockChain {
         out_point
     }
 
+    pub fn deploy_cell_output(&mut self, data: Bytes, output: CellOutput) -> OutPoint {
+        let data_hash = CellOutput::calc_data_hash(&data);
+        if let Some(out_point) = self.cells_by_data_hash.get(&data_hash) {
+            return out_point.to_owned();
+        }
+        let tx_hash = random_hash();
+        let out_point = OutPoint::new(tx_hash, 0);
+        self.create_cell_with_outpoint(out_point.clone(), output, data);
+        out_point
+    }
+
     pub fn get_default_script_outpoint(&self) -> OutPoint {
         let always_success_data_hash = CellOutput::calc_data_hash(&ALWAYS_SUCCESS.to_vec());
         self.cells_by_data_hash.get(&always_success_data_hash).unwrap().clone()
     }
 
+    pub fn deploy_random_cell_with_default_lock(&mut self, capacity: usize, args: Option<Bytes>) -> OutPoint {
+        let script = {
+            
+            if let Some(args) = args {
+                self.build_script(&self.get_default_script_outpoint(), args)
+            } else {
+                self.build_script(&self.get_default_script_outpoint(), Bytes::default())
+            }
+        }.unwrap();
+        let tx_hash = random_hash();
+        let out_point = OutPoint::new(tx_hash, 0);
+        let cell = CellOutput::new_builder()
+            .capacity(Capacity::bytes(capacity).expect("Data Capacity").pack())
+            .lock(script)
+            .build();
+        self.create_cell_with_outpoint(out_point.clone(), cell, Bytes::default());
+        out_point
+    }
     pub fn insert_header(&mut self, header: HeaderView) {
         self.headers.insert(header.hash(), header);
     }
@@ -148,7 +177,7 @@ impl MockChain {
     }
 
     pub fn build_script_with_hash_type(
-        &mut self,
+        &self,
         outp: &OutPoint,
         typ: ScriptHashType,
         args: Bytes,
@@ -172,7 +201,7 @@ impl MockChain {
         self.cells_by_type_hash.get(&hash).cloned()
     }
 
-    pub fn build_script(&mut self, outp: &OutPoint, args: Bytes) -> Option<Script> {
+    pub fn build_script(&self, outp: &OutPoint, args: Bytes) -> Option<Script> {
         self.build_script_with_hash_type(outp, ScriptHashType::Data1, args)
     }
 

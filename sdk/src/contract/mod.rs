@@ -3,7 +3,7 @@ pub mod builtins;
 pub mod schema;
 use self::schema::*;
 
-use crate::ckb_types::packed::{CellOutput, CellOutputBuilder, Uint64};
+use crate::ckb_types::packed::{CellOutput, CellOutputBuilder, Uint64, CellInput};
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
 
 #[cfg(not(feature = "script"))]
@@ -20,6 +20,7 @@ use crate::ckb_types::{H256, core::TransactionBuilder};
 use ckb_hash::blake2b_256;
 #[cfg(not(feature = "script"))]
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
+
 
 #[cfg(not(feature = "script"))]
 use std::fs;
@@ -46,13 +47,140 @@ impl ContractSource {
 }
 
 #[cfg(not(feature = "script"))]
-pub enum ContractCellFieldSelector {
+pub enum ContractField {
     Args,
     Data,
     LockScript,
     TypeScript,
     Capacity,
 }
+
+#[cfg(not(feature = "script"))]
+#[derive(Clone)]
+pub enum TransactionField {
+    Inputs,
+    Outputs,
+    Dependencies
+}
+
+#[cfg(not(feature = "script"))]
+pub enum RuleScope {
+    ContractField(ContractField),
+    TransactionField(TransactionField)
+}
+#[cfg(not(feature = "script"))]
+impl From<ContractField> for RuleScope {
+    fn from(f: ContractField) -> Self {
+        Self::ContractField(f)
+    }
+}
+#[cfg(not(feature = "script"))]
+impl From<TransactionField> for RuleScope {
+    fn from(f: TransactionField) -> Self {
+        Self::TransactionField(f)
+    }
+}
+#[cfg(not(feature = "script"))]
+#[derive(Clone)]
+pub struct RuleContext {
+    inner: TransactionView,
+    idx: usize,
+    curr_field: TransactionField
+}
+#[cfg(not(feature = "script"))]
+impl RuleContext {
+
+    pub fn new(tx: TransactionView) -> Self {
+        Self {
+            inner: tx,
+            idx: 0,
+            curr_field: TransactionField::Outputs
+        }
+    }
+    pub fn tx(mut self, tx: TransactionView) -> Self {
+        self.inner = tx;
+        self
+    }
+
+    pub fn get_tx(&self) -> TransactionView {
+        self.inner.clone()
+    }
+    pub fn idx(&mut self, idx: usize) {
+        self.idx = idx;
+    }
+
+    pub fn curr_field(&mut self, field: TransactionField) {
+        self.curr_field = field;
+    }
+
+    pub fn load<A,D>(&self, scope: impl Into<RuleScope>) -> ContractCellField<A,D>
+    where
+        D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
+        A: JsonByteConversion + MolConversion + BytesConversion + Clone,
+    {
+        match scope.into() {
+            RuleScope::ContractField(field) => {
+                match field {
+                    ContractField::Args => todo!(),
+                    ContractField::Data => {
+                        match self.curr_field {
+                            TransactionField::Outputs => {
+                                let data_reader = self.inner.outputs_data();
+                                let data_reader = data_reader.as_reader();
+                                let data = data_reader.get(self.idx);
+                                if let Some(data) = data {
+                                    ContractCellField::Data(D::from_bytes(data.raw_data().to_vec().into()))
+                                } else {
+                                    ContractCellField::Data(D::default())
+                                }
+                            }
+                            _ =>  ContractCellField::Data(D::default())
+                        }
+                    },
+                    ContractField::LockScript => todo!(),
+                    ContractField::TypeScript => todo!(),
+                    ContractField::Capacity => todo!(),
+                }
+            },
+            RuleScope::TransactionField(field) => {
+                match field {
+                    TransactionField::Inputs => {
+                        ContractCellField::Inputs(self.inner.inputs().into_iter().collect::<Vec<CellInput>>())
+                    },
+                    TransactionField::Outputs => {
+                        ContractCellField::Outputs(self.inner.outputs_with_data_iter().collect::<Vec<CellOutputWithData>>())
+                    },
+                    TransactionField::Dependencies => {
+                        ContractCellField::CellDeps(self.inner.cell_deps_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
+                    },
+                }
+            }
+        }
+    }
+}
+
+#[cfg(not(feature = "script"))]
+pub struct OutputRule<A,D> {
+    pub scope: RuleScope,
+    pub rule: Box<dyn Fn(RuleContext) -> ContractCellField<A,D>>,
+}
+
+#[cfg(not(feature = "script"))]
+impl<A,D> OutputRule<A,D> {
+  pub fn new<F>(scope: impl Into<RuleScope>, rule: F) -> Self 
+  where 
+    F: 'static + Fn(RuleContext) -> ContractCellField<A,D>
+  {
+      OutputRule {
+          scope: scope.into(),
+          rule: Box::new(rule)
+      }
+  }
+  pub fn exec(&self, ctx: &RuleContext) -> ContractCellField<A,D> {
+      self.rule.as_ref()(ctx.clone()) //call((ctx,))
+  }
+}
+
 #[cfg(not(feature = "script"))]
 pub enum ContractCellField<A, D> {
     Args(A),
@@ -60,6 +188,9 @@ pub enum ContractCellField<A, D> {
     LockScript(ckb_types::packed::Script),
     TypeScript(ckb_types::packed::Script),
     Capacity(Uint64),
+    Inputs(Vec<CellInput>),
+    Outputs(Vec<CellOutputWithData>),
+    CellDeps(Vec<ckb_types::packed::CellDep>),
 }
 #[cfg(not(feature = "script"))]
 #[derive(Default)]
@@ -72,7 +203,7 @@ pub struct Contract<A, D> {
     pub type_: Option<Script>,
     pub code: Option<JsonBytes>,
     #[allow(clippy::type_complexity)]
-    pub output_rules: Vec<Box<dyn Fn(ContractCellField<A, D>) -> ContractCellField<A, D>>>,
+    pub output_rules: Vec<OutputRule<A,D>>,
     pub input_rules: Vec<Box<dyn Fn(TransactionView) -> CellQuery>>,
 }
 
@@ -198,11 +329,12 @@ where
         A::from_bytes(args)
     }
 
-    pub fn add_output_rule<F>(&mut self, transform_func: F)
+    pub fn add_output_rule<F>(&mut self, scope: impl Into<RuleScope>, transform_func: F)
     where
-        F: Fn(ContractCellField<A, D>) -> ContractCellField<A, D> + 'static,
+        F: Fn(RuleContext) -> ContractCellField<A, D> + 'static,
     {
-        self.output_rules.push(Box::new(transform_func));
+
+        self.output_rules.push(OutputRule::new(scope.into(), transform_func));
     }
 
     pub fn add_input_rule<F>(&mut self, query_func: F)
@@ -269,32 +401,56 @@ where
 
             if let Some(type_) = output.type_().to_opt() {
                 if type_.calc_script_hash() == self_script_hash {
-                    return tx.output_with_data(idx);
+                    return Some((idx, tx.output_with_data(idx).unwrap()));
                 }
             }
 
             if output.lock().calc_script_hash() == self_script_hash {
-                return tx.output_with_data(idx);
+                return Some((idx, tx.output_with_data(idx).unwrap()));
             }
 
             idx += 1;
             None
         });
 
+        let mut ctx = RuleContext::new(tx.clone());
+
         let outputs = outputs
             .into_iter()
-            .map(|output| {
-                let processed = self.output_rules.iter().fold(output, |output, rule| {
+            .map(|output_with_idx| {
+                ctx.idx(output_with_idx.0);
+                let processed = self.output_rules.iter().fold(output_with_idx.1, |output, rule| {
                     let data = self.read_raw_data(output.1.clone());
                     println!("Data before update {:?}", data.to_mol());
-                    let updated_field = rule(ContractCellField::Data(data));
-                    if let ContractCellField::Data(new_data) = updated_field {
-                        println!("Data after update {:?}", new_data.to_mol());
-
-                        (output.0, new_data.to_bytes())
-                    } else {
-                        output
+                    let updated_field = rule.exec(&ctx);
+                    match updated_field {
+                        ContractCellField::Args(_) => todo!(),
+                        ContractCellField::Data(d) => {
+                            let updated_tx = ctx.get_tx();
+                            let updated_outputs_data = updated_tx.outputs_with_data_iter()
+                                .enumerate().map(|(i, output)| {
+                                    if i == ctx.idx {
+                                       (output.0, d.to_bytes())
+                                    } else {
+                                        output
+                                    }
+                                }).collect::<Vec<CellOutputWithData>>();
+                           
+                            let updated_tx = updated_tx.as_advanced_builder()
+                                .set_outputs(updated_outputs_data.iter().map(|o| o.0.clone()).collect::<Vec<_>>())
+                                .set_outputs_data(updated_outputs_data.iter().map(|o| o.1.pack()).collect::<Vec<_>>())
+                                .build();
+                            ctx = ctx.clone().tx(updated_tx);
+                            return (output.0, d.to_bytes());
+                        },
+                        ContractCellField::LockScript(_) => todo!(),
+                        ContractCellField::TypeScript(_) => todo!(),
+                        ContractCellField::Capacity(_) => todo!(),
+                        _ => {
+                            panic!("Error: Contract-level rule attempted transaction-level update.")
+                        }
                     }
+                   
                 });
                 println!("Output bytes of processed output: {:?}", processed.1.pack());
                 processed
