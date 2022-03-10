@@ -113,9 +113,9 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
      let tnft_code_cell = tnft_contract.as_code_cell();
 
      let tnft_code_cell_outpoint = chain.create_cell(tnft_code_cell.0, tnft_code_cell.1);
-     tnft_contract.source = Some(ContractSource::Chain(tnft_code_cell_outpoint.clone().into()));
+     tnft_contract.source = Some(ContractSource::Chain(tnft_code_cell_outpoint.into()));
  
-    let genesis_seed = genesis_id_from(tx_input_cell.clone());
+    let genesis_seed = genesis_id_from(tx_input_cell);
 
     tnft_contract.add_input_rule(move |_tx| -> CellQuery {
         CellQuery {
@@ -129,7 +129,7 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
     tnft_contract.add_output_rule(ContractField::Data, move |ctx| -> NftField {
         let nft: NftField = ctx.load(ContractField::Data);
         if let ContractCellField::Data(nft_data) = nft {
-            let mut t_nft_data = nft_data.clone();
+            let mut t_nft_data = nft_data;
             t_nft_data.genesis_id = genesis_seed.clone();
             NftField::Data(t_nft_data)
         } else {
@@ -161,8 +161,8 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
    let tnft_code_cell = tnft_contract.as_code_cell();
 
    let tnft_code_cell_outpoint = chain.create_cell(tnft_code_cell.0, tnft_code_cell.1);
-   tnft_contract.source = Some(ContractSource::Chain(tnft_code_cell_outpoint.clone().into()));
-   let genesis_seed = genesis_id_from(genesis_id_seed_cell.clone());
+   tnft_contract.source = Some(ContractSource::Chain(tnft_code_cell_outpoint.into()));
+   let genesis_seed = genesis_id_from(genesis_id_seed_cell);
 
 
     tnft_contract.add_input_rule(move |_tx| -> CellQuery {
@@ -177,7 +177,7 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
     tnft_contract.add_output_rule(ContractField::Data, move |ctx| -> NftField {
         let nft: NftField = ctx.load(ContractField::Data);
         if let ContractCellField::Data(nft_data) = nft {
-            let mut t_nft_data = nft_data.clone();
+            let mut t_nft_data = nft_data;
             t_nft_data.genesis_id = genesis_seed.clone();
             NftField::Data(t_nft_data)
         } else {
@@ -209,8 +209,8 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
     let tnft_code_cell = tnft_contract.as_code_cell();
 
     let tnft_code_cell_outpoint = chain.create_cell(tnft_code_cell.0, tnft_code_cell.1);
-    tnft_contract.source = Some(ContractSource::Chain(tnft_code_cell_outpoint.clone().into()));
-    let genesis_seed = genesis_id_from(tx_input_cell.clone());
+    tnft_contract.source = Some(ContractSource::Chain(tnft_code_cell_outpoint.into()));
+    let genesis_seed = genesis_id_from(tx_input_cell);
 
     let tnft_input_cell = CellOutput::new_builder()
         .lock(minter_lock_script.clone().unwrap())
@@ -218,11 +218,11 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
         .type_(Some(Script::from(tnft_contract.as_script().unwrap())).pack())
         .build();
     let tnft_input_cell_data = TrampolineNFT {
-        genesis_id: genesis_id_from(input_tnft_seed.clone()),
+        genesis_id: genesis_id_from(input_tnft_seed),
         cid: Default::default(),
     };
 
-    let _tnft_input_outpoint = chain.deploy_cell_output(tnft_input_cell_data.clone().to_bytes(), tnft_input_cell.clone());
+    let _tnft_input_outpoint = chain.deploy_cell_output(tnft_input_cell_data.to_bytes(), tnft_input_cell);
 
     // Create two tnft output cells with same data as tnft input cell
     // Add input rule to grab the tnft_input_cell
@@ -238,7 +238,7 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
     tnft_contract.add_output_rule(ContractField::Data, move |ctx| -> NftField {
         let nft: NftField = ctx.load(ContractField::Data);
         if let ContractCellField::Data(nft_data) = nft {
-            let mut t_nft_data = nft_data.clone();
+            let mut t_nft_data = nft_data;
             t_nft_data.genesis_id = genesis_seed.clone();
             NftField::Data(t_nft_data)
         } else {

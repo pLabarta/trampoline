@@ -129,13 +129,13 @@ fn test_failed_issuance_tx_no_permissions() {
     );
 
     // Deploy SUDT to chain
-    let mut sudt_contract = gen_sudt_contract(minter_lock_script.clone(), Some(1500));
+    let mut sudt_contract = gen_sudt_contract(minter_lock_script, Some(1500));
     let sudt_code_cell = sudt_contract.as_code_cell();
     let sudt_code_cell_outpoint = chain.create_cell(sudt_code_cell.0, sudt_code_cell.1);
 
     // Create Mint SUDT transaction, using as input a cell locked with a different user's lock script
     // Should fail because the user does not have mint permissions
-    sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.clone().into()));
+    sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.into()));
     //let fail_tx = TransactionBuilder::default().build();
 
     // Add rule to sudt output generation to increase the amount field.
@@ -194,10 +194,10 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     );
 
     // Deploy SUDT to chain
-    let mut sudt_contract = gen_sudt_contract(minter_lock_script.clone(), Some(1500));
+    let mut sudt_contract = gen_sudt_contract(minter_lock_script, Some(1500));
     let sudt_code_cell = sudt_contract.as_code_cell();
     let sudt_code_cell_outpoint = chain.create_cell(sudt_code_cell.0, sudt_code_cell.1);
-    sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.clone().into()));
+    sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.into()));
     // Create Mint SUDT transaction, using as input a cell locked with the minter's lock script
     // let tx = TransactionBuilder::default()
     //     .cell_dep(
