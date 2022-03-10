@@ -7,7 +7,7 @@ use crate::ckb_types::{
     prelude::*,
 };
 
-use mol_defs::{Byte32, Byte32Reader, NFT, NFTBuilder, NFTReader};
+use mol_defs::{Byte32, Byte32Reader, NFT, NFTBuilder};
 
 #[cfg(not(feature = "script"))]
 use crate::contract::Contract;
@@ -59,7 +59,7 @@ impl JsonByteConversion for TrampolineNFT {
         todo!()
     }
 
-    fn from_json_bytes(bytes: JsonBytes) -> Self {
+    fn from_json_bytes(_bytes: JsonBytes) -> Self {
         todo!()
     }
 }

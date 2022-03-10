@@ -338,7 +338,7 @@ where
         let data_size = self.data.to_mol().as_builder().expected_length() as u64;
         println!("DATA SIZE EXPECTED: {:?}", data_size);
         let mut data = Vec::with_capacity(data_size as usize);
-        (0..data_size as usize).into_iter().for_each(|i| {
+        (0..data_size as usize).into_iter().for_each(|_| {
             data.push(0u8);
         });
         let mut tx = TransactionBuilder::default()
@@ -351,7 +351,7 @@ where
             .output_data(data.pack());
 
         if let Some(ContractSource::Chain(outp)) = self.source.clone() {
-            tx = tx.cell_dep(self.as_cell_dep(outp.clone()).into());
+            tx = tx.cell_dep(self.as_cell_dep(outp).into());
         }
 
         tx.build()
@@ -383,7 +383,7 @@ where
         let total_outputs = tx.outputs().as_builder().extend(tx_template.outputs()).build();
         let total_inputs = tx.inputs().as_builder().extend(tx_template.inputs()).build();
         let total_outputs_data = tx.outputs_data().as_builder().extend(tx_template.outputs_data()).build();
-        let tx = tx.clone().as_advanced_builder()
+        let tx = tx.as_advanced_builder()
             .set_cell_deps(total_deps.into_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
             .set_outputs(total_outputs.into_iter().collect::<Vec<crate::ckb_types::packed::CellOutput>>())
             .set_inputs(total_inputs.into_iter().collect::<Vec<crate::ckb_types::packed::CellInput>>())
@@ -438,7 +438,7 @@ where
                                 .set_outputs_data(updated_outputs_data.iter().map(|o| o.1.pack()).collect::<Vec<_>>())
                                 .build();
                             ctx = ctx.clone().tx(updated_tx);
-                            return (output.0, d.to_bytes());
+                            (output.0, d.to_bytes())
                         },
                         ContractCellField::LockScript(_) => todo!(),
                         ContractCellField::TypeScript(_) => todo!(),

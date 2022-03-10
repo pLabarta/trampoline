@@ -103,7 +103,7 @@ impl MockChain {
     }
 
     pub fn get_default_script_outpoint(&self) -> OutPoint {
-        let always_success_data_hash = CellOutput::calc_data_hash(&ALWAYS_SUCCESS.to_vec());
+        let always_success_data_hash = CellOutput::calc_data_hash(ALWAYS_SUCCESS.as_ref());
         self.cells_by_data_hash.get(&always_success_data_hash).unwrap().clone()
     }
 

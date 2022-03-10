@@ -3,7 +3,7 @@ use std::prelude::v1::*;
 
 use ckb_types::{
     core::{TransactionBuilder, TransactionView},
-    packed::{CellInputBuilder, CellDep, CellDepBuilder, CellDepVec, CellInput},
+    packed::{CellInputBuilder, CellInput},
     prelude::*,
 };
 
