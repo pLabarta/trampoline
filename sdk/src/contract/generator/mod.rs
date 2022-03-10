@@ -3,7 +3,7 @@ use std::prelude::v1::*;
 
 use ckb_types::{
     core::{TransactionBuilder, TransactionView},
-    packed::{CellInputBuilder, CellDep, CellDepBuilder, CellDepVec},
+    packed::{CellInputBuilder, CellDep, CellDepBuilder, CellDepVec, CellInput},
     prelude::*,
 };
 
@@ -23,6 +23,8 @@ pub trait GeneratorMiddleware {
         tx: TransactionView,
         query_register: Arc<Mutex<Vec<CellQuery>>>,
     ) -> TransactionView;
+
+    fn update_query_register(&self, tx: TransactionView, query_register: Arc<Mutex<Vec<CellQuery>>>);
 }
 
 // TODO: implement from for CellQueryAttribute on json_types and packed types
@@ -100,19 +102,9 @@ impl<'a, 'b> Generator<'a, 'b> {
     pub fn generate(&self) -> TransactionView {
         self.pipe(self.tx.as_ref().unwrap().clone(), self.query_queue.clone())
     }
-}
 
-impl GeneratorMiddleware for Generator<'_, '_> {
-    fn pipe(
-        &self,
-        tx: TransactionView,
-        query_register: Arc<Mutex<Vec<CellQuery>>>,
-    ) -> TransactionView {
-        let res = self.middleware.iter().fold(tx, |tx, middleware| {
-            middleware.pipe(tx, query_register.clone())
-        });
-
-        let inputs = query_register
+   pub fn resolve_queries(&self, query_register: Arc<Mutex<Vec<CellQuery>>>) -> Vec<CellInput>{
+        query_register
             .lock()
             .unwrap()
             .iter().flat_map(|query| self.query(query.to_owned()).unwrap())
@@ -121,25 +113,38 @@ impl GeneratorMiddleware for Generator<'_, '_> {
                     .previous_output(outp.into())
                     .build()
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>()
+    }
+}
 
-        // TO DO: Will have to accommodate some cells being deptype of depgroup
-        // let inputs_cell_deps = query_register.lock()
-        //     .unwrap()
-        //     .iter()
-        //     .flat_map(|query| self.query(query.to_owned()).unwrap())
-        //     .map(|outp| {
-        //         CellInputBuilder::default()
-        //             .previous_output(outp.into())
-        //             .build()
-        //     })
-        //     .collect::<Vec<_>>();
+impl GeneratorMiddleware for Generator<'_, '_> {
 
-       // println!("GENERATED INPUTS: {:?}", inputs);
-        let tx = res.as_advanced_builder()
+   fn update_query_register(&self, tx: TransactionView, query_register: Arc<Mutex<Vec<CellQuery>>>) {
+    self.middleware.iter().for_each(|m| {
+        m.update_query_register(tx.clone(), query_register.clone())
+    });
+   }
+    fn pipe(
+        &self,
+        tx: TransactionView,
+        query_register: Arc<Mutex<Vec<CellQuery>>>,
+    ) -> TransactionView {
+     
+        self.update_query_register(tx.clone(), query_register.clone());
+        let inputs = self.resolve_queries(query_register.clone());
+        let tx = tx.as_advanced_builder()
             .set_inputs(inputs)
-            //.set_cell_deps(res.cell_deps().as_builder().extend(inputs_cell_deps).build().into_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
             .build();
+        
+        let tx = self.middleware.iter().fold(tx, |tx, middleware| {
+            middleware.pipe(tx, query_register.clone())
+        });
+
+        
+        // TO DO: Resolve cell deps of inputs
+        //         Will have to accommodate some cells being deptype of depgroup
+        
+       
 
         println!("FINAL TX GENERATED: {:#?}", ckb_jsonrpc_types::TransactionView::from(tx.clone()));
         tx

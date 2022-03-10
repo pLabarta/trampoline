@@ -26,7 +26,7 @@ use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
 use std::fs;
 #[cfg(not(feature = "script"))]
 use std::path::PathBuf;
-use std::prelude::v1::*;
+
 #[cfg(not(feature = "script"))]
 use std::sync::{Arc, Mutex};
 
@@ -47,6 +47,7 @@ impl ContractSource {
 }
 
 #[cfg(not(feature = "script"))]
+#[derive(Clone, PartialEq)]
 pub enum ContractField {
     Args,
     Data,
@@ -56,7 +57,7 @@ pub enum ContractField {
 }
 
 #[cfg(not(feature = "script"))]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum TransactionField {
     Inputs,
     Outputs,
@@ -64,6 +65,7 @@ pub enum TransactionField {
 }
 
 #[cfg(not(feature = "script"))]
+#[derive(PartialEq)]
 pub enum RuleScope {
     ContractField(ContractField),
     TransactionField(TransactionField)
@@ -84,8 +86,8 @@ impl From<TransactionField> for RuleScope {
 #[derive(Clone)]
 pub struct RuleContext {
     inner: TransactionView,
-    idx: usize,
-    curr_field: TransactionField
+    pub idx: usize,
+    pub curr_field: TransactionField
 }
 #[cfg(not(feature = "script"))]
 impl RuleContext {
@@ -250,19 +252,6 @@ where
         })
     }
 
-    // pub fn as_script_with_type_hash(&self) -> Option<ckb_jsonrpc_types::Script> {
-    //     // To do: check is hash_type_type
-    //     let script_hash = self.as_code_cell().0.type_().to_opt().unwrap().calc_script_hash().into();
-    //
-    //     Some(Script::from(
-    //         packed::ScriptBuilder::default()
-    //             .args(self.args.to_bytes().pack())
-    //             .code_hash(script_hash.pack())
-    //             .hash_type(ckb_types::core::ScriptHashType::Type.into())
-    //             .build()
-    //     ))
-    // }
-
     // Return a CellOutputWithData which is the code cell storing this contract's logic
     pub fn as_code_cell(&self) -> CellOutputWithData {
         let data: Bytes = self.code.clone().unwrap_or_default().into_bytes();
@@ -375,10 +364,15 @@ where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
     A: JsonByteConversion + MolConversion + BytesConversion + Clone,
 {
+    fn update_query_register(&self, tx: TransactionView, query_register: Arc<Mutex<Vec<CellQuery>>>) {
+        let queries = self.input_rules.iter().map(|rule| rule(tx.clone()));
+
+        query_register.lock().unwrap().extend(queries);
+    }
     fn pipe(
         &self,
         tx: TransactionView,
-        query_queue: Arc<Mutex<Vec<CellQuery>>>,
+        _query_queue: Arc<Mutex<Vec<CellQuery>>>,
     ) -> TransactionView {
         type OutputWithData = (CellOutput, Bytes);
 
@@ -426,6 +420,9 @@ where
                     match updated_field {
                         ContractCellField::Args(_) => todo!(),
                         ContractCellField::Data(d) => {
+                            if rule.scope != ContractField::Data.into() {
+                                panic!("Error, mismatch of output rule scope and returned field");
+                            }
                             let updated_tx = ctx.get_tx();
                             let updated_outputs_data = updated_tx.outputs_with_data_iter()
                                 .enumerate().map(|(i, output)| {
@@ -457,9 +454,7 @@ where
             })
             .collect::<Vec<OutputWithData>>();
 
-        let queries = self.input_rules.iter().map(|rule| rule(tx.clone()));
 
-        query_queue.lock().unwrap().extend(queries);
 
         tx.as_advanced_builder()
             .set_outputs(
