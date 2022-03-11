@@ -130,7 +130,7 @@ impl RuleContext {
                     ContractField::Data => {
                         match self.curr_field {
                             TransactionField::Outputs => {
-                                let data_reader = self.inner.tx.outputs_data();
+                                let data_reader = self.inner.outputs_data();
                                 let data_reader = data_reader.as_reader();
                                 let data = data_reader.get(self.idx);
                                 if let Some(data) = data {
@@ -150,13 +150,13 @@ impl RuleContext {
             RuleScope::TransactionField(field) => {
                 match field {
                     TransactionField::Inputs => {
-                        ContractCellField::Inputs(self.inner.tx.inputs().into_iter().collect::<Vec<CellInput>>())
+                        ContractCellField::Inputs(self.inner.inputs().into_iter().collect::<Vec<CellInput>>())
                     },
                     TransactionField::Outputs => {
-                        ContractCellField::Outputs(self.inner.tx.outputs_with_data_iter().collect::<Vec<CellOutputWithData>>())
+                        ContractCellField::Outputs(self.inner.outputs_with_data_iter().collect::<Vec<CellOutputWithData>>())
                     },
                     TransactionField::Dependencies => {
-                        ContractCellField::CellDeps(self.inner.tx.cell_deps_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
+                        ContractCellField::CellDeps(self.inner.cell_deps_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
                     },
                     TransactionField::ResolvedInputs => {
                         ContractCellField::ResolvedInputs(self.inner.inputs.clone())
@@ -433,7 +433,7 @@ where
                                 panic!("Error, mismatch of output rule scope and returned field");
                             }
                             let mut updated_tx = ctx.get_tx();
-                            let inner_tx_view = updated_tx.tx;
+                            let inner_tx_view = updated_tx.tx.clone();
                             let updated_outputs_data = inner_tx_view.outputs_with_data_iter()
                                 .enumerate().map(|(i, output)| {
                                     if i == ctx.idx {
@@ -447,7 +447,7 @@ where
                                 .set_outputs(updated_outputs_data.iter().map(|o| o.0.clone()).collect::<Vec<_>>())
                                 .set_outputs_data(updated_outputs_data.iter().map(|o| o.1.pack()).collect::<Vec<_>>())
                                 .build();
-                            updated_tx.tx = updated_inner_tx;
+                            let updated_tx = updated_tx.tx(updated_inner_tx);
                             ctx = ctx.clone().tx(updated_tx);
                             (output.0, d.to_bytes())
                         },
