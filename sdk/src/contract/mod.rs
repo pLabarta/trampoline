@@ -1,6 +1,7 @@
 use std::prelude::v1::*;
 pub mod builtins;
 pub mod schema;
+use self::generator::CellMetaTransaction;
 use self::schema::*;
 
 use crate::ckb_types::packed::{CellOutput, CellOutputBuilder, Uint64, CellInput};
@@ -20,6 +21,7 @@ use crate::ckb_types::{H256, core::TransactionBuilder};
 use ckb_hash::blake2b_256;
 #[cfg(not(feature = "script"))]
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
+use ckb_types::core::cell::CellMeta;
 
 
 #[cfg(not(feature = "script"))]
@@ -59,6 +61,7 @@ pub enum ContractField {
 #[cfg(not(feature = "script"))]
 #[derive(Clone, PartialEq)]
 pub enum TransactionField {
+    ResolvedInputs,
     Inputs,
     Outputs,
     Dependencies
@@ -85,26 +88,26 @@ impl From<TransactionField> for RuleScope {
 #[cfg(not(feature = "script"))]
 #[derive(Clone)]
 pub struct RuleContext {
-    inner: TransactionView,
+    inner: CellMetaTransaction,
     pub idx: usize,
     pub curr_field: TransactionField
 }
 #[cfg(not(feature = "script"))]
 impl RuleContext {
 
-    pub fn new(tx: TransactionView) -> Self {
+    pub fn new(tx: impl Into<CellMetaTransaction>) -> Self {
         Self {
-            inner: tx,
+            inner: tx.into(),
             idx: 0,
             curr_field: TransactionField::Outputs
         }
     }
-    pub fn tx(mut self, tx: TransactionView) -> Self {
-        self.inner = tx;
+    pub fn tx(mut self, tx: impl Into<CellMetaTransaction>) -> Self {
+        self.inner = tx.into();
         self
     }
 
-    pub fn get_tx(&self) -> TransactionView {
+    pub fn get_tx(&self) -> CellMetaTransaction {
         self.inner.clone()
     }
     pub fn idx(&mut self, idx: usize) {
@@ -127,7 +130,7 @@ impl RuleContext {
                     ContractField::Data => {
                         match self.curr_field {
                             TransactionField::Outputs => {
-                                let data_reader = self.inner.outputs_data();
+                                let data_reader = self.inner.tx.outputs_data();
                                 let data_reader = data_reader.as_reader();
                                 let data = data_reader.get(self.idx);
                                 if let Some(data) = data {
@@ -147,14 +150,18 @@ impl RuleContext {
             RuleScope::TransactionField(field) => {
                 match field {
                     TransactionField::Inputs => {
-                        ContractCellField::Inputs(self.inner.inputs().into_iter().collect::<Vec<CellInput>>())
+                        ContractCellField::Inputs(self.inner.tx.inputs().into_iter().collect::<Vec<CellInput>>())
                     },
                     TransactionField::Outputs => {
-                        ContractCellField::Outputs(self.inner.outputs_with_data_iter().collect::<Vec<CellOutputWithData>>())
+                        ContractCellField::Outputs(self.inner.tx.outputs_with_data_iter().collect::<Vec<CellOutputWithData>>())
                     },
                     TransactionField::Dependencies => {
-                        ContractCellField::CellDeps(self.inner.cell_deps_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
+                        ContractCellField::CellDeps(self.inner.tx.cell_deps_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
                     },
+                    TransactionField::ResolvedInputs => {
+                        ContractCellField::ResolvedInputs(self.inner.inputs.clone())
+                    },
+                    
                 }
             }
         }
@@ -184,6 +191,7 @@ impl<A,D> OutputRule<A,D> {
 }
 
 #[cfg(not(feature = "script"))]
+
 pub enum ContractCellField<A, D> {
     Args(A),
     Data(D),
@@ -191,6 +199,7 @@ pub enum ContractCellField<A, D> {
     TypeScript(ckb_types::packed::Script),
     Capacity(Uint64),
     Inputs(Vec<CellInput>),
+    ResolvedInputs(Vec<CellMeta>),
     Outputs(Vec<CellOutputWithData>),
     CellDeps(Vec<ckb_types::packed::CellDep>),
 }
@@ -364,19 +373,19 @@ where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
     A: JsonByteConversion + MolConversion + BytesConversion + Clone,
 {
-    fn update_query_register(&self, tx: TransactionView, query_register: Arc<Mutex<Vec<CellQuery>>>) {
-        let queries = self.input_rules.iter().map(|rule| rule(tx.clone()));
+    fn update_query_register(&self, tx: CellMetaTransaction, query_register: Arc<Mutex<Vec<CellQuery>>>) {
+        let queries = self.input_rules.iter().map(|rule| rule(tx.clone().tx));
 
         query_register.lock().unwrap().extend(queries);
     }
     fn pipe(
         &self,
-        tx: TransactionView,
+        tx_meta: CellMetaTransaction,
         _query_queue: Arc<Mutex<Vec<CellQuery>>>,
-    ) -> TransactionView {
+    ) -> CellMetaTransaction {
         type OutputWithData = (CellOutput, Bytes);
 
-
+        let tx = tx_meta.tx.clone();
         let tx_template = self.tx_template();
 
         let total_deps = tx.cell_deps().as_builder().extend(tx_template.cell_deps_iter()).build();
@@ -407,7 +416,7 @@ where
             None
         });
 
-        let mut ctx = RuleContext::new(tx.clone());
+        let mut ctx = RuleContext::new(tx_meta.clone());
 
         let outputs = outputs
             .into_iter()
@@ -423,8 +432,9 @@ where
                             if rule.scope != ContractField::Data.into() {
                                 panic!("Error, mismatch of output rule scope and returned field");
                             }
-                            let updated_tx = ctx.get_tx();
-                            let updated_outputs_data = updated_tx.outputs_with_data_iter()
+                            let mut updated_tx = ctx.get_tx();
+                            let inner_tx_view = updated_tx.tx;
+                            let updated_outputs_data = inner_tx_view.outputs_with_data_iter()
                                 .enumerate().map(|(i, output)| {
                                     if i == ctx.idx {
                                        (output.0, d.to_bytes())
@@ -433,10 +443,11 @@ where
                                     }
                                 }).collect::<Vec<CellOutputWithData>>();
                            
-                            let updated_tx = updated_tx.as_advanced_builder()
+                            let updated_inner_tx = inner_tx_view.as_advanced_builder()
                                 .set_outputs(updated_outputs_data.iter().map(|o| o.0.clone()).collect::<Vec<_>>())
                                 .set_outputs_data(updated_outputs_data.iter().map(|o| o.1.pack()).collect::<Vec<_>>())
                                 .build();
+                            updated_tx.tx = updated_inner_tx;
                             ctx = ctx.clone().tx(updated_tx);
                             (output.0, d.to_bytes())
                         },
@@ -456,7 +467,7 @@ where
 
 
 
-        tx.as_advanced_builder()
+       let final_inner_tx =  tx.as_advanced_builder()
             .set_outputs(
                 outputs
                     .iter()
@@ -469,6 +480,7 @@ where
                     .map(|out| out.1.clone().pack())
                     .collect::<Vec<ckb_types::packed::Bytes>>(),
             )
-            .build()
+            .build();
+        tx_meta.tx(final_inner_tx)
     }
 }

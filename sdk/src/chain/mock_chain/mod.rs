@@ -484,6 +484,22 @@ impl TransactionProvider for MockChainTxProvider {
 }
 
 impl QueryProvider for MockChainTxProvider {
+
+    fn query_cell_meta(&self, query: CellQuery) -> Option<Vec<CellMeta>> {
+        if let Some(outpoints) = self.query(query) {
+            println!("OUTPOINTS TO CREATE CELL META: {:?}", outpoints);
+            Some(outpoints.iter().map(|outp| {
+                let outp = ckb_types::packed::OutPoint::from(outp.clone());
+                let cell_output = self.chain.borrow().get_cell(&outp).unwrap();
+                CellMetaBuilder::from_cell_output(cell_output.0, cell_output.1)
+                    .out_point(outp)
+                    .build()
+            }).collect())
+        } else {
+            println!("NO OUTPOINTS TO RESOLVE IN QUERY CELL META");
+            None
+        }
+    }
     fn query(&self, query: CellQuery) -> Option<Vec<ckb_jsonrpc_types::OutPoint>> {
         let CellQuery { _query, _limit } = query;
         println!("QUERY FROM QUERY PROVIDER: {:?}", _query);

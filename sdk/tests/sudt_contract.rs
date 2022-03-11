@@ -171,7 +171,7 @@ fn test_failed_issuance_tx_no_permissions() {
   
     let new_fail_tx = generator.generate(); //generator.pipe(fail_tx, Arc::new(Mutex::new(vec![])));
     // Test that failure transaction failed
-    let is_valid = chain_rpc.verify_tx(new_fail_tx.into());
+    let is_valid = chain_rpc.verify_tx(new_fail_tx.tx.into());
     assert!(!is_valid);
 }
 
@@ -243,11 +243,11 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     let new_tx = generator.generate(); //generator.pipe(tx, Arc::new(Mutex::new(vec![])));
 
     // Test that success transaction succeeded & has correct sudt amount minted
-    let new_tx_amt = new_tx.output_with_data(0).unwrap().1;
+    let new_tx_amt = new_tx.tx.output_with_data(0).unwrap().1;
     let new_tx_amt: u128 = sudt_contract.read_raw_data(new_tx_amt).to_mol().unpack();
     assert_eq!(new_tx_amt, 2000_u128);
 
-    let is_valid = chain_rpc.verify_tx(new_tx.into());
+    let is_valid = chain_rpc.verify_tx(new_tx.tx.into());
     assert!(is_valid);
 }
 
@@ -289,10 +289,10 @@ fn test_update_sudt_with_rule_pipeline() {
     );
 
     // Pipe transaction into sudt contract
-    let new_tx = sudt_contract.pipe(transaction, Arc::new(Mutex::new(vec![])));
+    let new_tx = sudt_contract.pipe(transaction.into(), Arc::new(Mutex::new(vec![])));
 
     // Check that sudt contract updated correctly with a total balance increase of 37 (17 + 20)
-    let new_tx_amt = new_tx.output_with_data(0).unwrap().1;
+    let new_tx_amt = new_tx.tx.output_with_data(0).unwrap().1;
     println!("New tx amt as bytes: {:?}", new_tx_amt.pack());
     let new_tx_amt: u128 = sudt_contract.read_raw_data(new_tx_amt).into();
     assert_eq!(new_tx_amt, 2037_u128);

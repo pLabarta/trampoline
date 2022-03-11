@@ -2,12 +2,43 @@ use ckb_jsonrpc_types::{Byte32, Capacity, OutPoint, Script, TransactionView as J
 use std::prelude::v1::*;
 
 use ckb_types::{
-    core::{TransactionBuilder, TransactionView},
+    core::{TransactionBuilder, TransactionView, cell::CellMeta},
     packed::{CellInputBuilder, CellInput},
     prelude::*,
 };
 
 use std::sync::{Arc, Mutex};
+
+#[derive(Clone, Debug)]
+pub struct CellMetaTransaction {
+    pub tx: TransactionView,
+    pub inputs: Vec<CellMeta>,
+}
+
+impl From<TransactionView> for CellMetaTransaction {
+    fn from(tx: TransactionView) -> Self {
+        Self {
+            tx,
+            inputs: vec![]
+        }
+    }
+}
+
+impl CellMetaTransaction {
+    pub fn tx(self, tx: TransactionView) -> Self {
+        Self {
+            tx,
+            inputs: self.inputs
+        }
+    }
+
+    pub fn inputs(self, inputs: Vec<CellMeta>) -> Self {
+        Self {
+            tx: self.tx,
+            inputs
+        }
+    }
+}
 
 // Note: Uses ckb_jsonrpc_types
 pub trait TransactionProvider {
@@ -20,11 +51,11 @@ pub trait TransactionProvider {
 pub trait GeneratorMiddleware {
     fn pipe(
         &self,
-        tx: TransactionView,
+        tx: CellMetaTransaction,
         query_register: Arc<Mutex<Vec<CellQuery>>>,
-    ) -> TransactionView;
+    ) -> CellMetaTransaction;
 
-    fn update_query_register(&self, tx: TransactionView, query_register: Arc<Mutex<Vec<CellQuery>>>);
+    fn update_query_register(&self, tx: CellMetaTransaction, query_register: Arc<Mutex<Vec<CellQuery>>>);
 }
 
 // TODO: implement from for CellQueryAttribute on json_types and packed types
@@ -53,6 +84,7 @@ pub struct CellQuery {
 
 pub trait QueryProvider {
     fn query(&self, query: CellQuery) -> Option<Vec<OutPoint>>;
+    fn query_cell_meta(&self, query: CellQuery) -> Option<Vec<CellMeta>>;
 }
 
 #[derive(Default)]
@@ -60,7 +92,7 @@ pub struct Generator<'a, 'b> {
     middleware: Vec<&'a dyn GeneratorMiddleware>,
     chain_service: Option<&'b dyn TransactionProvider>,
     query_service: Option<&'b dyn QueryProvider>,
-    tx: Option<TransactionView>,
+    tx: Option<CellMetaTransaction>,
     query_queue: Arc<Mutex<Vec<CellQuery>>>,
 }
 
@@ -70,7 +102,7 @@ impl<'a, 'b> Generator<'a, 'b> {
             middleware: vec![],
             chain_service: None,
             query_service: None,
-            tx: Some(TransactionBuilder::default().build()),
+            tx: Some(TransactionBuilder::default().build().into()),
             query_queue: Arc::new(Mutex::new(vec![])),
         }
     }
@@ -90,8 +122,8 @@ impl<'a, 'b> Generator<'a, 'b> {
         self
     }
 
-    pub fn query(&self, query: CellQuery) -> Option<Vec<OutPoint>> {
-        let res = self.query_service.unwrap().query(query.clone());
+    pub fn query(&self, query: CellQuery) -> Option<Vec<CellMeta>> {
+        let res = self.query_service.unwrap().query_cell_meta(query.clone());
         println!(
             "Res in generator.query for cell_query {:?} is {:?}",
             query, res
@@ -99,43 +131,40 @@ impl<'a, 'b> Generator<'a, 'b> {
         res
     }
 
-    pub fn generate(&self) -> TransactionView {
+    pub fn generate(&self) -> CellMetaTransaction {
         self.pipe(self.tx.as_ref().unwrap().clone(), self.query_queue.clone())
     }
 
-   pub fn resolve_queries(&self, query_register: Arc<Mutex<Vec<CellQuery>>>) -> Vec<CellInput>{
+   pub fn resolve_queries(&self, query_register: Arc<Mutex<Vec<CellQuery>>>) -> Vec<CellMeta>{
         query_register
             .lock()
             .unwrap()
             .iter().flat_map(|query| self.query(query.to_owned()).unwrap())
-            .map(|outp| {
-                CellInputBuilder::default()
-                    .previous_output(outp.into())
-                    .build()
-            })
             .collect::<Vec<_>>()
     }
 }
 
+
 impl GeneratorMiddleware for Generator<'_, '_> {
 
-   fn update_query_register(&self, tx: TransactionView, query_register: Arc<Mutex<Vec<CellQuery>>>) {
+   fn update_query_register(&self, tx: CellMetaTransaction, query_register: Arc<Mutex<Vec<CellQuery>>>) {
     self.middleware.iter().for_each(|m| {
         m.update_query_register(tx.clone(), query_register.clone())
     });
    }
     fn pipe(
         &self,
-        tx: TransactionView,
+        tx: CellMetaTransaction,
         query_register: Arc<Mutex<Vec<CellQuery>>>,
-    ) -> TransactionView {
+    ) -> CellMetaTransaction {
      
         self.update_query_register(tx.clone(), query_register.clone());
         let inputs = self.resolve_queries(query_register.clone());
-        let tx = tx.as_advanced_builder()
-            .set_inputs(inputs)
+        println!("RESOLVED INPUTS IN GENERATOR PIPE: {:?}", inputs);
+        let inner_tx = tx.tx.as_advanced_builder()
+            .set_inputs(inputs.iter().map(|inp| CellInputBuilder::default().previous_output(inp.out_point.clone()).build()).collect::<Vec<_>>())
             .build();
-        
+       let tx = tx.tx(inner_tx).inputs(inputs);
         let tx = self.middleware.iter().fold(tx, |tx, middleware| {
             middleware.pipe(tx, query_register.clone())
         });
@@ -146,7 +175,7 @@ impl GeneratorMiddleware for Generator<'_, '_> {
         
        
 
-        println!("FINAL TX GENERATED: {:#?}", ckb_jsonrpc_types::TransactionView::from(tx.clone()));
+        println!("FINAL TX GENERATED: {:#?}", ckb_jsonrpc_types::TransactionView::from(tx.clone().tx));
         tx
 
     }

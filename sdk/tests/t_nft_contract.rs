@@ -9,7 +9,7 @@ use ckb_hash::blake2b_256;
 use trampoline_sdk::ckb_types::packed::{CellOutput, CellInput};
 
 use trampoline_sdk::ckb_types::{self, error::Error, bytes::Bytes, prelude::*, H256, 
-    core::{TransactionView, TransactionBuilder}, packed::*};
+    core::{TransactionView, TransactionBuilder, cell::CellMeta}, packed::*};
 use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
 use trampoline_sdk::contract::*;
 use trampoline_sdk::contract::{schema::*, ContractSource};
@@ -141,7 +141,7 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
     let generator = Generator::new().chain_service(&chain_rpc).query_service(&chain_rpc)
     .pipeline(vec![&tnft_contract]);
     let new_mint_tx = generator.generate(); //generator.pipe(tx_skeleton, Arc::new(Mutex::new(vec![])));
-    let is_valid = chain_rpc.verify_tx(new_mint_tx.into());
+    let is_valid = chain_rpc.verify_tx(new_mint_tx.tx.into());
     assert!(is_valid);
  }
 
@@ -189,7 +189,7 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
     let generator = Generator::new().chain_service(&chain_rpc).query_service(&chain_rpc)
     .pipeline(vec![&tnft_contract]);
     let new_mint_tx = generator.generate(); //generator.pipe(tx_skeleton, Arc::new(Mutex::new(vec![])));
-    let is_valid = chain_rpc.verify_tx(new_mint_tx.into());
+    let is_valid = chain_rpc.verify_tx(new_mint_tx.tx.into());
     assert!(!is_valid);
 
  }
@@ -237,19 +237,25 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
 
     tnft_contract.add_output_rule(ContractField::Data, move |ctx| -> NftField {
         let nft: NftField = ctx.load(ContractField::Data);
-        if let ContractCellField::Data(nft_data) = nft {
-            let mut t_nft_data = nft_data;
-            t_nft_data.genesis_id = genesis_seed.clone();
-            NftField::Data(t_nft_data)
+        if let NftField::ResolvedInputs(inputs) = ctx.load(TransactionField::ResolvedInputs) {
+            if let ContractCellField::Data(nft_data) = nft {
+                let mut t_nft_data = nft_data;
+                let genesis_id = genesis_id_from(inputs.first().unwrap().out_point.clone());
+                t_nft_data.genesis_id = genesis_id;
+                NftField::Data(t_nft_data)
+            } else {
+                nft
+            }
         } else {
             nft
         }
+        
     });
        
    let chain_rpc = ChainRpc::new(chain);
    let generator = Generator::new().chain_service(&chain_rpc).query_service(&chain_rpc)
    .pipeline(vec![&tnft_contract]);
    let new_mint_tx = generator.generate(); //generator.pipe(tx_skeleton, Arc::new(Mutex::new(vec![])));
-   let is_valid = chain_rpc.verify_tx(new_mint_tx.into());
+   let is_valid = chain_rpc.verify_tx(new_mint_tx.tx.into());
    assert!(is_valid);
  }
