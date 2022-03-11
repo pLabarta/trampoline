@@ -3,5 +3,14 @@ name = "{{PROJECT_NAME}}"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+{{PROJECT_NAME}}-schemas = {path = "./schemas", optional = true}
+{{PROJECT_NAME}}-generators = {path = "./generators", optional = true}
+
 [workspace]
 members = ["schemas", "generators"]
+
+[features]
+default = ["schemas", "generators"]
+generators = ["{{PROJECT_NAME}}-generators"]
+schemas = ["{{PROJECT_NAME}}-schemas"]
