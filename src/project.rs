@@ -148,6 +148,9 @@ impl TrampolineResource for TrampolineProject {
         let mut project_dir = std::env::current_dir()?;
         project_dir.push(&name);
         fs::create_dir(&project_dir)?;
+        project_dir.push("src");
+        fs::create_dir(&project_dir)?;
+        project_dir.pop();
 
         project_dir.push(".trampoline");
         fs::create_dir(&project_dir)?;
@@ -164,7 +167,9 @@ impl TrampolineResource for TrampolineProject {
         project_dir.pop();
 
         project_dir.push("generators");
-        fs::create_dir(&project_dir)?;
+        project_dir.push("src");
+        fs::create_dir_all(&project_dir)?;
+        project_dir.pop();
         project_dir.pop();
 
         project_dir.push("schemas");

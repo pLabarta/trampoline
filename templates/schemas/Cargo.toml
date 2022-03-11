@@ -1,5 +1,5 @@
 [package]
-name = "{{PROJECT_NAME}}"
+name = "{{PROJECT_NAME}}-schemas"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 molecule = "0.7.2"
+trampoline-sdk = {git = "https://github.com/WilfredTA/trampoline", branch = "develop"}
