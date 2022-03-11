@@ -9,7 +9,7 @@ use ckb_hash::blake2b_256;
 use trampoline_sdk::ckb_types::packed::{CellOutput, CellInput};
 
 use trampoline_sdk::ckb_types::{self, error::Error, bytes::Bytes, prelude::*, H256, 
-    core::{TransactionView, TransactionBuilder, cell::CellMeta}, packed::*};
+    core::{TransactionView, TransactionBuilder}, packed::*};
 use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
 use trampoline_sdk::contract::*;
 use trampoline_sdk::contract::{schema::*, ContractSource};
@@ -203,14 +203,14 @@ type NftField = ContractCellField<NftArgs, TrampolineNFT>;
     let minter_lock_script = chain.build_script(&minter_lock_cell, vec![1_u8].into());
 
 
-    let tx_input_cell = chain.deploy_random_cell_with_default_lock(2000, Some(vec![1_u8].into()));
+    let _tx_input_cell = chain.deploy_random_cell_with_default_lock(2000, Some(vec![1_u8].into()));
     let input_tnft_seed = chain.deploy_random_cell_with_default_lock(2000, Some(vec![2_u8].into()));
     
     let tnft_code_cell = tnft_contract.as_code_cell();
 
     let tnft_code_cell_outpoint = chain.create_cell(tnft_code_cell.0, tnft_code_cell.1);
     tnft_contract.source = Some(ContractSource::Chain(tnft_code_cell_outpoint.into()));
-    let genesis_seed = genesis_id_from(tx_input_cell);
+   
 
     let tnft_input_cell = CellOutput::new_builder()
         .lock(minter_lock_script.clone().unwrap())

@@ -432,7 +432,7 @@ where
                             if rule.scope != ContractField::Data.into() {
                                 panic!("Error, mismatch of output rule scope and returned field");
                             }
-                            let mut updated_tx = ctx.get_tx();
+                            let updated_tx = ctx.get_tx();
                             let inner_tx_view = updated_tx.tx.clone();
                             let updated_outputs_data = inner_tx_view.outputs_with_data_iter()
                                 .enumerate().map(|(i, output)| {
