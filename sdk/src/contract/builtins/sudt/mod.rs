@@ -1,11 +1,8 @@
 use std::prelude::v1::*;
 
-use crate::ckb_types::{
-    packed::{Byte32, Uint128},
-};
+use crate::ckb_types::packed::{Byte32, Uint128};
 #[cfg(not(feature = "script"))]
 use crate::contract::Contract;
-
 
 use crate::contract::schema::SchemaPrimitiveType;
 

@@ -2,8 +2,8 @@ use ckb_jsonrpc_types::{Byte32, Capacity, OutPoint, Script, TransactionView as J
 use std::prelude::v1::*;
 
 use crate::ckb_types::{
-    core::{TransactionBuilder, TransactionView, cell::CellMeta},
-    packed::{CellInputBuilder},
+    core::{cell::CellMeta, TransactionBuilder, TransactionView},
+    packed::CellInputBuilder,
     prelude::*,
 };
 
@@ -19,10 +19,7 @@ pub struct CellMetaTransaction {
 
 impl From<TransactionView> for CellMetaTransaction {
     fn from(tx: TransactionView) -> Self {
-        Self {
-            tx,
-            inputs: vec![]
-        }
+        Self { tx, inputs: vec![] }
     }
 }
 
@@ -30,14 +27,14 @@ impl CellMetaTransaction {
     pub fn tx(self, tx: TransactionView) -> Self {
         Self {
             tx,
-            inputs: self.inputs
+            inputs: self.inputs,
         }
     }
 
     pub fn with_inputs(self, inputs: Vec<CellMeta>) -> Self {
         Self {
             tx: self.tx,
-            inputs
+            inputs,
         }
     }
 
@@ -63,7 +60,7 @@ impl CellMetaTransaction {
 
     pub fn witnesses(&self) -> crate::ckb_types::packed::BytesVec {
         self.tx.witnesses()
-    } 
+    }
 
     pub fn output(&self, idx: usize) -> Option<crate::ckb_types::packed::CellOutput> {
         self.tx.output(idx)
@@ -93,7 +90,9 @@ impl CellMetaTransaction {
         self.tx.outputs_with_data_iter()
     }
 
-    pub fn outputs_capacity(&self) -> Result<crate::ckb_types::core::Capacity, ckb_types::core::CapacityError> {
+    pub fn outputs_capacity(
+        &self,
+    ) -> Result<crate::ckb_types::core::Capacity, ckb_types::core::CapacityError> {
         self.tx.outputs_capacity()
     }
     pub fn fake_hash(mut self, hash: crate::ckb_types::packed::Byte32) -> Self {
@@ -106,7 +105,6 @@ impl CellMetaTransaction {
         self.tx = self.tx.fake_witness_hash(witness_hash);
         self
     }
-
 }
 
 // Note: Uses ckb_jsonrpc_types
@@ -124,7 +122,11 @@ pub trait GeneratorMiddleware {
         query_register: Arc<Mutex<Vec<CellQuery>>>,
     ) -> CellMetaTransaction;
 
-    fn update_query_register(&self, tx: CellMetaTransaction, query_register: Arc<Mutex<Vec<CellQuery>>>);
+    fn update_query_register(
+        &self,
+        tx: CellMetaTransaction,
+        query_register: Arc<Mutex<Vec<CellQuery>>>,
+    );
 }
 
 // TODO: implement from for CellQueryAttribute on json_types and packed types
@@ -204,48 +206,59 @@ impl<'a, 'b> Generator<'a, 'b> {
         self.pipe(self.tx.as_ref().unwrap().clone(), self.query_queue.clone())
     }
 
-   pub fn resolve_queries(&self, query_register: Arc<Mutex<Vec<CellQuery>>>) -> Vec<CellMeta>{
+    pub fn resolve_queries(&self, query_register: Arc<Mutex<Vec<CellQuery>>>) -> Vec<CellMeta> {
         query_register
             .lock()
             .unwrap()
-            .iter().flat_map(|query| self.query(query.to_owned()).unwrap())
+            .iter()
+            .flat_map(|query| self.query(query.to_owned()).unwrap())
             .collect::<Vec<_>>()
     }
 }
 
-
 impl GeneratorMiddleware for Generator<'_, '_> {
-
-   fn update_query_register(&self, tx: CellMetaTransaction, query_register: Arc<Mutex<Vec<CellQuery>>>) {
-    self.middleware.iter().for_each(|m| {
-        m.update_query_register(tx.clone(), query_register.clone())
-    });
-   }
+    fn update_query_register(
+        &self,
+        tx: CellMetaTransaction,
+        query_register: Arc<Mutex<Vec<CellQuery>>>,
+    ) {
+        self.middleware
+            .iter()
+            .for_each(|m| m.update_query_register(tx.clone(), query_register.clone()));
+    }
     fn pipe(
         &self,
         tx: CellMetaTransaction,
         query_register: Arc<Mutex<Vec<CellQuery>>>,
     ) -> CellMetaTransaction {
-     
         self.update_query_register(tx.clone(), query_register.clone());
         let inputs = self.resolve_queries(query_register.clone());
         println!("RESOLVED INPUTS IN GENERATOR PIPE: {:?}", inputs);
-        let inner_tx = tx.as_advanced_builder()
-            .set_inputs(inputs.iter().map(|inp| CellInputBuilder::default().previous_output(inp.out_point.clone()).build()).collect::<Vec<_>>())
+        let inner_tx = tx
+            .as_advanced_builder()
+            .set_inputs(
+                inputs
+                    .iter()
+                    .map(|inp| {
+                        CellInputBuilder::default()
+                            .previous_output(inp.out_point.clone())
+                            .build()
+                    })
+                    .collect::<Vec<_>>(),
+            )
             .build();
-       let tx = tx.tx(inner_tx).with_inputs(inputs);
+        let tx = tx.tx(inner_tx).with_inputs(inputs);
         let tx = self.middleware.iter().fold(tx, |tx, middleware| {
             middleware.pipe(tx, query_register.clone())
         });
 
-        
         // TO DO: Resolve cell deps of inputs
         //         Will have to accommodate some cells being deptype of depgroup
-        
-       
 
-        println!("FINAL TX GENERATED: {:#?}", ckb_jsonrpc_types::TransactionView::from(tx.clone().tx));
+        println!(
+            "FINAL TX GENERATED: {:#?}",
+            ckb_jsonrpc_types::TransactionView::from(tx.clone().tx)
+        );
         tx
-
     }
 }

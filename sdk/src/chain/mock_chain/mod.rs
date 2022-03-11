@@ -20,11 +20,10 @@ use ckb_types::{
 use ckb_util::LinkedHashSet;
 use rand::{thread_rng, Rng};
 
+use ckb_always_success_script::ALWAYS_SUCCESS;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, collections::HashMap};
-use ckb_always_success_script::ALWAYS_SUCCESS;
 const MAX_CYCLES: u64 = 500_0000;
-
 
 pub fn random_hash() -> Byte32 {
     let mut rng = thread_rng();
@@ -37,11 +36,7 @@ pub fn random_out_point() -> OutPoint {
     OutPoint::new_builder().tx_hash(random_hash()).build()
 }
 
-
-
-
 pub type CellOutputWithData = (CellOutput, Bytes);
-
 
 pub struct MockChain {
     pub cells: HashMap<OutPoint, CellOutputWithData>,
@@ -57,16 +52,16 @@ pub struct MockChain {
 
 impl Default for MockChain {
     fn default() -> Self {
-      let mut chain =  Self { 
-          cells: Default::default(), 
-          outpoint_txs: Default::default(), 
-          headers: Default::default(), 
-          epoches: Default::default(), 
-          cells_by_data_hash: Default::default(), 
-          cells_by_lock_hash: Default::default(), 
-          cells_by_type_hash: Default::default(), 
-          debug: Default::default(), 
-          messages: Default::default() 
+        let mut chain = Self {
+            cells: Default::default(),
+            outpoint_txs: Default::default(),
+            headers: Default::default(),
+            epoches: Default::default(),
+            cells_by_data_hash: Default::default(),
+            cells_by_lock_hash: Default::default(),
+            cells_by_type_hash: Default::default(),
+            debug: Default::default(),
+            messages: Default::default(),
         };
 
         chain.deploy_cell_with_data(Bytes::from(ALWAYS_SUCCESS.to_vec()));
@@ -104,18 +99,25 @@ impl MockChain {
 
     pub fn get_default_script_outpoint(&self) -> OutPoint {
         let always_success_data_hash = CellOutput::calc_data_hash(ALWAYS_SUCCESS.as_ref());
-        self.cells_by_data_hash.get(&always_success_data_hash).unwrap().clone()
+        self.cells_by_data_hash
+            .get(&always_success_data_hash)
+            .unwrap()
+            .clone()
     }
 
-    pub fn deploy_random_cell_with_default_lock(&mut self, capacity: usize, args: Option<Bytes>) -> OutPoint {
+    pub fn deploy_random_cell_with_default_lock(
+        &mut self,
+        capacity: usize,
+        args: Option<Bytes>,
+    ) -> OutPoint {
         let script = {
-            
             if let Some(args) = args {
                 self.build_script(&self.get_default_script_outpoint(), args)
             } else {
                 self.build_script(&self.get_default_script_outpoint(), Bytes::default())
             }
-        }.unwrap();
+        }
+        .unwrap();
         let tx_hash = random_hash();
         let out_point = OutPoint::new(tx_hash, 0);
         let cell = CellOutput::new_builder()
@@ -471,7 +473,10 @@ impl TransactionProvider for MockChainTxProvider {
         let inner_tx = ckb_types::packed::Transaction::from(inner_tx);
         let converted_tx_view = inner_tx.as_advanced_builder().build();
         let tx = chain.complete_tx(converted_tx_view);
-        println!("TX AFTER CHAIN COMPLETE {:#?}", ckb_jsonrpc_types::TransactionView::from(tx.clone()));
+        println!(
+            "TX AFTER CHAIN COMPLETE {:#?}",
+            ckb_jsonrpc_types::TransactionView::from(tx.clone())
+        );
         let result = chain.verify_tx(&tx, MAX_CYCLES);
         match result {
             Ok(_) => true,
@@ -484,17 +489,21 @@ impl TransactionProvider for MockChainTxProvider {
 }
 
 impl QueryProvider for MockChainTxProvider {
-
     fn query_cell_meta(&self, query: CellQuery) -> Option<Vec<CellMeta>> {
         if let Some(outpoints) = self.query(query) {
             println!("OUTPOINTS TO CREATE CELL META: {:?}", outpoints);
-            Some(outpoints.iter().map(|outp| {
-                let outp = ckb_types::packed::OutPoint::from(outp.clone());
-                let cell_output = self.chain.borrow().get_cell(&outp).unwrap();
-                CellMetaBuilder::from_cell_output(cell_output.0, cell_output.1)
-                    .out_point(outp)
-                    .build()
-            }).collect())
+            Some(
+                outpoints
+                    .iter()
+                    .map(|outp| {
+                        let outp = ckb_types::packed::OutPoint::from(outp.clone());
+                        let cell_output = self.chain.borrow().get_cell(&outp).unwrap();
+                        CellMetaBuilder::from_cell_output(cell_output.0, cell_output.1)
+                            .out_point(outp)
+                            .build()
+                    })
+                    .collect(),
+            )
         } else {
             println!("NO OUTPOINTS TO RESOLVE IN QUERY CELL META");
             None

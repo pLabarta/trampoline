@@ -1,22 +1,17 @@
-
 use std::prelude::v1::*;
 
 pub mod mol_defs;
-use crate::ckb_types::{
-    bytes::Bytes,
-    prelude::*,
-};
+use crate::ckb_types::{bytes::Bytes, prelude::*};
 
-use mol_defs::{Byte32, Byte32Reader, NFT, NFTBuilder};
+use mol_defs::{Byte32, Byte32Reader, NFTBuilder, NFT};
 
 #[cfg(not(feature = "script"))]
 use crate::contract::Contract;
 use crate::{
-    contract::schema::SchemaPrimitiveType, impl_entity_unpack, impl_pack_for_fixed_byte_array, impl_primitive_reader_unpack,
-    contract::schema::{BytesConversion, JsonByteConversion, MolConversion, JsonBytes}
+    contract::schema::SchemaPrimitiveType,
+    contract::schema::{BytesConversion, JsonByteConversion, JsonBytes, MolConversion},
+    impl_entity_unpack, impl_pack_for_fixed_byte_array, impl_primitive_reader_unpack,
 };
-
-
 
 #[cfg(not(feature = "script"))]
 pub trait NftContentHasher {
@@ -41,7 +36,7 @@ impl BytesConversion for TrampolineNFT {
         let nft_mol = NFT::from_compatible_slice(&bytes.to_vec()).unwrap();
         Self {
             genesis_id: GenesisId::new(nft_mol.genesis_id().unpack()),
-            cid: ContentId::new(nft_mol.content_id().unpack())
+            cid: ContentId::new(nft_mol.content_id().unpack()),
         }
     }
 
@@ -77,10 +72,11 @@ impl MolConversion for TrampolineNFT {
     fn from_mol(entity: Self::MolType) -> Self {
         Self {
             genesis_id: GenesisId::new(entity.genesis_id().unpack()),
-            cid: ContentId::new(entity.content_id().unpack())
+            cid: ContentId::new(entity.content_id().unpack()),
         }
     }
 }
 
 #[cfg(not(feature = "script"))]
-pub type TrampolineNFTContract = Contract<SchemaPrimitiveType<Bytes, ckb_types::packed::Bytes>, TrampolineNFT>;
+pub type TrampolineNFTContract =
+    Contract<SchemaPrimitiveType<Bytes, ckb_types::packed::Bytes>, TrampolineNFT>;

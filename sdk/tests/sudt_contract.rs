@@ -140,9 +140,10 @@ fn test_failed_issuance_tx_no_permissions() {
 
     // Add rule to sudt output generation to increase the amount field.
     sudt_contract.add_output_rule(
-              ContractField::Data,
+        ContractField::Data,
         |ctx| -> ContractCellField<OwnerLockHash, SudtAmount> {
-            let amount:  ContractCellField<OwnerLockHash, SudtAmount> = ctx.load(ContractField::Data);
+            let amount: ContractCellField<OwnerLockHash, SudtAmount> =
+                ctx.load(ContractField::Data);
             if let ContractCellField::Data(amount) = amount {
                 let amt: u128 = amount.into();
                 ContractCellField::Data(SudtAmount::from(amt + 2000))
@@ -168,9 +169,8 @@ fn test_failed_issuance_tx_no_permissions() {
         .query_service(&chain_rpc)
         .pipeline(vec![&sudt_contract]);
 
-  
     let new_fail_tx = generator.generate(); //generator.pipe(fail_tx, Arc::new(Mutex::new(vec![])));
-    // Test that failure transaction failed
+                                            // Test that failure transaction failed
     let is_valid = chain_rpc.verify_tx(new_fail_tx.tx.into());
     assert!(!is_valid);
 }
@@ -212,9 +212,10 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
 
     // Add rule to sudt output generation to increase the amount field.
     sudt_contract.add_output_rule(
-              ContractField::Data,
+        ContractField::Data,
         |ctx| -> ContractCellField<OwnerLockHash, SudtAmount> {
-            let amount:  ContractCellField<OwnerLockHash, SudtAmount> = ctx.load(ContractField::Data);
+            let amount: ContractCellField<OwnerLockHash, SudtAmount> =
+                ctx.load(ContractField::Data);
             if let ContractCellField::Data(amount) = amount {
                 let amt: u128 = amount.into();
                 ContractCellField::Data(SudtAmount::from(amt + 2000))
@@ -262,9 +263,10 @@ fn test_update_sudt_with_rule_pipeline() {
 
     // Add output rule to sudt contract to increase balance by 17
     sudt_contract.add_output_rule(
-              ContractField::Data,
+        ContractField::Data,
         |ctx| -> ContractCellField<OwnerLockHash, SudtAmount> {
-            let amount:  ContractCellField<OwnerLockHash, SudtAmount> = ctx.load(ContractField::Data);
+            let amount: ContractCellField<OwnerLockHash, SudtAmount> =
+                ctx.load(ContractField::Data);
             if let ContractCellField::Data(amount) = amount {
                 let amt: u128 = amount.into();
                 ContractCellField::Data(SudtAmount::from(amt + 17))
@@ -278,7 +280,8 @@ fn test_update_sudt_with_rule_pipeline() {
     sudt_contract.add_output_rule(
         ContractField::Data,
         |ctx| -> ContractCellField<OwnerLockHash, SudtAmount> {
-            let amount:  ContractCellField<OwnerLockHash, SudtAmount> = ctx.load(ContractField::Data);
+            let amount: ContractCellField<OwnerLockHash, SudtAmount> =
+                ctx.load(ContractField::Data);
             if let ContractCellField::Data(amount) = amount {
                 let amt: u128 = amount.into();
                 ContractCellField::Data(SudtAmount::from(amt + 20))
@@ -304,7 +307,8 @@ fn test_add_output_rule() {
     sudt_contract.add_output_rule(
         ContractField::Data,
         |ctx| -> ContractCellField<OwnerLockHash, SudtAmount> {
-            let amount:  ContractCellField<OwnerLockHash, SudtAmount> = ctx.load(ContractField::Data);
+            let amount: ContractCellField<OwnerLockHash, SudtAmount> =
+                ctx.load(ContractField::Data);
 
             if let ContractCellField::Data(amount) = amount {
                 let amt: u128 = amount.into();

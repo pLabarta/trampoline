@@ -4,7 +4,7 @@ pub mod schema;
 use self::generator::CellMetaTransaction;
 use self::schema::*;
 
-use crate::ckb_types::packed::{CellOutput, CellOutputBuilder, Uint64, CellInput};
+use crate::ckb_types::packed::{CellInput, CellOutput, CellOutputBuilder, Uint64};
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
 
 #[cfg(not(feature = "script"))]
@@ -16,13 +16,12 @@ use crate::chain::CellOutputWithData;
 #[cfg(not(feature = "script"))]
 use crate::ckb_types::core::TransactionView;
 #[cfg(not(feature = "script"))]
-use crate::ckb_types::{H256, core::TransactionBuilder};
+use crate::ckb_types::{core::TransactionBuilder, H256};
 #[cfg(not(feature = "script"))]
 use ckb_hash::blake2b_256;
 #[cfg(not(feature = "script"))]
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
 use ckb_types::core::cell::CellMeta;
-
 
 #[cfg(not(feature = "script"))]
 use std::fs;
@@ -64,14 +63,14 @@ pub enum TransactionField {
     ResolvedInputs,
     Inputs,
     Outputs,
-    Dependencies
+    Dependencies,
 }
 
 #[cfg(not(feature = "script"))]
 #[derive(PartialEq)]
 pub enum RuleScope {
     ContractField(ContractField),
-    TransactionField(TransactionField)
+    TransactionField(TransactionField),
 }
 #[cfg(not(feature = "script"))]
 impl From<ContractField> for RuleScope {
@@ -90,16 +89,15 @@ impl From<TransactionField> for RuleScope {
 pub struct RuleContext {
     inner: CellMetaTransaction,
     pub idx: usize,
-    pub curr_field: TransactionField
+    pub curr_field: TransactionField,
 }
 #[cfg(not(feature = "script"))]
 impl RuleContext {
-
     pub fn new(tx: impl Into<CellMetaTransaction>) -> Self {
         Self {
             inner: tx.into(),
             idx: 0,
-            curr_field: TransactionField::Outputs
+            curr_field: TransactionField::Outputs,
         }
     }
     pub fn tx(mut self, tx: impl Into<CellMetaTransaction>) -> Self {
@@ -118,76 +116,73 @@ impl RuleContext {
         self.curr_field = field;
     }
 
-    pub fn load<A,D>(&self, scope: impl Into<RuleScope>) -> ContractCellField<A,D>
+    pub fn load<A, D>(&self, scope: impl Into<RuleScope>) -> ContractCellField<A, D>
     where
         D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
         A: JsonByteConversion + MolConversion + BytesConversion + Clone,
     {
         match scope.into() {
-            RuleScope::ContractField(field) => {
-                match field {
-                    ContractField::Args => todo!(),
-                    ContractField::Data => {
-                        match self.curr_field {
-                            TransactionField::Outputs => {
-                                let data_reader = self.inner.outputs_data();
-                                let data_reader = data_reader.as_reader();
-                                let data = data_reader.get(self.idx);
-                                if let Some(data) = data {
-                                    ContractCellField::Data(D::from_bytes(data.raw_data().to_vec().into()))
-                                } else {
-                                    ContractCellField::Data(D::default())
-                                }
-                            }
-                            _ =>  ContractCellField::Data(D::default())
+            RuleScope::ContractField(field) => match field {
+                ContractField::Args => todo!(),
+                ContractField::Data => match self.curr_field {
+                    TransactionField::Outputs => {
+                        let data_reader = self.inner.outputs_data();
+                        let data_reader = data_reader.as_reader();
+                        let data = data_reader.get(self.idx);
+                        if let Some(data) = data {
+                            ContractCellField::Data(D::from_bytes(data.raw_data().to_vec().into()))
+                        } else {
+                            ContractCellField::Data(D::default())
                         }
-                    },
-                    ContractField::LockScript => todo!(),
-                    ContractField::TypeScript => todo!(),
-                    ContractField::Capacity => todo!(),
+                    }
+                    _ => ContractCellField::Data(D::default()),
+                },
+                ContractField::LockScript => todo!(),
+                ContractField::TypeScript => todo!(),
+                ContractField::Capacity => todo!(),
+            },
+            RuleScope::TransactionField(field) => match field {
+                TransactionField::Inputs => ContractCellField::Inputs(
+                    self.inner.inputs().into_iter().collect::<Vec<CellInput>>(),
+                ),
+                TransactionField::Outputs => ContractCellField::Outputs(
+                    self.inner
+                        .outputs_with_data_iter()
+                        .collect::<Vec<CellOutputWithData>>(),
+                ),
+                TransactionField::Dependencies => ContractCellField::CellDeps(
+                    self.inner
+                        .cell_deps_iter()
+                        .collect::<Vec<crate::ckb_types::packed::CellDep>>(),
+                ),
+                TransactionField::ResolvedInputs => {
+                    ContractCellField::ResolvedInputs(self.inner.inputs.clone())
                 }
             },
-            RuleScope::TransactionField(field) => {
-                match field {
-                    TransactionField::Inputs => {
-                        ContractCellField::Inputs(self.inner.inputs().into_iter().collect::<Vec<CellInput>>())
-                    },
-                    TransactionField::Outputs => {
-                        ContractCellField::Outputs(self.inner.outputs_with_data_iter().collect::<Vec<CellOutputWithData>>())
-                    },
-                    TransactionField::Dependencies => {
-                        ContractCellField::CellDeps(self.inner.cell_deps_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
-                    },
-                    TransactionField::ResolvedInputs => {
-                        ContractCellField::ResolvedInputs(self.inner.inputs.clone())
-                    },
-                    
-                }
-            }
         }
     }
 }
 
 #[cfg(not(feature = "script"))]
-pub struct OutputRule<A,D> {
+pub struct OutputRule<A, D> {
     pub scope: RuleScope,
-    pub rule: Box<dyn Fn(RuleContext) -> ContractCellField<A,D>>,
+    pub rule: Box<dyn Fn(RuleContext) -> ContractCellField<A, D>>,
 }
 
 #[cfg(not(feature = "script"))]
-impl<A,D> OutputRule<A,D> {
-  pub fn new<F>(scope: impl Into<RuleScope>, rule: F) -> Self 
-  where 
-    F: 'static + Fn(RuleContext) -> ContractCellField<A,D>
-  {
-      OutputRule {
-          scope: scope.into(),
-          rule: Box::new(rule)
-      }
-  }
-  pub fn exec(&self, ctx: &RuleContext) -> ContractCellField<A,D> {
-      self.rule.as_ref()(ctx.clone()) //call((ctx,))
-  }
+impl<A, D> OutputRule<A, D> {
+    pub fn new<F>(scope: impl Into<RuleScope>, rule: F) -> Self
+    where
+        F: 'static + Fn(RuleContext) -> ContractCellField<A, D>,
+    {
+        OutputRule {
+            scope: scope.into(),
+            rule: Box::new(rule),
+        }
+    }
+    pub fn exec(&self, ctx: &RuleContext) -> ContractCellField<A, D> {
+        self.rule.as_ref()(ctx.clone()) //call((ctx,))
+    }
 }
 
 #[cfg(not(feature = "script"))]
@@ -214,7 +209,7 @@ pub struct Contract<A, D> {
     pub type_: Option<Script>,
     pub code: Option<JsonBytes>,
     #[allow(clippy::type_complexity)]
-    pub output_rules: Vec<OutputRule<A,D>>,
+    pub output_rules: Vec<OutputRule<A, D>>,
     pub input_rules: Vec<Box<dyn Fn(TransactionView) -> CellQuery>>,
 }
 
@@ -331,8 +326,8 @@ where
     where
         F: Fn(RuleContext) -> ContractCellField<A, D> + 'static,
     {
-
-        self.output_rules.push(OutputRule::new(scope.into(), transform_func));
+        self.output_rules
+            .push(OutputRule::new(scope.into(), transform_func));
     }
 
     pub fn add_input_rule<F>(&mut self, query_func: F)
@@ -353,9 +348,9 @@ where
         let mut tx = TransactionBuilder::default()
             .output(
                 CellOutput::new_builder()
-                  .capacity((data_size + arg_size).pack())
-                  .type_(Some(ckb_types::packed::Script::from(self.as_script().unwrap())).pack())
-                  .build()
+                    .capacity((data_size + arg_size).pack())
+                    .type_(Some(ckb_types::packed::Script::from(self.as_script().unwrap())).pack())
+                    .build(),
             )
             .output_data(data.pack());
 
@@ -364,7 +359,6 @@ where
         }
 
         tx.build()
-            
     }
 }
 #[cfg(not(feature = "script"))]
@@ -373,7 +367,11 @@ where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
     A: JsonByteConversion + MolConversion + BytesConversion + Clone,
 {
-    fn update_query_register(&self, tx: CellMetaTransaction, query_register: Arc<Mutex<Vec<CellQuery>>>) {
+    fn update_query_register(
+        &self,
+        tx: CellMetaTransaction,
+        query_register: Arc<Mutex<Vec<CellQuery>>>,
+    ) {
         let queries = self.input_rules.iter().map(|rule| rule(tx.clone().tx));
 
         query_register.lock().unwrap().extend(queries);
@@ -388,15 +386,48 @@ where
         let tx = tx_meta.tx.clone();
         let tx_template = self.tx_template();
 
-        let total_deps = tx.cell_deps().as_builder().extend(tx_template.cell_deps_iter()).build();
-        let total_outputs = tx.outputs().as_builder().extend(tx_template.outputs()).build();
-        let total_inputs = tx.inputs().as_builder().extend(tx_template.inputs()).build();
-        let total_outputs_data = tx.outputs_data().as_builder().extend(tx_template.outputs_data()).build();
-        let tx = tx.as_advanced_builder()
-            .set_cell_deps(total_deps.into_iter().collect::<Vec<crate::ckb_types::packed::CellDep>>())
-            .set_outputs(total_outputs.into_iter().collect::<Vec<crate::ckb_types::packed::CellOutput>>())
-            .set_inputs(total_inputs.into_iter().collect::<Vec<crate::ckb_types::packed::CellInput>>())
-            .set_outputs_data(total_outputs_data.into_iter().collect::<Vec<crate::ckb_types::packed::Bytes>>())
+        let total_deps = tx
+            .cell_deps()
+            .as_builder()
+            .extend(tx_template.cell_deps_iter())
+            .build();
+        let total_outputs = tx
+            .outputs()
+            .as_builder()
+            .extend(tx_template.outputs())
+            .build();
+        let total_inputs = tx
+            .inputs()
+            .as_builder()
+            .extend(tx_template.inputs())
+            .build();
+        let total_outputs_data = tx
+            .outputs_data()
+            .as_builder()
+            .extend(tx_template.outputs_data())
+            .build();
+        let tx = tx
+            .as_advanced_builder()
+            .set_cell_deps(
+                total_deps
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::CellDep>>(),
+            )
+            .set_outputs(
+                total_outputs
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::CellOutput>>(),
+            )
+            .set_inputs(
+                total_inputs
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::CellInput>>(),
+            )
+            .set_outputs_data(
+                total_outputs_data
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::Bytes>>(),
+            )
             .build();
         let mut idx = 0;
         let outputs = tx.clone().outputs().into_iter().filter_map(|output| {
@@ -465,9 +496,8 @@ where
             })
             .collect::<Vec<OutputWithData>>();
 
-
-
-       let final_inner_tx =  tx.as_advanced_builder()
+        let final_inner_tx = tx
+            .as_advanced_builder()
             .set_outputs(
                 outputs
                     .iter()

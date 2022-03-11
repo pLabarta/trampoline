@@ -1,9 +1,8 @@
 #[cfg(not(feature = "script"))]
 pub use ckb_jsonrpc_types::JsonBytes;
 
-
-use std::prelude::v1::*;
 use std::marker::PhantomData;
+use std::prelude::v1::*;
 #[cfg(feature = "script")]
 pub struct JsonBytes(crate::ckb_types::bytes::Bytes);
 #[cfg(feature = "script")]
@@ -68,7 +67,7 @@ pub struct SchemaPrimitiveType<T, M> {
     _entity_type: std::marker::PhantomData<M>,
 }
 
-impl<T,M> SchemaPrimitiveType<T, M> 
+impl<T, M> SchemaPrimitiveType<T, M>
 where
     M: Entity + Unpack<T>,
     T: Pack<M>,
