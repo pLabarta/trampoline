@@ -473,7 +473,6 @@ where
                                         output
                                     }
                                 }).collect::<Vec<CellOutputWithData>>();
-                           
                             let updated_inner_tx = inner_tx_view.as_advanced_builder()
                                 .set_outputs(updated_outputs_data.iter().map(|o| o.0.clone()).collect::<Vec<_>>())
                                 .set_outputs_data(updated_outputs_data.iter().map(|o| o.1.pack()).collect::<Vec<_>>())
@@ -489,7 +488,6 @@ where
                             panic!("Error: Contract-level rule attempted transaction-level update.")
                         }
                     }
-                   
                 });
                 println!("Output bytes of processed output: {:?}", processed.1.pack());
                 processed
