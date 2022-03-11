@@ -2,7 +2,7 @@ use crate::chain::*;
 use crate::contract::generator::{
     CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,
 };
-use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder, TYPE_ID_CODE_HASH};
+use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder};
 use ckb_error::Error as CKBError;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
 use ckb_script::{TransactionScriptsVerifier, TxVerifyEnv};
@@ -235,21 +235,21 @@ impl MockChain {
             cell_deps.insert(cell_dep);
         }
 
-        for i in tx.input_pts_iter() {
-            if let Some((cell, _data)) = self.cells.get(&i) {
-                let dep = self.find_cell_dep_for_script(&cell.lock());
-                cell_deps.insert(dep);
+        // for i in tx.input_pts_iter() {
+        //     if let Some((cell, _data)) = self.cells.get(&i) {
+        //         let dep = self.find_cell_dep_for_script(&cell.lock());
+        //         cell_deps.insert(dep);
 
-                if let Some(script) = cell.type_().to_opt() {
-                    if script.code_hash() != TYPE_ID_CODE_HASH.pack()
-                        || script.hash_type() != ScriptHashType::Type.into()
-                    {
-                        let dep = self.find_cell_dep_for_script(&script);
-                        cell_deps.insert(dep);
-                    }
-                }
-            }
-        }
+        //         if let Some(script) = cell.type_().to_opt() {
+        //             if script.code_hash() != TYPE_ID_CODE_HASH.pack()
+        //                 || script.hash_type() != ScriptHashType::Type.into()
+        //             {
+        //                 let dep = self.find_cell_dep_for_script(&script);
+        //                 cell_deps.insert(dep);
+        //             }
+        //         }
+        //     }
+        // }
 
         // for (cell, _data) in tx.outputs_with_data_iter() {
         //     if let Some(script) = cell.type_().to_opt() {
@@ -552,6 +552,12 @@ impl QueryProvider for MockChainTxProvider {
                             .collect::<Vec<ckb_jsonrpc_types::OutPoint>>(),
                     )
                 }
+                CellQueryAttribute::DataHash(hash) => Some(vec![self
+                    .chain
+                    .borrow()
+                    .get_cell_by_data_hash(&hash.into())
+                    .unwrap()
+                    .into()]),
                 _ => panic!("Capacity based queries currently unsupported!"),
             },
             _ => panic!("Compund queries currently unsupported!"),

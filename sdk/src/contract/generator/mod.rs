@@ -1,4 +1,5 @@
 use ckb_jsonrpc_types::{Byte32, Capacity, OutPoint, Script, TransactionView as JsonTransaction};
+use ckb_types::packed::CellDepBuilder;
 use std::prelude::v1::*;
 
 use crate::ckb_types::{
@@ -7,6 +8,7 @@ use crate::ckb_types::{
     prelude::*,
 };
 
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
 use crate::chain::CellOutputWithData;
@@ -130,16 +132,17 @@ pub trait GeneratorMiddleware {
 }
 
 // TODO: implement from for CellQueryAttribute on json_types and packed types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CellQueryAttribute {
     LockHash(Byte32),
     LockScript(Script),
     TypeScript(Script),
     MinCapacity(Capacity),
     MaxCapacity(Capacity),
+    DataHash(Byte32),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum QueryStatement {
     Single(CellQueryAttribute),
     FilterFrom(CellQueryAttribute, CellQueryAttribute),
@@ -147,7 +150,7 @@ pub enum QueryStatement {
     All(Vec<CellQueryAttribute>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CellQuery {
     pub _query: QueryStatement,
     pub _limit: u64,
@@ -251,7 +254,37 @@ impl GeneratorMiddleware for Generator<'_, '_> {
         let tx = self.middleware.iter().fold(tx, |tx, middleware| {
             middleware.pipe(tx, query_register.clone())
         });
+        #[allow(clippy::mutable_key_type)]
+        let mut queries = HashSet::new();
+        tx.inputs.iter().for_each(|cell| {
+            if let Some(script) = cell.cell_output.type_().to_opt() {
+                let query = CellQuery {
+                    _query: QueryStatement::Single(CellQueryAttribute::DataHash(
+                        script.code_hash().into(),
+                    )),
+                    _limit: 1,
+                };
+                queries.insert(query);
+            }
+            queries.insert(CellQuery {
+                _query: QueryStatement::Single(CellQueryAttribute::DataHash(
+                    cell.cell_output.lock().code_hash().into(),
+                )),
+                _limit: 1,
+            });
+        });
+        let deps = queries.into_iter().flat_map(|q| {
+            self.query(q).unwrap().into_iter().map(|cell_dep_meta| {
+                CellDepBuilder::default()
+                    .out_point(cell_dep_meta.out_point)
+                    .build()
+            })
+        });
 
+        let inner_tx = tx
+            .as_advanced_builder()
+            .cell_deps(tx.cell_deps().as_builder().extend(deps).build())
+            .build();
         // TO DO: Resolve cell deps of inputs
         //         Will have to accommodate some cells being deptype of depgroup
 
@@ -259,6 +292,6 @@ impl GeneratorMiddleware for Generator<'_, '_> {
             "FINAL TX GENERATED: {:#?}",
             ckb_jsonrpc_types::TransactionView::from(tx.clone().tx)
         );
-        tx
+        tx.tx(inner_tx)
     }
 }
