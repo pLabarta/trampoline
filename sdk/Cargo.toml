@@ -12,7 +12,7 @@ bytes = { version = "1.1.0", optional = true }
 ckb-always-success-script = { version = "0.0.1", optional = true }
 ckb-app-config = { version = "0.101.4", optional = true }
 ckb-chain-spec = { version = "0.101.4", optional = true }
-ckb-crypto = { version = "0.101.4", optional = true }
+ckb-crypto = { version = "0.101.4", optional = true, features = ["secp"] }
 ckb-error = { version = "0.101.4", optional = true }
 ckb-hash = { version = "0.101.4", optional = true }
 ckb-jsonrpc-types = { version = "0.101.4", optional = true }
@@ -23,7 +23,7 @@ ckb-traits = { version = "0.101.4", optional = true }
 ckb-types = { version = "0.101.4", optional = true }
 ckb-util = { version = "0.101.4", optional = true }
 ckb-verification = { version = "0.101.4", optional = true }
-ckb-sdk = {git = "https://github.com/TheWaWaR/ckb-sdk", optional = true}
+ckb-sdk = {git = "https://github.com/TheWaWaR/ckb-sdk"}
 hex = { version = "0.4.3", optional = true }
 includedir = { version = "0.6.0", optional = true }
 jsonrpc-core = { version = "18.0.0", optional = true }
@@ -42,7 +42,7 @@ tokio = { version = "1.17.0", features = ["full"], optional = true }
 toml = { version = "0.5.8", optional = true }
 walkdir = { version = "2.3.2", optional = true }
 ckb-standalone-types = { version = "0.1.2", default-features = false, optional = true }
-
+secp256k1 = { version = "0.20", features = ["recovery"] }
 [features]
 default = ["std"]
 script = ["ckb-standalone-types"]
@@ -50,5 +50,5 @@ std = ["no-std-compat/std", "tokio/full", "molecule/std", "ckb-always-success-sc
     "ckb-chain-spec", "ckb-crypto", "ckb-error", "ckb-hash", "ckb-jsonrpc-types", "ckb-resource",
     "ckb-script", "ckb-system-scripts", "ckb-traits", "ckb-types", "ckb-util", "ckb-verification", "anyhow",
     "bytes", "blake2b-rs", "hex", "jsonrpc-core", "molecule-codegen", "phf", "rand", "reqwest",
-    "serde", "serde_json", "structopt", "thiserror", "tokio", "toml", "walkdir", "lazy_static", "includedir", "ckb-sdk"
+    "serde", "serde_json", "structopt", "thiserror", "tokio", "toml", "walkdir", "lazy_static", "includedir"
 ]

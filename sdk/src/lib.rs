@@ -21,6 +21,8 @@ mod contract;
 #[cfg(feature = "script")]
 pub use crate::contract::{builtins, schema};
 
+pub mod account;
+
 #[cfg(not(feature = "script"))]
 pub mod ckb_types {
     pub use ckb_types::*;

@@ -2832,6 +2832,7 @@ dependencies = [
  "phf 0.10.1",
  "rand 0.8.5",
  "reqwest",
+ "secp256k1",
  "serde",
  "serde_json",
  "structopt",
