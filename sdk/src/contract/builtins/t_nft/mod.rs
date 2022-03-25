@@ -5,7 +5,7 @@ use crate::ckb_types::{bytes::Bytes, prelude::*};
 
 use mol_defs::{Byte32, Byte32Reader, NFTBuilder, NFT};
 
-#[cfg(not(feature = "script"))]
+
 use crate::contract::Contract;
 use crate::{
     contract::schema::SchemaPrimitiveType,
@@ -13,7 +13,7 @@ use crate::{
     impl_entity_unpack, impl_pack_for_fixed_byte_array, impl_primitive_reader_unpack,
 };
 
-#[cfg(not(feature = "script"))]
+
 pub trait NftContentHasher {
     fn hash(content: impl AsRef<[u8]>) -> mol_defs::Byte32;
 }
@@ -77,6 +77,6 @@ impl MolConversion for TrampolineNFT {
     }
 }
 
-#[cfg(not(feature = "script"))]
+
 pub type TrampolineNFTContract =
     Contract<SchemaPrimitiveType<Bytes, ckb_types::packed::Bytes>, TrampolineNFT>;

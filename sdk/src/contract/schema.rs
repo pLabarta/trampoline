@@ -1,34 +1,8 @@
-#[cfg(not(feature = "script"))]
+
 pub use ckb_jsonrpc_types::JsonBytes;
 
 use std::marker::PhantomData;
 use std::prelude::v1::*;
-#[cfg(feature = "script")]
-pub struct JsonBytes(crate::ckb_types::bytes::Bytes);
-#[cfg(feature = "script")]
-impl JsonBytes {
-    pub fn from_bytes(bytes: Bytes) -> Self {
-        Self(bytes)
-    }
-    pub fn into_bytes(self) -> Bytes {
-        self.0
-    }
-}
-
-#[cfg(feature = "script")]
-impl From<JsonBytes> for ckb_standalone_types::packed::Bytes {
-    fn from(bytes: JsonBytes) -> Self {
-        bytes.into_bytes().pack()
-    }
-}
-
-#[cfg(feature = "script")]
-impl From<ckb_standalone_types::packed::Bytes> for JsonBytes {
-    fn from(bytes: ckb_standalone_types::packed::Bytes) -> Self {
-        Self(bytes.unpack())
-    }
-}
-
 use crate::ckb_types::{bytes::Bytes, prelude::*};
 
 pub trait JsonByteConversion {
