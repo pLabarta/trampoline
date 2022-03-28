@@ -29,11 +29,11 @@ pub enum TrampolineCommand {
         #[structopt(flatten)]
         command: SchemaCommand,
     },
-    // #[structopt(name = "account", about = "Manage addresses and keys")]
-    // Account {
-    //     #[structopt(flatten)]
-    //     command: AccountCommand
-    // }
+    #[structopt(name = "account", about = "Manage addresses and keys")]
+    Account {
+        #[structopt(flatten)]
+        command: AccountCommand,
+    },
 }
 
 #[derive(Debug, StructOpt)]
@@ -62,7 +62,7 @@ pub enum NetworkCommands {
     Config {
         #[structopt(name = "host-port", long, short)]
         port_host: Option<usize>,
-        #[structopt(name = "host", long, short)]
+        #[structopt(name = "host", long)]
         host: Option<String>,
         #[structopt(name = "local-path-binding", long, short)]
         local_binding: Option<PathBuf>,
@@ -88,4 +88,12 @@ pub enum SchemaCommand {
     New { name: String, def: Option<String> },
     #[structopt(name = "build", about = "Generate rust bindings for schema")]
     Build { name: String },
+}
+
+#[derive(Debug, StructOpt)]
+pub enum AccountCommand {
+    #[structopt(name = "new", about = "Create a new account")]
+    New {},
+    #[structopt(name = "import", about = "Import an account using secret key")]
+    Import { sk: String },
 }

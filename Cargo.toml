@@ -41,6 +41,7 @@ tokio = { version = "1.17.0", features = ["full"] }
 toml = "0.5.8"
 walkdir = "2.3.2"
 trampoline-sdk = {path = "./sdk"}
+secp256k1 = "0.19.0"
 
 
 [build-dependencies]
@@ -48,4 +49,7 @@ includedir_codegen = "0.6.0"
 
  [workspace]
  members = ["sdk"]
+
+[dev-dependencies]
+tempfile = "3.3.0"
  #members = ["sdk", "validity-lang"]

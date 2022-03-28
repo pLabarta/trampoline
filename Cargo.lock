@@ -367,7 +367,7 @@ dependencies = [
  "faster-hex",
  "lazy_static",
  "rand 0.7.3",
- "secp256k1",
+ "secp256k1 0.20.3",
  "thiserror",
 ]
 
@@ -614,7 +614,7 @@ dependencies = [
  "lru",
  "parking_lot 0.11.2",
  "reqwest",
- "secp256k1",
+ "secp256k1 0.20.3",
  "serde",
  "serde_derive",
  "serde_json",
@@ -2275,11 +2275,29 @@ dependencies = [
 
 [[package]]
 name = "secp256k1"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6179428c22c73ac0fbb7b5579a56353ce78ba29759b3b8575183336ea74cdfb"
+dependencies = [
+ "secp256k1-sys 0.3.0",
+]
+
+[[package]]
+name = "secp256k1"
 version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97d03ceae636d0fed5bae6a7f4f664354c5f4fcedf6eef053fef17e49f837d0a"
 dependencies = [
- "secp256k1-sys",
+ "secp256k1-sys 0.4.2",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11553d210db090930f4432bea123b31f70bbf693ace14504ea2a35e796c28dd2"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -2570,7 +2588,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.5.1",
  "ring",
- "secp256k1",
+ "secp256k1 0.20.3",
  "sha2",
  "tokio",
  "tokio-util 0.7.0",
@@ -2788,9 +2806,11 @@ dependencies = [
  "phf 0.8.0",
  "rand 0.8.5",
  "reqwest",
+ "secp256k1 0.19.0",
  "serde",
  "serde_json",
  "structopt",
+ "tempfile",
  "tera",
  "thiserror",
  "tokio",
@@ -2832,7 +2852,7 @@ dependencies = [
  "phf 0.10.1",
  "rand 0.8.5",
  "reqwest",
- "secp256k1",
+ "secp256k1 0.20.3",
  "serde",
  "serde_json",
  "structopt",

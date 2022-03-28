@@ -3,6 +3,7 @@ pub mod opts;
 pub mod project;
 pub mod schema;
 mod utils;
+pub mod account;
 
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
