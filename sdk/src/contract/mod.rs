@@ -7,38 +7,38 @@ use self::schema::*;
 use crate::ckb_types::packed::{CellInput, CellOutput, CellOutputBuilder, Uint64};
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
 
-#[cfg(not(feature = "script"))]
+
 pub mod generator;
-#[cfg(not(feature = "script"))]
+
 use self::generator::{CellQuery, GeneratorMiddleware};
-#[cfg(not(feature = "script"))]
+
 use crate::chain::CellOutputWithData;
-#[cfg(not(feature = "script"))]
+
 use crate::ckb_types::core::TransactionView;
-#[cfg(not(feature = "script"))]
+
 use crate::ckb_types::{core::TransactionBuilder, H256};
-#[cfg(not(feature = "script"))]
+
 use ckb_hash::blake2b_256;
-#[cfg(not(feature = "script"))]
+
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
 use ckb_types::core::cell::CellMeta;
 
-#[cfg(not(feature = "script"))]
+
 use std::fs;
-#[cfg(not(feature = "script"))]
+
 use std::path::PathBuf;
 
-#[cfg(not(feature = "script"))]
+
 use std::sync::{Arc, Mutex};
 
-#[cfg(not(feature = "script"))]
+
 #[derive(Debug, Clone)]
 pub enum ContractSource {
     LocalPath(PathBuf),
     Immediate(Bytes),
     Chain(OutPoint),
 }
-#[cfg(not(feature = "script"))]
+
 impl ContractSource {
     pub fn load_from_path(path: PathBuf) -> std::io::Result<Bytes> {
         let file = fs::read(path)?;
@@ -47,7 +47,7 @@ impl ContractSource {
     }
 }
 
-#[cfg(not(feature = "script"))]
+
 #[derive(Clone, PartialEq)]
 pub enum ContractField {
     Args,
@@ -57,7 +57,7 @@ pub enum ContractField {
     Capacity,
 }
 
-#[cfg(not(feature = "script"))]
+
 #[derive(Clone, PartialEq)]
 pub enum TransactionField {
     ResolvedInputs,
@@ -66,32 +66,32 @@ pub enum TransactionField {
     Dependencies,
 }
 
-#[cfg(not(feature = "script"))]
+
 #[derive(PartialEq)]
 pub enum RuleScope {
     ContractField(ContractField),
     TransactionField(TransactionField),
 }
-#[cfg(not(feature = "script"))]
+
 impl From<ContractField> for RuleScope {
     fn from(f: ContractField) -> Self {
         Self::ContractField(f)
     }
 }
-#[cfg(not(feature = "script"))]
+
 impl From<TransactionField> for RuleScope {
     fn from(f: TransactionField) -> Self {
         Self::TransactionField(f)
     }
 }
-#[cfg(not(feature = "script"))]
+
 #[derive(Clone)]
 pub struct RuleContext {
     inner: CellMetaTransaction,
     pub idx: usize,
     pub curr_field: TransactionField,
 }
-#[cfg(not(feature = "script"))]
+
 impl RuleContext {
     pub fn new(tx: impl Into<CellMetaTransaction>) -> Self {
         Self {
@@ -163,13 +163,13 @@ impl RuleContext {
     }
 }
 
-#[cfg(not(feature = "script"))]
+
 pub struct OutputRule<A, D> {
     pub scope: RuleScope,
     pub rule: Box<dyn Fn(RuleContext) -> ContractCellField<A, D>>,
 }
 
-#[cfg(not(feature = "script"))]
+
 impl<A, D> OutputRule<A, D> {
     pub fn new<F>(scope: impl Into<RuleScope>, rule: F) -> Self
     where
@@ -185,7 +185,7 @@ impl<A, D> OutputRule<A, D> {
     }
 }
 
-#[cfg(not(feature = "script"))]
+
 
 pub enum ContractCellField<A, D> {
     Args(A),
@@ -198,9 +198,9 @@ pub enum ContractCellField<A, D> {
     Outputs(Vec<CellOutputWithData>),
     CellDeps(Vec<ckb_types::packed::CellDep>),
 }
-#[cfg(not(feature = "script"))]
+
 #[derive(Default)]
-#[cfg(not(feature = "script"))]
+
 pub struct Contract<A, D> {
     pub source: Option<ContractSource>,
     pub data: D,
@@ -213,7 +213,7 @@ pub struct Contract<A, D> {
     pub input_rules: Vec<Box<dyn Fn(TransactionView) -> CellQuery>>,
 }
 
-#[cfg(not(feature = "script"))]
+
 impl<A, D> Contract<A, D>
 where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
@@ -361,7 +361,7 @@ where
         tx.build()
     }
 }
-#[cfg(not(feature = "script"))]
+
 impl<A, D> GeneratorMiddleware for Contract<A, D>
 where
     D: JsonByteConversion + MolConversion + BytesConversion + Clone,
