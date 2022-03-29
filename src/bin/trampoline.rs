@@ -9,9 +9,10 @@ use ckb_hash::blake2b_256;
 use ckb_types::{h256, H256};
 
 use structopt::StructOpt;
+use trampoline::account::AccountManager;
 
 use trampoline::docker::*;
-use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
+use trampoline::opts::{AccountCommand, NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
 use trampoline::project::*;
 use trampoline::schema::{Schema, SchemaInitArgs};
@@ -249,6 +250,27 @@ fn main() -> Result<()> {
                 _ => {
                     println!("Command not yet implemented!");
                     std::process::exit(0);
+                }
+            }
+        }
+        TrampolineCommand::Account { command } => {
+            let project = TrampolineProject::from(project?);
+            let mgr = AccountManager::new(project.root_dir.join(".trampoline").join("accounts"));
+
+            match command {
+                AccountCommand::New {} => {
+                    let account = mgr.create_account()?;
+                    println!(
+                        "Account Created\n{}",
+                        serde_json::to_string_pretty(&account.to_json()).unwrap()
+                    );
+                }
+                AccountCommand::Import { sk } => {
+                    let account = mgr.import_account(sk)?;
+                    println!(
+                        "Account Imported\n{}",
+                        serde_json::to_string_pretty(&account.to_json()).unwrap()
+                    );
                 }
             }
         }
