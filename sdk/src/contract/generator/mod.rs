@@ -1,113 +1,18 @@
 use ckb_jsonrpc_types::{Byte32, Capacity, OutPoint, Script, TransactionView as JsonTransaction};
-use ckb_types::packed::CellDepBuilder;
-use std::prelude::v1::*;
+use ckb_types::packed::{CellDepBuilder};
 
 use crate::ckb_types::{
     core::{cell::CellMeta, TransactionBuilder, TransactionView},
     packed::CellInputBuilder,
     prelude::*,
 };
+use crate::types::{
+    cell::CellOutputWithData,
+    transaction::CellMetaTransaction
+};
 
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
-
-use crate::chain::CellOutputWithData;
-
-#[derive(Clone, Debug)]
-pub struct CellMetaTransaction {
-    pub tx: TransactionView,
-    pub inputs: Vec<CellMeta>,
-}
-
-impl From<TransactionView> for CellMetaTransaction {
-    fn from(tx: TransactionView) -> Self {
-        Self { tx, inputs: vec![] }
-    }
-}
-
-impl CellMetaTransaction {
-    pub fn tx(self, tx: TransactionView) -> Self {
-        Self {
-            tx,
-            inputs: self.inputs,
-        }
-    }
-
-    pub fn with_inputs(self, inputs: Vec<CellMeta>) -> Self {
-        Self {
-            tx: self.tx,
-            inputs,
-        }
-    }
-
-    pub fn as_advanced_builder(&self) -> TransactionBuilder {
-        self.tx.as_advanced_builder()
-    }
-
-    pub fn cell_deps(&self) -> crate::ckb_types::packed::CellDepVec {
-        self.tx.cell_deps()
-    }
-
-    pub fn inputs(&self) -> crate::ckb_types::packed::CellInputVec {
-        self.tx.inputs()
-    }
-
-    pub fn outputs(&self) -> crate::ckb_types::packed::CellOutputVec {
-        self.tx.outputs()
-    }
-
-    pub fn outputs_data(&self) -> crate::ckb_types::packed::BytesVec {
-        self.tx.outputs_data()
-    }
-
-    pub fn witnesses(&self) -> crate::ckb_types::packed::BytesVec {
-        self.tx.witnesses()
-    }
-
-    pub fn output(&self, idx: usize) -> Option<crate::ckb_types::packed::CellOutput> {
-        self.tx.output(idx)
-    }
-
-    pub fn output_with_data(&self, idx: usize) -> Option<CellOutputWithData> {
-        self.tx.output_with_data(idx)
-    }
-
-    pub fn output_pts(&self) -> Vec<crate::ckb_types::packed::OutPoint> {
-        self.tx.output_pts()
-    }
-
-    pub fn cell_deps_iter(&self) -> impl Iterator<Item = crate::ckb_types::packed::CellDep> {
-        self.tx.cell_deps_iter()
-    }
-
-    pub fn output_pts_iter(&self) -> impl Iterator<Item = crate::ckb_types::packed::OutPoint> {
-        self.tx.output_pts_iter()
-    }
-
-    pub fn input_pts_iter(&self) -> impl Iterator<Item = crate::ckb_types::packed::OutPoint> {
-        self.tx.input_pts_iter()
-    }
-
-    pub fn outputs_with_data_iter(&self) -> impl Iterator<Item = CellOutputWithData> {
-        self.tx.outputs_with_data_iter()
-    }
-
-    pub fn outputs_capacity(
-        &self,
-    ) -> Result<crate::ckb_types::core::Capacity, ckb_types::core::CapacityError> {
-        self.tx.outputs_capacity()
-    }
-    pub fn fake_hash(mut self, hash: crate::ckb_types::packed::Byte32) -> Self {
-        self.tx = self.tx.fake_hash(hash);
-        self
-    }
-
-    /// Sets a fake witness hash.
-    pub fn fake_witness_hash(mut self, witness_hash: crate::ckb_types::packed::Byte32) -> Self {
-        self.tx = self.tx.fake_witness_hash(witness_hash);
-        self
-    }
-}
 
 // Note: Uses ckb_jsonrpc_types
 pub trait TransactionProvider {

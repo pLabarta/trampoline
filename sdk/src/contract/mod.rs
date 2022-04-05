@@ -1,17 +1,18 @@
 use std::prelude::v1::*;
 pub mod builtins;
 pub mod schema;
-use self::generator::CellMetaTransaction;
 use self::schema::*;
 
 use crate::ckb_types::packed::{CellInput, CellOutput, CellOutputBuilder, Uint64};
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
-
+use crate::types::{
+    transaction::CellMetaTransaction,
+    cell::CellOutputWithData,
+};
 pub mod generator;
 
 use self::generator::{CellQuery, GeneratorMiddleware};
 
-use crate::chain::CellOutputWithData;
 
 use crate::ckb_types::core::TransactionView;
 
