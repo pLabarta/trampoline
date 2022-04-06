@@ -8,7 +8,7 @@ use super::cell::CellOutputWithData;
 // ckb_jsonrpc_types::TransactionView has Transaction and hash
 
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct Transaction {
     pub (crate) inner: JsonTransaction,
 }

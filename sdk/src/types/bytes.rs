@@ -55,6 +55,27 @@ impl From<JsonBytes> for Bytes {
     }
 }
 
+impl From<Vec<u8>> for Bytes {
+    fn from(bytes: Vec<u8>) -> Self {
+        let bytes = bytes.pack();
+        bytes.into()
+    }
+}
+
+impl From<&[u8]> for Bytes {
+    fn from(slice: &[u8]) -> Self {
+        slice.pack().into()
+    }
+}
+
+// impl<T: AsRef<[u8]>> From<T> for Bytes {
+//     fn from(bytes: T) -> Self {
+//         let bytes = bytes.as_ref();
+//         let bytes = bytes.pack();
+//         Self(bytes.into())
+//     }
+// }
+
 impl From<Bytes> for CkBytes {
     fn from(b: Bytes) -> Self {
         b.0.into_bytes()
@@ -90,3 +111,4 @@ impl From<&Bytes> for JsonBytes {
         b.0.clone()
     }
 }
+

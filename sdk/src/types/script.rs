@@ -38,9 +38,17 @@ pub struct Script {
     pub (crate) script_hash: H256
 }
 
+impl Default for Script {
+    fn default() -> Self {
+        let mut ret = Self { args: Default::default(), code_hash: Default::default(), hash_type: Default::default(), script_hash: Default::default() };
+        let script_hash = ret.calc_script_hash();
+        ret.script_hash = script_hash;
+        ret
+    }
+}
 
 impl Script {
-
+ 
     pub fn set_args(&mut self, args: impl Into<Bytes>) {
         self.args = args.into();
     }
@@ -51,6 +59,11 @@ impl Script {
         self.args.len() + CODE_HASH_SIZE_BYTES + 1
     }
 
+    pub fn calc_script_hash(&self) -> H256 {
+        let packed: PackedScript = self.clone().into();
+        packed.calc_script_hash().unpack()
+
+    }
     /// Validate that script hash is correct
     pub fn validate(&self) -> ScriptResult<H256> {
         let packed: PackedScript = self.clone().into();

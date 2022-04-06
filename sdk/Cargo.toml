@@ -27,7 +27,6 @@ ckb-sdk = {git = "https://github.com/TheWaWaR/ckb-sdk"}
 hex = { version = "0.4.3"}
 includedir = { version = "0.6.0"}
 jsonrpc-core = { version = "18.0.0"}
-lazy_static = { version = "1.4.0"}
 molecule = { version = "0.7.2", default-features = false }
 molecule-codegen = { version = "0.7.2"}
 phf = { version = "0.10.1"}

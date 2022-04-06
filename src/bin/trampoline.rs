@@ -237,13 +237,14 @@ fn main() -> Result<()> {
                 }
                 NetworkCommands::Rpc { hash } => {
                     let hash = H256::from_str(hash.as_str())?;
-                    let mut rpc_client = rpc::RpcClient::new();
+                    //let mut rpc_client = rpc::RpcClient::new();
                     let url = format!(
                         "{}:{}",
                         project.config.env.as_ref().unwrap().chain.host,
                         project.config.env.as_ref().unwrap().chain.host_port
                     );
-                    let result = rpc_client.get_transaction(hash, url)?;
+                    let mut rpc_client = rpc::blocking::CkbRpcClient::new(url.as_str());
+                    let result = rpc_client.get_transaction(hash)?;
                     println!("Transaction with status: {}", serde_json::json!(result));
                 }
                 _ => {

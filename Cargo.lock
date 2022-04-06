@@ -2799,7 +2799,6 @@ dependencies = [
  "hex",
  "includedir",
  "jsonrpc-core",
- "lazy_static",
  "molecule",
  "molecule-codegen",
  "phf 0.10.1",

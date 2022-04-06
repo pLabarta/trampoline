@@ -11,6 +11,12 @@ pub mod ckb_types {
     pub use ckb_types::*;
 }
 
+pub mod precompiled {
+    pub const SUDT: &'static [u8] = include_bytes!("../binaries/simple_udt");
+    pub const TNFT: &'static [u8] = include_bytes!("../binaries/trampoline-nft");
+}
+
+
 // From ckb_types::conversion
 #[macro_export]
 macro_rules! impl_entity_unpack {
@@ -68,13 +74,4 @@ macro_rules! impl_pack_for_fixed_byte_array {
             }
         }
     };
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
 }
