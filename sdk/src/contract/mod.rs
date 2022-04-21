@@ -414,8 +414,8 @@ where
     }
 
     // Get code cell as a cell dep
-    pub fn as_cell_dep(&self) -> TContractResult<CellDep> {
-        todo!()
+    pub fn as_code_cell_dep(&self) -> TContractResult<ckb_types::packed::CellDep> {
+        Ok(self.inner_code_cell.as_cell_dep(ckb_types::core::DepType::Code)?)    
     }
 
     // Get caller cell as a cell output
