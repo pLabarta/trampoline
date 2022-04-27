@@ -1,37 +1,14 @@
 use ckb_types::{
     H256,
     core::{
-        cell::{
-            CellMeta,
-            CellMetaBuilder,
-            CellProvider,
-            CellStatus,
-            
-        },
         Capacity,
-        
-        capacity_bytes,
-        CapacityResult,
         CapacityError, DepType,
     },
-    packed::{Byte32, CellOutput, OutPoint, CellInput, Bytes as PackedBytes, CellDep},
+    packed::{CellOutput, OutPoint, CellDep},
     prelude::*,
 };
 
-
-
-use ckb_jsonrpc_types::{CellOutput as JsonCellOutput, 
-    CellDep as JsonCellDep, 
-    CellData, 
-    CellInput as JsonCellInput, 
-    CellWithStatus, 
-    JsonBytes, 
-    CellInfo as CellWithData,
-    Byte32 as JsonByte32,
-    OutPoint as JsonOutPoint,
-    
-};
-use std::io::Error as IoError;
+use std::{io::Error as IoError, borrow::Borrow};
 use thiserror::Error;
 
 use super::script::{Script, ScriptError};
@@ -69,38 +46,61 @@ pub struct Cell {
 impl Cell {
 
     pub fn with_data(data: impl Into<Bytes>) -> Self {
-        Self {
-            data: data.into(),
+        let data: Bytes = data.into();
+       
+        let mut cell = Self {
+            data,
             outpoint: None,
             capacity: Capacity::zero(),
             lock_script: Script::default(),
             type_script: None,
+        };
+        let cell_capacity = cell.required_capacity().unwrap();
+        println!("Cell WITH DATA REQ CAPACITY {}", cell_capacity.as_u64());
+        assert!(cell.set_capacity_shannons(cell_capacity.as_u64()).is_ok());
+        cell
+    }
+
+    pub fn with_lock(script: impl Borrow<Script>) -> Self {
+        Self {
+            data: Default::default(),
+            outpoint: None,
+            capacity: Capacity::zero(),
+            lock_script: script.borrow().clone(),
+            type_script: None,
         }
+    }
+
+    pub fn required_capacity(&self) -> CellResult<Capacity> {
+        let type_script_size = match &self.type_script {
+            Some(script) => {
+               // script.validate()?;
+                script.required_capacity()?
+            },
+            None => Capacity::zero()
+        };
+        //self.lock_script.validate()?;
+        let lock_script_size = self.lock_script.required_capacity()?;
+        let other_fields_size = self.data.required_capacity()?;
+        let capacity_field_req = Capacity::bytes(8)?;
+        let total_size = 
+             type_script_size
+             .safe_add(lock_script_size)?
+             .safe_add(other_fields_size)?
+             .safe_add(capacity_field_req)?;
+        Ok(total_size)
     }
     /// Ensure the total cell size <= min required capacity
     /// Ensure that the capacity in the cell >= min required capacity
     pub fn validate(&self) -> CellResult<Capacity> {
-       let type_script_size = match &self.type_script {
+       match &self.type_script {
            Some(script) => {
                script.validate()?;
-               script.required_capacity()?
            },
-           None => Capacity::zero()
+           None => {}
        };
        self.lock_script.validate()?;
-       let lock_script_size = self.lock_script.required_capacity()?;
-       let other_fields_size = self.data.required_capacity()?;
-       let capacity_field_req = Capacity::bytes(8)?;
-       let total_size = 
-            type_script_size
-            .safe_add(lock_script_size)?
-            .safe_add(other_fields_size)?
-            .safe_add(capacity_field_req)?;
-        if self.capacity < total_size {
-            Err(CellError::CapacityNotEnough)
-        } else {
-            Ok(total_size)
-        }
+       self.required_capacity()
     }
 
     pub fn lock_hash(&self) -> CellResult<H256> {
@@ -139,6 +139,10 @@ impl Cell {
 
     pub fn data_hash(&self) -> H256 {
         self.data.hash_256()
+    }
+
+    pub fn data(&self) -> Bytes {
+        self.data.clone()
     }
 
 
@@ -186,7 +190,7 @@ impl Cell {
         Ok(())
     }
     
-    pub fn as_cell_dep(&self, dep_type: DepType) -> CellResult<CellDep> {
+    pub fn as_cell_dep(&self, _dep_type: DepType) -> CellResult<CellDep> {
         todo!()
     }
 }
@@ -223,7 +227,6 @@ impl From<Cell> for CellOutputWithData {
         
     }
 }
-
 
 
 

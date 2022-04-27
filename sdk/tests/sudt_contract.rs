@@ -1,7 +1,6 @@
 extern crate ckb_always_success_script;
 extern crate trampoline_sdk;
 
-use ckb_types::packed::CellOutputBuilder;
 use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
 use trampoline_sdk::contract::*;
 use trampoline_sdk::contract::{builtins::sudt::*, generator::*, schema::*};

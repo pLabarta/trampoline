@@ -33,7 +33,7 @@ mod tests {
     use super::cell::{Cell, CellError};
     use ckb_types::prelude::*;
     use ckb_types::H256;
-    use ckb_types::{packed::{Byte32, Bytes as PackedBytes, CellOutput, Script}};
+    use ckb_types::{packed::{CellOutput, Script}};
     use ckb_hash::{blake2b_256};
     use ckb_types::core::ScriptHashType;
     use ckb_always_success_script::ALWAYS_SUCCESS;
@@ -57,24 +57,24 @@ mod tests {
             .build();
         let hash_1: H256 = packed_script.calc_script_hash().unpack();
         let mut cell_with_lock = cell::Cell::default();
-        cell_with_lock.set_lock_script(packed_script.clone());
+        assert!(cell_with_lock.set_lock_script(packed_script.clone()).is_ok());
         let hash_2 = cell_with_lock.lock_hash().unwrap();
         assert_eq!(hash_1, hash_2);
     }
 
-    #[test]
-    fn validate_fails_before_set_due_to_capacity() {
-        let mut cell = Cell::with_data(ALWAYS_SUCCESS.as_ref());
-        let validate_res = cell.validate();
-        match validate_res {
-            Ok(_) => assert!(false, "Cell validate returned Ok when it shouldn't"),
-            Err(e) => {
-                match e {
-                    CellError::CapacityNotEnough => assert!(true),
-                    _ => assert!(false, "CellError does not match! Got {:?}--Expected {:?}", e, CellError::CapacityNotEnough)
-                }
-            }
-        };
+    // #[test]
+    // fn validate_fails_before_set_due_to_capacity() {
+    //     let cell = Cell::with_data(ALWAYS_SUCCESS.as_ref());
+    //     let validate_res = cell.validate();
+    //     match validate_res {
+    //         Ok(_) => assert!(false, "Cell validate returned Ok when it shouldn't"),
+    //         Err(e) => {
+    //             match e {
+    //                 CellError::CapacityNotEnough => assert!(true),
+    //                 _ => assert!(false, "CellError does not match! Got {:?}--Expected {:?}", e, CellError::CapacityNotEnough)
+    //             }
+    //         }
+    //     };
 
-    }
+    // }
 }

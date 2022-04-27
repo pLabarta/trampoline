@@ -2,14 +2,11 @@ use ckb_jsonrpc_types::{Byte32, Capacity, OutPoint, Script, TransactionView as J
 use ckb_types::packed::{CellDepBuilder};
 
 use crate::ckb_types::{
-    core::{cell::CellMeta, TransactionBuilder, TransactionView},
+    core::{cell::CellMeta, TransactionBuilder},
     packed::CellInputBuilder,
     prelude::*,
 };
-use crate::types::{
-    cell::CellOutputWithData,
-    transaction::CellMetaTransaction
-};
+use crate::types::transaction::CellMetaTransaction;
 
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};

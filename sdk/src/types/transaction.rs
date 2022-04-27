@@ -1,6 +1,6 @@
 use ckb_types::core::cell::CellMeta;
 use ckb_types::prelude::*;
-use ckb_types::core::{TransactionView, TransactionInfo, TransactionMeta, TransactionBuilder};
+use ckb_types::core::{TransactionView,TransactionBuilder};
 use ckb_types::packed::{Transaction as PackedTransaction, TransactionView as PackedTransactionView, TransactionViewBuilder};
 use ckb_jsonrpc_types::{TransactionView as JsonTransactionView, Transaction as JsonTransaction};
 use super::cell::CellOutputWithData;

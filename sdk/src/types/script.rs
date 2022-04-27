@@ -1,20 +1,22 @@
+use std::borrow::Borrow;
+
 use ckb_types::prelude::*;
-use ckb_types::{H256, h256, bytes::Bytes as CkBytes};
+use ckb_types::{H256, bytes::Bytes as CkBytes};
 use ckb_types::core::{
     ScriptHashType,
-    DepType,
     Capacity, CapacityError
     
 };
 use super::bytes::Bytes;
-use super::constants::{CODE_HASH_SIZE_BYTES, ONE_CKB};
+use super::cell::Cell;
+use super::constants::{CODE_HASH_SIZE_BYTES};
 use ckb_types::packed::{
-    Script as PackedScript, ScriptBuilder, ScriptOpt, ScriptOptBuilder, Bytes as PackedBytes
+    Script as PackedScript, Bytes as PackedBytes
 };
 use ckb_jsonrpc_types::{
     Script as JsonScript, 
     ScriptHashType as JsonScriptHashType,
-    DepType as JsonDepType,
+
     JsonBytes
 };
 
@@ -53,6 +55,9 @@ impl Script {
         self.args = args.into();
     }
 
+    pub fn set_hash_type(&mut self, typ: JsonScriptHashType) {
+        self.hash_type = typ;
+    }
     pub fn set_code_hash(&mut self, code_hash: H256) {
         self.code_hash = code_hash;
     }
@@ -172,5 +177,21 @@ impl From<Script> for PackedScript {
             .code_hash(code_hash.pack())
             .hash_type(ScriptHashType::from(hash_type).into())
             .build()
+    }
+}
+
+impl From<Cell> for Script {
+    fn from(c: Cell) -> Self {
+        let mut s = Self::default();
+        s.set_code_hash(c.data_hash());
+        s
+    }
+}
+
+impl From<&Cell> for Script {
+    fn from(c: &Cell) -> Self {
+        let mut s = Self::default();
+        s.set_code_hash(c.data_hash());
+        s
     }
 }
