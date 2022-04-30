@@ -10,19 +10,19 @@ anyhow = { version = "1.0.56"}
 blake2b-rs = { version = "0.2.0"}
 bytes = { version = "1.1.0"}
 ckb-always-success-script = { version = "0.0.1"}
-ckb-app-config = { version = "0.101.4"}
-ckb-chain-spec = { version = "0.101.4"}
-ckb-crypto = { version = "0.101.4", features = ["secp"] }
-ckb-error = { version = "0.101.4"}
-ckb-hash = { version = "0.101.4"}
-ckb-jsonrpc-types = { version = "0.101.4"}
-ckb-resource = { version = "0.101.4"}
-ckb-script = { version = "0.101.4"}
+ckb-app-config = { version = "0.103.0"}
+ckb-chain-spec = { version = "0.103.0"}
+ckb-crypto = { version = "0.103.0", features = ["secp"] }
+ckb-error = { version = "0.103.0"}
+ckb-hash = { version = "0.103.0"}
+ckb-jsonrpc-types = { version = "0.103.0"}
+ckb-resource = { version = "0.103.0"}
+ckb-script = { version = "0.103.0"}
 ckb-system-scripts = { version = "0.5.4"}
-ckb-traits = { version = "0.101.4"}
-ckb-types = { version = "0.101.4"}
-ckb-util = { version = "0.101.4"}
-ckb-verification = { version = "0.101.4"}
+ckb-traits = { version = "0.103.0"}
+ckb-types = { version = "0.103.0"}
+ckb-util = { version = "0.103.0"}
+ckb-verification = { version = "0.103.0"}
 ckb-sdk = {git = "https://github.com/TheWaWaR/ckb-sdk"}
 hex = { version = "0.4.3"}
 includedir = { version = "0.6.0"}
