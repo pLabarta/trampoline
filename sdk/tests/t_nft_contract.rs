@@ -141,9 +141,9 @@ fn test_success_deploy() {
         }
     });
 
-    let chain_rpc = ChainRpc::new(chain);
+    let chain_rpc = ChainRpc::new(chain.clone());
     let generator = Generator::new()
-        .chain_service(&chain_rpc)
+        .chain_service(&chain)
         .query_service(&chain_rpc)
         .pipeline(vec![&tnft_contract]);
     let new_mint_tx = generator.generate(); //generator.pipe(tx_skeleton, Arc::new(Mutex::new(vec![])));
@@ -193,9 +193,9 @@ fn test_invalid_mismatched_genesis_id() {
         }
     });
 
-    let chain_rpc = ChainRpc::new(chain);
+    let chain_rpc = ChainRpc::new(chain.clone());
     let generator = Generator::new()
-        .chain_service(&chain_rpc)
+        .chain_service(&chain)
         .query_service(&chain_rpc)
         .pipeline(vec![&tnft_contract]);
     let new_mint_tx = generator.generate(); //generator.pipe(tx_skeleton, Arc::new(Mutex::new(vec![])));
@@ -263,9 +263,9 @@ fn test_invalid_mint_of_pre_existing_tnft() {
         }
     });
 
-    let chain_rpc = ChainRpc::new(chain);
+    let chain_rpc = ChainRpc::new(chain.clone());
     let generator = Generator::new()
-        .chain_service(&chain_rpc)
+        .chain_service(&chain)
         .query_service(&chain_rpc)
         .pipeline(vec![&tnft_contract]);
     let new_mint_tx = generator.generate(); //generator.pipe(tx_skeleton, Arc::new(Mutex::new(vec![])));

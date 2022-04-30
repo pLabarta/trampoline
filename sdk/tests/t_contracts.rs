@@ -145,9 +145,9 @@ fn test_failed_issuance_tx_no_permissions() {
     });
 
     // Instantiate chain rpc and tx generator
-    let chain_rpc = ChainRpc::new(chain);
+    let chain_rpc = ChainRpc::new(chain.clone());
     let generator = Generator::new()
-        .chain_service(&chain_rpc)
+        .chain_service(&chain)
         .query_service(&chain_rpc)
         .pipeline(vec![&sudt_contract]);
 
@@ -218,9 +218,9 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     });
 
     // Instantiate chain rpc and tx generator
-    let chain_rpc = ChainRpc::new(chain);
+    let chain_rpc = ChainRpc::new(chain.clone());
     let generator = Generator::new()
-        .chain_service(&chain_rpc)
+        .chain_service(&chain)
         .query_service(&chain_rpc)
         .pipeline(vec![&sudt_contract]);
 

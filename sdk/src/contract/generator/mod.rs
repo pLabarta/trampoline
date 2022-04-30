@@ -1,11 +1,11 @@
 use ckb_jsonrpc_types::{Byte32, Capacity, OutPoint, Script, TransactionView as JsonTransaction};
 use ckb_types::packed::{CellDepBuilder};
 
-use crate::ckb_types::{
+use crate::{ckb_types::{
     core::{cell::CellMeta, TransactionBuilder},
     packed::CellInputBuilder,
     prelude::*,
-};
+}, chain::Chain};
 use crate::types::transaction::CellMetaTransaction;
 
 use std::collections::HashSet;
@@ -64,15 +64,17 @@ pub trait QueryProvider {
 }
 
 #[derive(Default)]
-pub struct Generator<'a, 'b> {
+pub struct Generator<'a, 'b, C: Chain> {
     middleware: Vec<&'a dyn GeneratorMiddleware>,
-    chain_service: Option<&'b dyn TransactionProvider>,
+    chain_service: Option<&'b C>,
     query_service: Option<&'b dyn QueryProvider>,
     tx: Option<CellMetaTransaction>,
     query_queue: Arc<Mutex<Vec<CellQuery>>>,
 }
 
-impl<'a, 'b> Generator<'a, 'b> {
+impl<'a, 'b, C> Generator<'a, 'b, C> 
+where C: Chain
+{
     pub fn new() -> Self {
         Generator {
             middleware: vec![],
@@ -88,7 +90,7 @@ impl<'a, 'b> Generator<'a, 'b> {
         self
     }
 
-    pub fn chain_service(mut self, chain_service: &'b dyn TransactionProvider) -> Self {
+    pub fn chain_service(mut self, chain_service: &'b C) -> Self {
         self.chain_service = Some(chain_service);
         self
     }
@@ -121,7 +123,7 @@ impl<'a, 'b> Generator<'a, 'b> {
     }
 }
 
-impl GeneratorMiddleware for Generator<'_, '_> {
+impl<C: Chain> GeneratorMiddleware for Generator<'_, '_, C> {
     fn update_query_register(
         &self,
         tx: CellMetaTransaction,
