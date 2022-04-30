@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+
 
 use ckb_types::prelude::*;
 use ckb_types::{H256, bytes::Bytes as CkBytes};
@@ -32,25 +32,18 @@ pub enum ScriptError {
 
 pub type ScriptResult<T> = Result<T, ScriptError>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Script {
     pub (crate) args: Bytes,
     pub (crate) code_hash: H256,
     pub (crate) hash_type: JsonScriptHashType,
-    pub (crate) script_hash: H256
+
 }
 
-impl Default for Script {
-    fn default() -> Self {
-        let mut ret = Self { args: Default::default(), code_hash: Default::default(), hash_type: Default::default(), script_hash: Default::default() };
-        let script_hash = ret.calc_script_hash();
-        ret.script_hash = script_hash;
-        ret
-    }
-}
 
 impl Script {
  
+    
     pub fn set_args(&mut self, args: impl Into<Bytes>) {
         self.args = args.into();
     }
@@ -77,8 +70,8 @@ impl Script {
     pub fn validate(&self) -> ScriptResult<H256> {
         let packed: PackedScript = self.clone().into();
         let calc_hash = packed.calc_script_hash().unpack();
-        if calc_hash != self.script_hash {
-            Err(ScriptError::MismatchedScriptHash(calc_hash, self.script_hash.clone()))
+        if calc_hash != self.calc_script_hash() {
+            Err(ScriptError::MismatchedScriptHash(calc_hash, self.calc_script_hash()))
         } else {
             Ok(calc_hash)
         }
@@ -127,14 +120,13 @@ impl From<JsonScript> for Script {
         let hash_type = j.hash_type.clone();
         let code_hash = j.code_hash.clone();
         let args = j.args.clone().into();
-        let packed: PackedScript = j.into();
-        let script_hash = packed.calc_script_hash();
+
       
         Self {
             args,
             code_hash: code_hash,
             hash_type,
-            script_hash: script_hash.unpack()
+     
 
         }
     }
@@ -143,7 +135,6 @@ impl From<JsonScript> for Script {
 impl From<PackedScript> for Script {
     fn from(s: PackedScript) -> Self {
         let reader = s.as_reader();
-        let script_hash = reader.calc_script_hash().unpack();
         let args = reader.args().to_entity();
         let hash_type = ScriptHashType::try_from(reader.hash_type().to_entity()).unwrap();
         let code_hash = reader.code_hash().to_entity().unpack();
@@ -152,14 +143,14 @@ impl From<PackedScript> for Script {
             args: args.into(),
             code_hash,
             hash_type: hash_type.into(),
-            script_hash,
+
         }
     }
 }
 
 impl From<Script> for JsonScript {
     fn from(s: Script) -> Self {
-        let Script {code_hash, hash_type, args, script_hash: _} = s;
+        let Script {code_hash, hash_type, args} = s;
         JsonScript {
             code_hash,
             hash_type,
@@ -170,7 +161,7 @@ impl From<Script> for JsonScript {
 
 impl From<Script> for PackedScript {
     fn from(s: Script) -> Self {
-        let Script {code_hash, hash_type, args, script_hash: _} = s;
+        let Script {code_hash, hash_type, args} = s;
 
         PackedScript::new_builder()
             .args(args.into())
@@ -184,6 +175,7 @@ impl From<Cell> for Script {
     fn from(c: Cell) -> Self {
         let mut s = Self::default();
         s.set_code_hash(c.data_hash());
+   
         s
     }
 }

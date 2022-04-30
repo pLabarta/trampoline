@@ -1,26 +1,17 @@
 
 use super::schema::*;
 
-use crate::ckb_types::packed::{CellInput, CellOutput, CellOutputBuilder, Uint64};
-use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
+use crate::ckb_types::packed::{CellInput, Uint64};
+use crate::ckb_types::bytes::Bytes;
 use crate::types::{
     transaction::CellMetaTransaction,
     cell::CellOutputWithData,
 };
 
 
-use super::generator::{CellQuery, GeneratorMiddleware};
-
-
-use crate::ckb_types::core::TransactionView;
-
-use crate::ckb_types::{core::TransactionBuilder, H256};
-
-use ckb_hash::blake2b_256;
-
-use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
+use ckb_jsonrpc_types::OutPoint;
 use ckb_types::core::cell::CellMeta;
-use thiserror::Error;
+
 use crate::types::cell::{Cell, CellError, CellResult};
 use crate::types::bytes::{Bytes as TBytes};
 

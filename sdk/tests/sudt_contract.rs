@@ -348,7 +348,7 @@ fn test_sudt_data_hash_gen_json() {
 
 #[test]
 fn test_sudt_code_hash_gen() {
-    let mut sudt_contract = gen_sudt_contract(None, None);
+    let sudt_contract = gen_sudt_contract(None, None);
 
     let code_hash = sudt_contract.code_hash().unwrap().pack();
     let hash_hex_str = format!("0x{}", hex::encode(&code_hash.raw_data()));

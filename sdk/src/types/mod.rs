@@ -30,7 +30,6 @@ pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> + Into<JsonBytes
 mod tests {
 
     use super::*;
-    use super::cell::{Cell, CellError};
     use ckb_types::prelude::*;
     use ckb_types::H256;
     use ckb_types::{packed::{CellOutput, Script}};

@@ -100,10 +100,10 @@ impl<'a, 'b> Generator<'a, 'b> {
 
     pub fn query(&self, query: CellQuery) -> Option<Vec<CellMeta>> {
         let res = self.query_service.unwrap().query_cell_meta(query.clone());
-        println!(
-            "Res in generator.query for cell_query {:?} is {:?}",
-            query, res
-        );
+        // println!(
+        //     "Res in generator.query for cell_query {:?} is {:?}",
+        //     query, res
+        // );
         res
     }
 
@@ -138,7 +138,7 @@ impl GeneratorMiddleware for Generator<'_, '_> {
     ) -> CellMetaTransaction {
         self.update_query_register(tx.clone(), query_register.clone());
         let inputs = self.resolve_queries(query_register.clone());
-        println!("RESOLVED INPUTS IN GENERATOR PIPE: {:?}", inputs);
+       // println!("RESOLVED INPUTS IN GENERATOR PIPE: {:?}", inputs);
         let inner_tx = tx
             .as_advanced_builder()
             .set_inputs(

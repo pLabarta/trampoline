@@ -1,9 +1,12 @@
+use std::sync::{Arc, Mutex};
+
+use super::schema::TrampolineSchema;
 use super::types::*;
 use super::generator::{CellQuery, GeneratorMiddleware};
 use crate::types::cell::{Cell, CellError, CellResult};
 use crate::types::bytes::{Bytes as TBytes};
 use crate::types::script::Script as TScript;
-use crate::ckb_types::packed::{CellInput, CellOutput, CellOutputBuilder, Uint64};
+use crate::ckb_types::packed::CellOutput;
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
 use crate::types::{
     transaction::CellMetaTransaction,
@@ -17,10 +20,6 @@ use crate::ckb_types::core::TransactionView;
 
 use crate::ckb_types::{core::TransactionBuilder, H256};
 
-use ckb_hash::blake2b_256;
-
-use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
-use ckb_types::core::cell::CellMeta;
 
 use thiserror::Error;
 
@@ -28,6 +27,8 @@ use thiserror::Error;
 pub enum TContractError {
     #[error(transparent)]
     CellError(#[from] CellError),
+    #[error("Cannot convert contract to CellDep. Please set Contract::Source to `Chain` or set inner code cell's outpoint")]
+    MissingOutpointOnCellDep
 }
 pub type TContractResult<T> = Result<T, TContractError>;
 // Replacement for Contract
@@ -68,10 +69,16 @@ where
 {
     
     fn from(bytes: TBytes) -> Self {
+        let code_cell = Cell::with_data(bytes.clone());
+        let mut caller_cell = Cell::default();
+        let script = TScript::from(&code_cell);
+        
+        assert!(caller_cell.set_type_script(script).is_ok());
+
         Self {
             source: Some(ContractSource::Immediate((&bytes).into())),
-            inner_code_cell: Cell::with_data(bytes),
-            inner_usage_cell: Default::default(),
+            inner_code_cell: code_cell,
+            inner_usage_cell: caller_cell,
             output_rules: Default::default(),
             input_rules: Default::default(),
             outputs_count: 1,
@@ -87,8 +94,8 @@ enum InnerCellType {
 
 impl<A,D> TContract<A,D>
 where
-    A: Into<TBytes> + Default,
-    D: Into<TBytes> + Default,
+    A: Into<TBytes> + Default + TrampolineSchema,
+    D: Into<TBytes> + Default + TrampolineSchema,
 {
 
     fn safe_cell_update(&mut self, cell: Cell, cell_type: InnerCellType) -> TContractResult<()> {
@@ -158,7 +165,8 @@ where
     }
 
     pub fn set_caller_cell_data(&mut self, data: D) -> TContractResult<()> {
-        // let data:TBytes = data.into();
+         let data:TBytes = data.to_bytes().into();
+         println!("data in set caller cell data: {:?}", data);
         self.update_inner_cells(move |cell| {
             let mut cell = cell.clone();
             cell.set_data(data)?;
@@ -203,6 +211,7 @@ where
     // Can be used to retrieve cell output, cell output with data, cell input, etc...
     pub fn as_caller_cell<C: From<Cell>>(&self) -> TContractResult<C> {
         let cell = self.inner_usage_cell.clone();
+        println!("CALLER CELL: {:?}", cell);
         cell.validate()?;
         Ok(cell.into())
     }
@@ -230,11 +239,232 @@ where
 
     // Get code cell as a cell dep
     pub fn as_code_cell_dep(&self) -> TContractResult<ckb_types::packed::CellDep> {
-        Ok(self.inner_code_cell.as_cell_dep(ckb_types::core::DepType::Code)?)    
+        match self.inner_code_cell.as_cell_dep(ckb_types::core::DepType::Code) {
+            Ok(dep) => Ok(dep),
+            Err(_) => {
+                if let Some(src) = &self.source {
+                    if let ContractSource::Chain(outp) = src {
+                        return Ok(packed::CellDep::new_builder()
+                             .out_point(outp.clone().into())
+                             .dep_type(ckb_types::core::DepType::Code.into())
+                             .build());
+                     } else {
+                         return Err(TContractError::MissingOutpointOnCellDep);
+                     }
+                } else {
+                    return Err(TContractError::MissingOutpointOnCellDep);
+                }
+               
+                
+                    
+            },
+        }  
     }
 
     // Get caller cell as a cell output
     pub fn as_cell_output(&self) -> TContractResult<CellOutput> {
         Ok(CellOutput::from(&self.inner_usage_cell))
+    }
+
+    pub fn add_output_rule<F>(&mut self, scope: impl Into<RuleScope>, transform_func: F)
+    where
+        F: Fn(RuleContext) -> ContractCellField<A, D> + 'static,
+    {
+        self.output_rules
+            .push(OutputRule::new(scope.into(), transform_func));
+    }
+
+    pub fn add_input_rule<F>(&mut self, query_func: F)
+    where
+        F: Fn(TransactionView) -> CellQuery + 'static,
+    {
+        self.input_rules.push(Box::new(query_func))
+    }
+
+    pub fn set_output_count(&mut self, count: usize) {
+        self.outputs_count = count;
+    }
+
+    pub fn tx_template(&self) -> TContractResult<TransactionView> {
+        let mut tx = TransactionBuilder::default();
+
+        for _ in 0..self.outputs_count {
+            tx = tx
+                .output(
+                   self.as_cell_output().unwrap()
+                )
+                .output_data(self.as_caller_cell::<Cell>()?.data().into());
+        }
+
+        if let Some(ContractSource::Chain(_)) = self.source.clone() {
+            tx = tx.cell_dep(self.as_code_cell_dep().unwrap());
+        }
+
+        Ok(tx.build())
+    }
+}
+
+
+
+impl<A, D> GeneratorMiddleware for TContract<A, D>
+where
+    A: Into<TBytes> + Clone + Default + TrampolineSchema,
+    D: Into<TBytes> + Clone + Default + TrampolineSchema,
+{
+    fn update_query_register(
+        &self,
+        tx: CellMetaTransaction,
+        query_register: Arc<Mutex<Vec<CellQuery>>>,
+    ) {
+        let queries = self.input_rules.iter().map(|rule| rule(tx.clone().tx));
+
+        query_register.lock().unwrap().extend(queries);
+    }
+    fn pipe(
+        &self,
+        tx_meta: CellMetaTransaction,
+        _query_queue: Arc<Mutex<Vec<CellQuery>>>,
+    ) -> CellMetaTransaction {
+        type OutputWithData = (CellOutput, Bytes);
+
+        let tx = tx_meta.tx.clone();
+        let tx_template = self.tx_template();
+        let tx_template = {
+            match tx_template {
+                Ok(t) => t,
+                Err(e) => {
+                    panic!("Error occurred {:?}", e);
+                }
+            }
+        };
+
+        let total_deps = tx
+            .cell_deps()
+            .as_builder()
+            .extend(tx_template.cell_deps_iter())
+            .build();
+        let total_outputs = tx
+            .outputs()
+            .as_builder()
+            .extend(tx_template.outputs())
+            .build();
+        let total_inputs = tx
+            .inputs()
+            .as_builder()
+            .extend(tx_template.inputs())
+            .build();
+        let total_outputs_data = tx
+            .outputs_data()
+            .as_builder()
+            .extend(tx_template.outputs_data())
+            .build();
+        let tx = tx
+            .as_advanced_builder()
+            .set_cell_deps(
+                total_deps
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::CellDep>>(),
+            )
+            .set_outputs(
+                total_outputs
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::CellOutput>>(),
+            )
+            .set_inputs(
+                total_inputs
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::CellInput>>(),
+            )
+            .set_outputs_data(
+                total_outputs_data
+                    .into_iter()
+                    .collect::<Vec<crate::ckb_types::packed::Bytes>>(),
+            )
+            .build();
+
+        let outputs = tx
+            .clone()
+            .outputs()
+            .into_iter()
+            .enumerate()
+            .filter_map(|(idx, output)| {
+                let self_script_hash: ckb_types::packed::Byte32 =
+                    self.script_hash().unwrap().pack();
+
+                if let Some(type_) = output.type_().to_opt() {
+                    if type_.calc_script_hash() == self_script_hash {
+                        return Some((idx, tx.output_with_data(idx).unwrap()));
+                    }
+                }
+
+                if output.lock().calc_script_hash() == self_script_hash {
+                    return Some((idx, tx.output_with_data(idx).unwrap()));
+                }
+
+                None
+            });
+
+        let mut ctx = RuleContext::new(tx_meta.clone());
+
+        let outputs = outputs
+            .map(|output_with_idx| {
+                ctx.idx(output_with_idx.0);
+                let processed = self.output_rules.iter().fold(output_with_idx.1, |output, rule| {
+                    let _data = D::from_bytes(output.1.clone()).to_mol();
+                   // println!("Data before update {:?}", data.to_mol());
+                    let updated_field = rule.exec(&ctx);
+                    match updated_field {
+                        ContractCellField::Args(_) => todo!(),
+                        ContractCellField::Data(d) => {
+                            if rule.scope != ContractField::Data.into() {
+                                panic!("Error, mismatch of output rule scope and returned field");
+                            }
+                            let updated_tx = ctx.get_tx();
+                            let inner_tx_view = updated_tx.tx.clone();
+                            let updated_outputs_data = inner_tx_view.outputs_with_data_iter()
+                                .enumerate().map(|(i, output)| {
+                                    if i == ctx.idx {
+                                       (output.0, d.to_bytes())
+                                    } else {
+                                        output
+                                    }
+                                }).collect::<Vec<CellOutputWithData>>();
+                            let updated_inner_tx = inner_tx_view.as_advanced_builder()
+                                .set_outputs(updated_outputs_data.iter().map(|o| o.0.clone()).collect::<Vec<_>>())
+                                .set_outputs_data(updated_outputs_data.iter().map(|o| o.1.pack()).collect::<Vec<_>>())
+                                .build();
+                            let updated_tx = updated_tx.tx(updated_inner_tx);
+                            ctx = ctx.clone().tx(updated_tx);
+                            (output.0, d.to_bytes())
+                        },
+                        ContractCellField::LockScript(_) => todo!(),
+                        ContractCellField::TypeScript(_) => todo!(),
+                        ContractCellField::Capacity(_) => todo!(),
+                        _ => {
+                            panic!("Error: Contract-level rule attempted transaction-level update.")
+                        }
+                    }
+                });
+                println!("Output bytes of processed output: {:?}", processed.1.pack());
+                processed
+            })
+            .collect::<Vec<OutputWithData>>();
+
+        let final_inner_tx = tx
+            .as_advanced_builder()
+            .set_outputs(
+                outputs
+                    .iter()
+                    .map(|out| out.0.clone())
+                    .collect::<Vec<CellOutput>>(),
+            )
+            .set_outputs_data(
+                outputs
+                    .iter()
+                    .map(|out| out.1.clone().pack())
+                    .collect::<Vec<ckb_types::packed::Bytes>>(),
+            )
+            .build();
+        tx_meta.tx(final_inner_tx)
     }
 }

@@ -30,6 +30,8 @@ pub enum CellError {
     IoError(#[from] IoError),
     #[error("Type script is currently None")]
     MissingTypeScript,
+    #[error("Cannot convert cell to CellDep: no outpoint")]
+    MissingOutpoint
 }
 
 pub type CellResult<T> = Result<T, CellError>;
@@ -191,7 +193,13 @@ impl Cell {
     }
     
     pub fn as_cell_dep(&self, _dep_type: DepType) -> CellResult<CellDep> {
-        todo!()
+        if let Some(outp) = self.outpoint() {
+            Ok(CellDep::new_builder().dep_type(_dep_type.into())
+            .out_point(outp).build())
+        } else {
+            Err(CellError::MissingOutpoint)
+        }
+       
     }
 }
 
@@ -215,6 +223,19 @@ impl From<Cell> for CellOutput {
                     .pack()
             )
             .build()
+    }
+}
+
+
+impl From<CellOutput> for Cell {
+    fn from(celloutput: CellOutput) -> Self {
+       let mut cell = Cell::default();
+       cell.set_lock_script(celloutput.lock()).ok();
+       if let Some(typ) = celloutput.type_().to_opt() {
+           cell.set_type_script(typ).ok();
+       }
+       cell.set_capacity_shannons(celloutput.capacity().unpack()).ok();
+       cell
     }
 }
 
