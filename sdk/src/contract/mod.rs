@@ -7,7 +7,6 @@ use self::schema::*;
 use crate::ckb_types::packed::{CellInput, CellOutput, CellOutputBuilder, Uint64};
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
 
-
 pub mod generator;
 
 use self::generator::{CellQuery, GeneratorMiddleware};
@@ -23,14 +22,11 @@ use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
 use ckb_types::core::cell::CellMeta;
 
-
 use std::fs;
 
 use std::path::PathBuf;
 
-
 use std::sync::{Arc, Mutex};
-
 
 #[derive(Debug, Clone)]
 pub enum ContractSource {
@@ -47,7 +43,6 @@ impl ContractSource {
     }
 }
 
-
 #[derive(Clone, PartialEq)]
 pub enum ContractField {
     Args,
@@ -57,7 +52,6 @@ pub enum ContractField {
     Capacity,
 }
 
-
 #[derive(Clone, PartialEq)]
 pub enum TransactionField {
     ResolvedInputs,
@@ -65,7 +59,6 @@ pub enum TransactionField {
     Outputs,
     Dependencies,
 }
-
 
 #[derive(PartialEq)]
 pub enum RuleScope {
@@ -163,12 +156,10 @@ impl RuleContext {
     }
 }
 
-
 pub struct OutputRule<A, D> {
     pub scope: RuleScope,
     pub rule: Box<dyn Fn(RuleContext) -> ContractCellField<A, D>>,
 }
-
 
 impl<A, D> OutputRule<A, D> {
     pub fn new<F>(scope: impl Into<RuleScope>, rule: F) -> Self
@@ -185,8 +176,6 @@ impl<A, D> OutputRule<A, D> {
     }
 }
 
-
-
 pub enum ContractCellField<A, D> {
     Args(A),
     Data(D),
@@ -199,8 +188,6 @@ pub enum ContractCellField<A, D> {
     CellDeps(Vec<ckb_types::packed::CellDep>),
 }
 
-#[derive(Default)]
-
 pub struct Contract<A, D> {
     pub source: Option<ContractSource>,
     pub data: D,
@@ -211,8 +198,28 @@ pub struct Contract<A, D> {
     #[allow(clippy::type_complexity)]
     pub output_rules: Vec<OutputRule<A, D>>,
     pub input_rules: Vec<Box<dyn Fn(TransactionView) -> CellQuery>>,
+    pub outputs_count: usize,
 }
 
+impl<A, D> Default for Contract<A, D>
+where
+    D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
+    A: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
+{
+    fn default() -> Self {
+        Self {
+            source: Default::default(),
+            data: Default::default(),
+            args: Default::default(),
+            lock: Default::default(),
+            type_: Default::default(),
+            code: Default::default(),
+            output_rules: Default::default(),
+            input_rules: Default::default(),
+            outputs_count: 1,
+        }
+    }
+}
 
 impl<A, D> Contract<A, D>
 where
@@ -232,6 +239,12 @@ where
     }
 
     pub fn data_hash(&self) -> Option<H256> {
+        let data = self.data.to_mol();
+        let data = data.as_slice();
+        let raw_hash = blake2b_256(&data);
+        H256::from_slice(&raw_hash).ok()
+    }
+    pub fn code_hash(&self) -> Option<H256> {
         if let Some(data) = &self.code {
             let byte_slice = data.as_bytes();
 
@@ -245,7 +258,7 @@ where
     // Returns a script structure which can be used as a lock or type script on other cells.
     // This is an easy way to let other cells use this contract
     pub fn as_script(&self) -> Option<ckb_jsonrpc_types::Script> {
-        self.data_hash().map(|data_hash| {
+        self.code_hash().map(|data_hash| {
             Script::from(
                 packed::ScriptBuilder::default()
                     .args(self.args.to_bytes().pack())
@@ -337,6 +350,9 @@ where
         self.input_rules.push(Box::new(query_func))
     }
 
+    pub fn output_count(&mut self, count: usize) {
+        self.outputs_count = count;
+    }
     pub fn tx_template(&self) -> TransactionView {
         let arg_size = self.args.to_mol().as_builder().expected_length() as u64;
         let data_size = self.data.to_mol().as_builder().expected_length() as u64;
@@ -345,14 +361,20 @@ where
         (0..data_size as usize).into_iter().for_each(|_| {
             data.push(0u8);
         });
-        let mut tx = TransactionBuilder::default()
-            .output(
-                CellOutput::new_builder()
-                    .capacity((data_size + arg_size).pack())
-                    .type_(Some(ckb_types::packed::Script::from(self.as_script().unwrap())).pack())
-                    .build(),
-            )
-            .output_data(data.pack());
+        let mut tx = TransactionBuilder::default();
+
+        for _ in 0..self.outputs_count {
+            tx = tx
+                .output(
+                    CellOutput::new_builder()
+                        .capacity((data_size + arg_size).pack())
+                        .type_(
+                            Some(ckb_types::packed::Script::from(self.as_script().unwrap())).pack(),
+                        )
+                        .build(),
+                )
+                .output_data(data.pack());
+        }
 
         if let Some(ContractSource::Chain(outp)) = self.source.clone() {
             tx = tx.cell_dep(self.as_cell_dep(outp).into());
@@ -429,28 +451,32 @@ where
                     .collect::<Vec<crate::ckb_types::packed::Bytes>>(),
             )
             .build();
-        let mut idx = 0;
-        let outputs = tx.clone().outputs().into_iter().filter_map(|output| {
-            let self_script_hash: ckb_types::packed::Byte32 = self.script_hash().unwrap().into();
 
-            if let Some(type_) = output.type_().to_opt() {
-                if type_.calc_script_hash() == self_script_hash {
+        let outputs = tx
+            .clone()
+            .outputs()
+            .into_iter()
+            .enumerate()
+            .filter_map(|(idx, output)| {
+                let self_script_hash: ckb_types::packed::Byte32 =
+                    self.script_hash().unwrap().into();
+
+                if let Some(type_) = output.type_().to_opt() {
+                    if type_.calc_script_hash() == self_script_hash {
+                        return Some((idx, tx.output_with_data(idx).unwrap()));
+                    }
+                }
+
+                if output.lock().calc_script_hash() == self_script_hash {
                     return Some((idx, tx.output_with_data(idx).unwrap()));
                 }
-            }
 
-            if output.lock().calc_script_hash() == self_script_hash {
-                return Some((idx, tx.output_with_data(idx).unwrap()));
-            }
-
-            idx += 1;
-            None
-        });
+                None
+            });
 
         let mut ctx = RuleContext::new(tx_meta.clone());
 
         let outputs = outputs
-            .into_iter()
             .map(|output_with_idx| {
                 ctx.idx(output_with_idx.0);
                 let processed = self.output_rules.iter().fold(output_with_idx.1, |output, rule| {
