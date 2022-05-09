@@ -1,4 +1,5 @@
 
+mod rpc_chain;
 mod mock_chain;
 mod traits;
 mod error;
