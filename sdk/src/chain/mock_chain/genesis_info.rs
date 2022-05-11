@@ -1,4 +1,3 @@
-use ckb_sdk::GenesisInfo;
 use ckb_types::{
     prelude::*,
     bytes::Bytes,
@@ -37,30 +36,16 @@ impl Default for GenesisScripts {
     }
 }
 
-// Deploy every system script from a genesis script to a MockChain return GenesisInfo
+// Deploy every system script from a genesis script to a MockChain
 pub fn genesis_event(
     chain: &mut MockChain,
-) -> GenesisInfo {
-    // Does nothing if the genesis scripts are already deployed
-    match &chain.genesis_info {
-        // Should return the existing genesis info
-        Some(genesis_info) => {
-            genesis_info.clone()
-        }
-
-        // Run genesis event
-        // Deploy genesis scripts, create a block, set the genesis info and return it
-        None => {
-            // Deploy scripts
-            deploy_genesis_scripts(chain, None);
-            // Create genesis block
-            let block = genesis_block_from_chain(chain);
-            // Insert block header
-            chain.insert_header(block.clone().header());
-            // Return genesis info
-            GenesisInfo::from_block(&block).expect("Failed to create genesis info from genesis block")
-        }
-    }
+) {
+    // Deploy scripts
+    deploy_genesis_scripts(chain, None);
+    // Create genesis block
+    let block = genesis_block_from_chain(chain);
+    // Insert block header
+    chain.insert_header(block.clone().header());
 }
 
 pub fn deploy_genesis_scripts(

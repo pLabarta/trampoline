@@ -15,7 +15,6 @@ use ckb_types::{
     prelude::*,
 };
 use ckb_verification::TransactionError;
-use ckb_sdk::GenesisInfo;
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]

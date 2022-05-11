@@ -53,7 +53,6 @@ pub struct MockChain {
     pub cells_by_data_hash: HashMap<Byte32, OutPoint>,
     pub cells_by_lock_hash: HashMap<Byte32, Vec<OutPoint>>,
     pub cells_by_type_hash: HashMap<Byte32, Vec<OutPoint>>,
-    pub genesis_info: Option<GenesisInfo>,
     pub default_lock: Option<OutPoint>,
     pub debug: bool,
     messages: Arc<Mutex<Vec<Message>>>,
@@ -465,14 +464,6 @@ mod tests {
         assert!(secp_data.is_some());
     }
 
-    #[test]
-    fn genesis_info_from_genesis_block_returns_ok() {
-        let (_chain, genesis_block) = mockchain_setup();
-
-        let genesis_info = GenesisInfo::from_block(&genesis_block);
-
-        assert!(genesis_info.is_ok());
-    }
 
     #[test]
     fn test_genesis_block_has_dao_cell() {

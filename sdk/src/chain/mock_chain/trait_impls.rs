@@ -187,15 +187,6 @@ impl Chain for MockChain {
         Ok(self.deploy_cell_output(data, outp))
     }
 
-    // Check how the genesis block is deployed on actual chains
-    fn genesis_info(&self) -> Option<GenesisInfo> {
-        self.genesis_info.clone()
-    }
-
-    fn set_genesis_info(&mut self, genesis_info: GenesisInfo) {
-        self.genesis_info = Some(genesis_info);
-    }
-
     fn set_default_lock<A, D>(&mut self, lock: Contract<A, D>)
     where
         D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
@@ -241,7 +232,6 @@ impl Default for MockChain {
             cells_by_data_hash: Default::default(),
             cells_by_lock_hash: Default::default(),
             cells_by_type_hash: Default::default(),
-            genesis_info: None,
             default_lock: None,
             debug: Default::default(),
             messages: Default::default(),
@@ -261,29 +251,5 @@ impl Default for MockChain {
 
         // Return chain
         chain
-    }
-}
-
-impl PartialEq for MockChain {
-    // Simple equality check for testing purposes
-    // Curves around genesis info not implementing PartialEq
-    fn eq(&self, other: &Self) -> bool {
-        self.cells == other.cells &&
-        self.default_lock == other.default_lock &&
-        self.outpoint_txs == other.outpoint_txs &&
-        self.headers == other.headers &&
-        self.epoches == other.epoches &&
-        self.cells_by_data_hash == other.cells_by_data_hash &&
-        self.cells_by_lock_hash == other.cells_by_lock_hash &&
-        self.cells_by_type_hash == other.cells_by_type_hash &&  
-        self.debug == other.debug &&
-
-        // Compare GenesisInfo
-        self.genesis_info.as_ref().unwrap().sighash_data_hash() == other.genesis_info.as_ref().unwrap().sighash_data_hash() &&
-        self.genesis_info.as_ref().unwrap().sighash_type_hash() == other.genesis_info.as_ref().unwrap().sighash_type_hash() &&
-        self.genesis_info.as_ref().unwrap().multisig_data_hash() == other.genesis_info.as_ref().unwrap().multisig_data_hash() &&
-        self.genesis_info.as_ref().unwrap().multisig_type_hash() == other.genesis_info.as_ref().unwrap().multisig_type_hash() &&
-        self.genesis_info.as_ref().unwrap().dao_data_hash() == other.genesis_info.as_ref().unwrap().dao_data_hash() &&
-        self.genesis_info.as_ref().unwrap().dao_type_hash() == other.genesis_info.as_ref().unwrap().dao_type_hash()
     }
 }
