@@ -1,12 +1,22 @@
+use std::collections::HashMap;
+
 use crate::contract::{generator::TransactionProvider, Contract, schema::{JsonByteConversion, MolConversion, BytesConversion}};
 use crate::types::{
     cell::{Cell},
     bytes::{Bytes},
 };
+use ckb_sdk::{ScriptId, unlock::ScriptUnlocker, traits::CellQueryOptions};
 use ckb_types::{
     core::TransactionView,
     packed::{Byte32, OutPoint},
 };
+
+pub type Unlockers = HashMap<ScriptId, Box<dyn ScriptUnlocker>>;
+
+pub enum CellInputs {
+    Cells(Vec<Cell>),
+    Query(CellQueryOptions),
+}
 
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
 use super::{ChainError, ChainResult};
@@ -36,8 +46,8 @@ pub trait Chain {
         }
     }
 
-    fn deploy_cell(&mut self, cell: &Cell) -> ChainResult<OutPoint>;
-    fn deploy_cells(&mut self, cells: &Vec<Cell>) -> ChainResult<Vec<OutPoint>>;
+    fn deploy_cell(&mut self, cell: &Cell, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<OutPoint>;
+    fn deploy_cells(&mut self, cells: &Vec<Cell>, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<Vec<OutPoint>>;
 
     // Removed due to changes in ckb-sdk-rust crate
     // fn genesis_info(&self) -> Option<GenesisInfo>;

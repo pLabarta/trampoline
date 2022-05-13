@@ -182,7 +182,7 @@ impl Chain for MockChain {
         MockChainTxProvider::new(self.clone())
     }
 
-    fn deploy_cell(&mut self, cell: &Cell) -> ChainResult<OutPoint> {
+    fn deploy_cell(&mut self, cell: &Cell, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<OutPoint> {
         let (outp, data): CellOutputWithData = cell.into();
         Ok(self.deploy_cell_output(data, outp))
     }
@@ -210,7 +210,7 @@ impl Chain for MockChain {
         cell
     }
 
-    fn deploy_cells(&mut self, cells: &Vec<Cell>) -> ChainResult<Vec<OutPoint>> {
+    fn deploy_cells(&mut self, cells: &Vec<Cell>, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<Vec<OutPoint>> {
        Ok(cells.iter().map(|c| {
             let (outp, data): CellOutputWithData = c.into();
             self.deploy_cell_output(data, outp)
@@ -252,4 +252,38 @@ impl Default for MockChain {
         // Return chain
         chain
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    #[test]
+    fn test_deploy_cell_and_fetch_cell() {
+        let mut chain = MockChain::default();
+        let lock_args = Bytes::from(b"test".to_vec());
+        let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let inputs = CellInputs::Cells(vec![]);
+        let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
+        let fetched_cell = chain.get_cell(&outpoint).unwrap();
+        assert_eq!(format!("{:?}",cell), format!("{:?}",Cell::from(fetched_cell.0)));
+    }
+
+    #[test]
+    fn test_deploy_two_cells_and_fetch_them() {
+        let mut chain = MockChain::default();
+        let lock_args = Bytes::from(b"test".to_vec());
+        let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let cell2 = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let inputs = CellInputs::Cells(vec![]);
+        let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
+        let outpoint2 = chain.deploy_cell(&cell2, HashMap::new(), &inputs).unwrap();
+        let fetched_cell = chain.get_cell(&outpoint).unwrap();
+        let fetched_cell2 = chain.get_cell(&outpoint2).unwrap();
+        assert_eq!(format!("{:?}",cell), format!("{:?}",Cell::from(fetched_cell.0)));
+        assert_eq!(format!("{:?}",cell2), format!("{:?}",Cell::from(fetched_cell2.0)));   
+    }
+
 }
