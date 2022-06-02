@@ -48,10 +48,3 @@ impl HeaderChecker for RpcChain {
         todo!()
     }
 }
-
-// fn rational_to_ratio(r: RationalU256) -> Ratio {
-//     let list: Vec<&str> = r.to_string().split("/").collect();
-//     let numer = list[0].parse::<u64>().unwrap();
-//     let denom = list[1].parse::<u64>().unwrap();
-//     Ratio::new(numer, denom)
-// }
