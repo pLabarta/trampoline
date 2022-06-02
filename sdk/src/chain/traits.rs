@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
-use crate::contract::{generator::TransactionProvider, Contract, schema::{JsonByteConversion, MolConversion, BytesConversion}};
-use crate::types::{
-    cell::{Cell},
-    bytes::{Bytes},
+use crate::contract::{
+    generator::TransactionProvider,
+    schema::{BytesConversion, JsonByteConversion, MolConversion},
+    Contract,
 };
-use ckb_sdk::{ScriptId, unlock::ScriptUnlocker, traits::CellQueryOptions};
+use crate::types::{bytes::Bytes, cell::Cell};
+use ckb_sdk::{traits::CellQueryOptions, unlock::ScriptUnlocker, ScriptId};
 use ckb_types::{
     core::TransactionView,
     packed::{Byte32, OutPoint},
@@ -18,8 +19,8 @@ pub enum CellInputs {
     Query(CellQueryOptions),
 }
 
-use ckb_jsonrpc_types::TransactionView as JsonTransaction;
 use super::{ChainError, ChainResult};
+use ckb_jsonrpc_types::TransactionView as JsonTransaction;
 // Modify trait TransactionProvider to be more flexible about input type
 // Then define TransactionProviderError to use in Chain trait
 // This way, anything that accepts TransactionProvider trait can accept chain trait
@@ -42,24 +43,30 @@ pub trait Chain {
         let json_tx = JsonTransaction::from(view_tx);
         match self.inner().send_tx(json_tx) {
             Some(hash) => Ok(hash.into()),
-            None => Err(ChainError::TransactionSendError)
+            None => Err(ChainError::TransactionSendError),
         }
     }
 
-    fn deploy_cell(&mut self, cell: &Cell, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<OutPoint>;
-    fn deploy_cells(&mut self, cells: &Vec<Cell>, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<Vec<OutPoint>>;
+    fn deploy_cell(
+        &mut self,
+        cell: &Cell,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<OutPoint>;
+    fn deploy_cells(
+        &mut self,
+        cells: &Vec<Cell>,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<Vec<OutPoint>>;
 
     // Removed due to changes in ckb-sdk-rust crate
     // fn genesis_info(&self) -> Option<GenesisInfo>;
     // fn set_genesis_info(&mut self, genesis_info: GenesisInfo);
-    
-    fn set_default_lock<A,D>(&mut self,lock: Contract<A,D>)
-    where 
-    D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-    A: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-    ;
+
+    fn set_default_lock<A, D>(&mut self, lock: Contract<A, D>)
+    where
+        D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
+        A: JsonByteConversion + MolConversion + BytesConversion + Clone + Default;
     fn generate_cell_with_default_lock(&self, lock_args: Bytes) -> Cell;
-
-    
-
 }

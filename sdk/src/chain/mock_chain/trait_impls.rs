@@ -1,10 +1,10 @@
-use crate::chain::*;
+use super::genesis_info::genesis_event;
 use crate::chain::mock_chain::MAX_CYCLES;
+use crate::chain::*;
 use crate::contract::generator::{
     CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,
 };
 use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
-use super::genesis_info::genesis_event;
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -13,13 +13,11 @@ use ckb_types::{
     bytes::Bytes,
     core::{
         cell::{CellMeta, CellMetaBuilder},
-   HeaderView,
+        HeaderView,
     },
-    packed::{Byte32,  CellOutput, OutPoint},
+    packed::{Byte32, CellOutput, OutPoint},
 };
-use std::{cell::RefCell};
-
-
+use std::cell::RefCell;
 
 impl CellDataProvider for MockChain {
     // load Cell Data
@@ -182,7 +180,12 @@ impl Chain for MockChain {
         MockChainTxProvider::new(self.clone())
     }
 
-    fn deploy_cell(&mut self, cell: &Cell, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<OutPoint> {
+    fn deploy_cell(
+        &mut self,
+        cell: &Cell,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<OutPoint> {
         let (outp, data): CellOutputWithData = cell.into();
         Ok(self.deploy_cell_output(data, outp))
     }
@@ -210,17 +213,21 @@ impl Chain for MockChain {
         cell
     }
 
-    fn deploy_cells(&mut self, cells: &Vec<Cell>, unlockers: Unlockers, inputs: &CellInputs) -> ChainResult<Vec<OutPoint>> {
-       Ok(cells.iter().map(|c| {
-            let (outp, data): CellOutputWithData = c.into();
-            self.deploy_cell_output(data, outp)
-        }).collect::<Vec<_>>())
-       
+    fn deploy_cells(
+        &mut self,
+        cells: &Vec<Cell>,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<Vec<OutPoint>> {
+        Ok(cells
+            .iter()
+            .map(|c| {
+                let (outp, data): CellOutputWithData = c.into();
+                self.deploy_cell_output(data, outp)
+            })
+            .collect::<Vec<_>>())
     }
 }
-
-
-
 
 impl Default for MockChain {
     fn default() -> Self {
@@ -247,8 +254,6 @@ impl Default for MockChain {
         // Run genesis event on the mockchain
         genesis_event(&mut chain);
 
-        
-
         // Return chain
         chain
     }
@@ -268,7 +273,10 @@ mod tests {
         let inputs = CellInputs::Cells(vec![]);
         let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
         let fetched_cell = chain.get_cell(&outpoint).unwrap();
-        assert_eq!(format!("{:?}",cell), format!("{:?}",Cell::from(fetched_cell.0)));
+        assert_eq!(
+            format!("{:?}", cell),
+            format!("{:?}", Cell::from(fetched_cell.0))
+        );
     }
 
     #[test]
@@ -282,8 +290,13 @@ mod tests {
         let outpoint2 = chain.deploy_cell(&cell2, HashMap::new(), &inputs).unwrap();
         let fetched_cell = chain.get_cell(&outpoint).unwrap();
         let fetched_cell2 = chain.get_cell(&outpoint2).unwrap();
-        assert_eq!(format!("{:?}",cell), format!("{:?}",Cell::from(fetched_cell.0)));
-        assert_eq!(format!("{:?}",cell2), format!("{:?}",Cell::from(fetched_cell2.0)));   
+        assert_eq!(
+            format!("{:?}", cell),
+            format!("{:?}", Cell::from(fetched_cell.0))
+        );
+        assert_eq!(
+            format!("{:?}", cell2),
+            format!("{:?}", Cell::from(fetched_cell2.0))
+        );
     }
-
 }
