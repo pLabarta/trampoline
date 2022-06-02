@@ -1,9 +1,8 @@
-mod trait_impls;
 pub mod genesis_info;
+mod trait_impls;
 pub use trait_impls::*;
 
 use crate::chain::*;
-
 
 use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder};
 use ckb_error::Error as CKBError;
@@ -24,10 +23,8 @@ use ckb_types::{
 use ckb_util::LinkedHashSet;
 use rand::{thread_rng, Rng};
 
-
-
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::{collections::HashMap};
 
 const MAX_CYCLES: u64 = 500_0000;
 
@@ -53,12 +50,10 @@ pub struct MockChain {
     pub cells_by_data_hash: HashMap<Byte32, OutPoint>,
     pub cells_by_lock_hash: HashMap<Byte32, Vec<OutPoint>>,
     pub cells_by_type_hash: HashMap<Byte32, Vec<OutPoint>>,
-    pub genesis_info: Option<GenesisInfo>,
     pub default_lock: Option<OutPoint>,
     pub debug: bool,
     messages: Arc<Mutex<Vec<Message>>>,
 }
-
 
 impl MockChain {
     pub fn deploy_cell_with_data(&mut self, data: Bytes) -> OutPoint {
@@ -447,31 +442,25 @@ mod tests {
         let multisig_code_hash_bytes =
             Byte32::from_slice(&ckb_system_scripts::CODE_HASH_SECP256K1_BLAKE160_MULTISIG_ALL)
                 .unwrap();
-        let multisig_outpoint = chain
-            .get_cell_by_data_hash(&multisig_code_hash_bytes);
+        let multisig_outpoint = chain.get_cell_by_data_hash(&multisig_code_hash_bytes);
         assert!(multisig_outpoint.is_some());
 
         let blake160_sighash_all_code_hash_bytes =
             Byte32::from_slice(&ckb_system_scripts::CODE_HASH_SECP256K1_BLAKE160_SIGHASH_ALL)
                 .unwrap();
-        let blake160_sighash_all_outpoint = chain
-            .get_cell_by_data_hash(&blake160_sighash_all_code_hash_bytes);
+        let blake160_sighash_all_outpoint =
+            chain.get_cell_by_data_hash(&blake160_sighash_all_code_hash_bytes);
         assert!(blake160_sighash_all_outpoint.is_some());
 
-        let dao = chain.get_cell_by_data_hash(&Byte32::from_slice(&ckb_system_scripts::CODE_HASH_DAO).unwrap());
+        let dao = chain.get_cell_by_data_hash(
+            &Byte32::from_slice(&ckb_system_scripts::CODE_HASH_DAO).unwrap(),
+        );
         assert!(dao.is_some());
 
-        let secp_data = chain.get_cell_by_data_hash(&Byte32::from_slice(&ckb_system_scripts::CODE_HASH_SECP256K1_DATA).unwrap());
+        let secp_data = chain.get_cell_by_data_hash(
+            &Byte32::from_slice(&ckb_system_scripts::CODE_HASH_SECP256K1_DATA).unwrap(),
+        );
         assert!(secp_data.is_some());
-    }
-
-    #[test]
-    fn genesis_info_from_genesis_block_returns_ok() {
-        let (_chain, genesis_block) = mockchain_setup();
-
-        let genesis_info = GenesisInfo::from_block(&genesis_block);
-
-        assert!(genesis_info.is_ok());
     }
 
     #[test]

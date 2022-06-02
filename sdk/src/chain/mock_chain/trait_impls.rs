@@ -1,10 +1,10 @@
-use crate::chain::*;
+use super::genesis_info::genesis_event;
 use crate::chain::mock_chain::MAX_CYCLES;
+use crate::chain::*;
 use crate::contract::generator::{
     CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,
 };
 use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
-use super::genesis_info::genesis_event;
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -13,13 +13,11 @@ use ckb_types::{
     bytes::Bytes,
     core::{
         cell::{CellMeta, CellMetaBuilder},
-   HeaderView,
+        HeaderView,
     },
-    packed::{Byte32,  CellOutput, OutPoint},
+    packed::{Byte32, CellOutput, OutPoint},
 };
-use std::{cell::RefCell};
-
-
+use std::cell::RefCell;
 
 impl CellDataProvider for MockChain {
     // load Cell Data
@@ -182,18 +180,14 @@ impl Chain for MockChain {
         MockChainTxProvider::new(self.clone())
     }
 
-    fn deploy_cell(&mut self, cell: &Cell) -> ChainResult<OutPoint> {
+    fn deploy_cell(
+        &mut self,
+        cell: &Cell,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<OutPoint> {
         let (outp, data): CellOutputWithData = cell.into();
         Ok(self.deploy_cell_output(data, outp))
-    }
-
-    // Check how the genesis block is deployed on actual chains
-    fn genesis_info(&self) -> Option<GenesisInfo> {
-        self.genesis_info.clone()
-    }
-
-    fn set_genesis_info(&mut self, genesis_info: GenesisInfo) {
-        self.genesis_info = Some(genesis_info);
     }
 
     fn set_default_lock<A, D>(&mut self, lock: Contract<A, D>)
@@ -219,17 +213,21 @@ impl Chain for MockChain {
         cell
     }
 
-    fn deploy_cells(&mut self, cells: &Vec<Cell>) -> ChainResult<Vec<OutPoint>> {
-       Ok(cells.iter().map(|c| {
-            let (outp, data): CellOutputWithData = c.into();
-            self.deploy_cell_output(data, outp)
-        }).collect::<Vec<_>>())
-       
+    fn deploy_cells(
+        &mut self,
+        cells: &Vec<Cell>,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<Vec<OutPoint>> {
+        Ok(cells
+            .iter()
+            .map(|c| {
+                let (outp, data): CellOutputWithData = c.into();
+                self.deploy_cell_output(data, outp)
+            })
+            .collect::<Vec<_>>())
     }
 }
-
-
-
 
 impl Default for MockChain {
     fn default() -> Self {
@@ -241,7 +239,6 @@ impl Default for MockChain {
             cells_by_data_hash: Default::default(),
             cells_by_lock_hash: Default::default(),
             cells_by_type_hash: Default::default(),
-            genesis_info: None,
             default_lock: None,
             debug: Default::default(),
             messages: Default::default(),
@@ -257,33 +254,49 @@ impl Default for MockChain {
         // Run genesis event on the mockchain
         genesis_event(&mut chain);
 
-        
-
         // Return chain
         chain
     }
 }
 
-impl PartialEq for MockChain {
-    // Simple equality check for testing purposes
-    // Curves around genesis info not implementing PartialEq
-    fn eq(&self, other: &Self) -> bool {
-        self.cells == other.cells &&
-        self.default_lock == other.default_lock &&
-        self.outpoint_txs == other.outpoint_txs &&
-        self.headers == other.headers &&
-        self.epoches == other.epoches &&
-        self.cells_by_data_hash == other.cells_by_data_hash &&
-        self.cells_by_lock_hash == other.cells_by_lock_hash &&
-        self.cells_by_type_hash == other.cells_by_type_hash &&  
-        self.debug == other.debug &&
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
 
-        // Compare GenesisInfo
-        self.genesis_info.as_ref().unwrap().sighash_data_hash() == other.genesis_info.as_ref().unwrap().sighash_data_hash() &&
-        self.genesis_info.as_ref().unwrap().sighash_type_hash() == other.genesis_info.as_ref().unwrap().sighash_type_hash() &&
-        self.genesis_info.as_ref().unwrap().multisig_data_hash() == other.genesis_info.as_ref().unwrap().multisig_data_hash() &&
-        self.genesis_info.as_ref().unwrap().multisig_type_hash() == other.genesis_info.as_ref().unwrap().multisig_type_hash() &&
-        self.genesis_info.as_ref().unwrap().dao_data_hash() == other.genesis_info.as_ref().unwrap().dao_data_hash() &&
-        self.genesis_info.as_ref().unwrap().dao_type_hash() == other.genesis_info.as_ref().unwrap().dao_type_hash()
+    use super::*;
+
+    #[test]
+    fn test_deploy_cell_and_fetch_cell() {
+        let mut chain = MockChain::default();
+        let lock_args = Bytes::from(b"test".to_vec());
+        let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let inputs = CellInputs::Cells(vec![]);
+        let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
+        let fetched_cell = chain.get_cell(&outpoint).unwrap();
+        assert_eq!(
+            format!("{:?}", cell),
+            format!("{:?}", Cell::from(fetched_cell.0))
+        );
+    }
+
+    #[test]
+    fn test_deploy_two_cells_and_fetch_them() {
+        let mut chain = MockChain::default();
+        let lock_args = Bytes::from(b"test".to_vec());
+        let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let cell2 = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let inputs = CellInputs::Cells(vec![]);
+        let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
+        let outpoint2 = chain.deploy_cell(&cell2, HashMap::new(), &inputs).unwrap();
+        let fetched_cell = chain.get_cell(&outpoint).unwrap();
+        let fetched_cell2 = chain.get_cell(&outpoint2).unwrap();
+        assert_eq!(
+            format!("{:?}", cell),
+            format!("{:?}", Cell::from(fetched_cell.0))
+        );
+        assert_eq!(
+            format!("{:?}", cell2),
+            format!("{:?}", Cell::from(fetched_cell2.0))
+        );
     }
 }
