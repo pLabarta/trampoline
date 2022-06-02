@@ -10,7 +10,6 @@ pub enum ChainError {
     TransactionSendError,
 }
 
-
 // Most of this is taken from https://github.com/nervosnetwork/ckb-tool.
 // Reimplementation here due to slight changes in the API & version conflicts
 pub type ChainResult<T> = Result<T, ChainError>;
