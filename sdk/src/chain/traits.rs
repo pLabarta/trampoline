@@ -8,7 +8,6 @@ use ckb_types::{
     packed::{Byte32, OutPoint},
 };
 
-use ckb_sdk::{GenesisInfo};
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
 use super::{ChainError, ChainResult};
 // Modify trait TransactionProvider to be more flexible about input type
@@ -40,9 +39,10 @@ pub trait Chain {
     fn deploy_cell(&mut self, cell: &Cell) -> ChainResult<OutPoint>;
     fn deploy_cells(&mut self, cells: &Vec<Cell>) -> ChainResult<Vec<OutPoint>>;
 
+    // Removed due to changes in ckb-sdk-rust crate
+    // fn genesis_info(&self) -> Option<GenesisInfo>;
+    // fn set_genesis_info(&mut self, genesis_info: GenesisInfo);
     
-    fn genesis_info(&self) -> Option<GenesisInfo>;
-    fn set_genesis_info(&mut self, genesis_info: GenesisInfo) ;
     fn set_default_lock<A,D>(&mut self,lock: Contract<A,D>)
     where 
     D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
