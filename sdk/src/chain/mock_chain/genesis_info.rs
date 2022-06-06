@@ -1,3 +1,8 @@
+use ckb_types::{
+    prelude::*,
+    bytes::Bytes,
+    packed::Byte32,
+};
 use ckb_system_scripts::BUNDLED_CELL;
 use ckb_types::core::{BlockBuilder, BlockView, TransactionBuilder};
 use ckb_types::{bytes::Bytes, packed::Byte32, prelude::*};
@@ -33,7 +38,9 @@ impl Default for GenesisScripts {
 }
 
 // Deploy every system script from a genesis script to a MockChain
-pub fn genesis_event(chain: &mut MockChain) {
+pub fn genesis_event(
+    chain: &mut MockChain,
+) {
     // Deploy scripts
     deploy_genesis_scripts(chain, None);
     // Create genesis block
