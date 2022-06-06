@@ -267,15 +267,29 @@ mod tests {
 
     #[test]
     fn test_deploy_cell_and_fetch_cell() {
+        // Setup chain
         let mut chain = MockChain::default();
+
+        // Setup cell to deploy
         let lock_args = Bytes::from(b"test".to_vec());
-        let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let cell = chain.generate_cell_with_default_lock(lock_args.into());
+    
+
+        // Setup cell inputs for the tx to include
         let inputs = CellInputs::Cells(vec![]);
+
+        // Deploy cell and get outpoint
         let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
+
+        // Retrieve the deployed cell
         let fetched_cell = chain.get_cell(&outpoint).unwrap();
+
+        let cells = chain.cells;
+        println!("{:?}", cells.get(&outpoint).unwrap().0.lock().args());
+
         assert_eq!(
-            format!("{:?}", cell),
-            format!("{:?}", Cell::from(fetched_cell.0))
+            format!("{:?}", CellOutputWithData::from(cell).0.lock().args()),
+            format!("{:?}", fetched_cell.0.lock().args())
         );
     }
 
