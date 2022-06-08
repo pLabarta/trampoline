@@ -15,7 +15,7 @@ pub mod ckb_builtin {
     pub use ckb_types::*;
 }
 pub mod query;
-
+pub mod address;
 // TO DO: Implement this trait for all types
 
 pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> + Into<JsonBytes> {
