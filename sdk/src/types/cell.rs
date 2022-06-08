@@ -103,15 +103,15 @@ impl Cell {
     pub fn lock_hash(&self) -> CellResult<H256> {
         self.lock_script
             .validate()
-            .map_err(|e| CellError::ScriptError(e))
+            .map_err(CellError::ScriptError)
     }
 
     pub fn type_hash(&self) -> CellResult<Option<H256>> {
         if let Some(script) = &self.type_script {
             script
                 .validate()
-                .map_err(|e| CellError::ScriptError(e))
-                .map(|hash| Some(hash))
+                .map_err(CellError::ScriptError)
+                .map(Some)
         } else {
             Ok(None)
         }
@@ -215,7 +215,7 @@ impl From<Cell> for CellOutput {
             .lock(cell.lock_script.into())
             .type_(
                 cell.type_script
-                    .map(|script| ckb_types::packed::Script::from(script))
+                    .map(ckb_types::packed::Script::from)
                     .pack(),
             )
             .build()

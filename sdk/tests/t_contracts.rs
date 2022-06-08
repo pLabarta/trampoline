@@ -60,7 +60,7 @@ fn generate_mock_tx(outputs: Vec<Cell>) -> TransactionView {
     let outputs_data = outputs.iter().map(|c| c.data()).collect::<Vec<_>>();
     let outputs = outputs
         .iter()
-        .map(|c| CellOutput::from(c))
+        .map(CellOutput::from)
         .collect::<Vec<_>>();
     TransactionBuilder::default()
         .outputs(outputs)

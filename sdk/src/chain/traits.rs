@@ -29,7 +29,7 @@ pub trait Chain {
     }
 
     fn send_tx<T: Into<TransactionView> + Clone>(&self, tx: T) -> ChainResult<Byte32> {
-        let view_tx: TransactionView = tx.clone().into();
+        let view_tx: TransactionView = tx.into();
         let json_tx = JsonTransaction::from(view_tx);
         match self.inner().send_tx(json_tx) {
             Some(hash) => Ok(hash.into()),

@@ -59,7 +59,7 @@ mod tests {
         let hash_1: H256 = packed_script.calc_script_hash().unpack();
         let mut cell_with_lock = cell::Cell::default();
         assert!(cell_with_lock
-            .set_lock_script(packed_script.clone())
+            .set_lock_script(packed_script)
             .is_ok());
         let hash_2 = cell_with_lock.lock_hash().unwrap();
         assert_eq!(hash_1, hash_2);

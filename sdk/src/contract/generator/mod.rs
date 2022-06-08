@@ -80,12 +80,12 @@ where
     }
 
     pub fn query(&self, query: CellQuery) -> Option<Vec<CellMeta>> {
-        let res = self.query_service.unwrap().query_cell_meta(query.clone());
+        
         // println!(
         //     "Res in generator.query for cell_query {:?} is {:?}",
         //     query, res
         // );
-        res
+        self.query_service.unwrap().query_cell_meta(query)
     }
 
     pub fn generate(&self) -> CellMetaTransaction {

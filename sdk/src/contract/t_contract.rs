@@ -185,7 +185,7 @@ where
         println!("data in set caller cell data: {:?}", data);
         self.update_inner_cells(
             move |cell| {
-                let mut cell = cell.clone();
+                let mut cell = cell;
                 cell.set_data(data)?;
                 Ok(cell)
             },
@@ -253,15 +253,15 @@ where
             Err(_) => {
                 if let Some(src) = &self.source {
                     if let ContractSource::Chain(outp) = src {
-                        return Ok(packed::CellDep::new_builder()
+                        Ok(packed::CellDep::new_builder()
                             .out_point(outp.clone().into())
                             .dep_type(ckb_types::core::DepType::Code.into())
-                            .build());
+                            .build())
                     } else {
-                        return Err(TContractError::MissingOutpointOnCellDep);
+                        Err(TContractError::MissingOutpointOnCellDep)
                     }
                 } else {
-                    return Err(TContractError::MissingOutpointOnCellDep);
+                    Err(TContractError::MissingOutpointOnCellDep)
                 }
             }
         }

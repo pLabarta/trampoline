@@ -34,7 +34,7 @@ impl Bytes {
     }
 
     pub fn required_capacity(&self) -> BytesResult<Capacity> {
-        Capacity::bytes(self.len()).map_err(|e| BytesError::CapacityCalcError(e))
+        Capacity::bytes(self.len()).map_err(BytesError::CapacityCalcError)
     }
 }
 

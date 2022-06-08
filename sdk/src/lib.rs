@@ -12,8 +12,8 @@ pub mod ckb_types {
 }
 
 pub mod precompiled {
-    pub const SUDT: &'static [u8] = include_bytes!("../binaries/simple_udt");
-    pub const TNFT: &'static [u8] = include_bytes!("../binaries/trampoline-nft");
+    pub const SUDT: &[u8] = include_bytes!("../binaries/simple_udt");
+    pub const TNFT: &[u8] = include_bytes!("../binaries/trampoline-nft");
 }
 
 // From ckb_types::conversion

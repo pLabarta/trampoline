@@ -62,7 +62,7 @@ impl Script {
         }
     }
     pub fn required_capacity(&self) -> ScriptResult<Capacity> {
-        Capacity::bytes(self.size_bytes()).map_err(|e| ScriptError::ScriptCapacityError(e))
+        Capacity::bytes(self.size_bytes()).map_err(ScriptError::ScriptCapacityError)
     }
     pub fn code_hash(&self) -> H256 {
         self.code_hash.clone()
@@ -100,11 +100,11 @@ impl From<JsonScript> for Script {
     fn from(j: JsonScript) -> Self {
         let hash_type = j.hash_type.clone();
         let code_hash = j.code_hash.clone();
-        let args = j.args.clone().into();
+        let args = j.args.into();
 
         Self {
             args,
-            code_hash: code_hash,
+            code_hash,
             hash_type,
         }
     }
