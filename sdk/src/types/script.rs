@@ -1,24 +1,11 @@
-
-
-use ckb_types::prelude::*;
-use ckb_types::{H256, bytes::Bytes as CkBytes};
-use ckb_types::core::{
-    ScriptHashType,
-    Capacity, CapacityError
-    
-};
 use super::bytes::Bytes;
 use super::cell::Cell;
-use super::constants::{CODE_HASH_SIZE_BYTES};
-use ckb_types::packed::{
-    Script as PackedScript, Bytes as PackedBytes
-};
-use ckb_jsonrpc_types::{
-    Script as JsonScript, 
-    ScriptHashType as JsonScriptHashType,
-
-    JsonBytes
-};
+use super::constants::CODE_HASH_SIZE_BYTES;
+use ckb_jsonrpc_types::{JsonBytes, Script as JsonScript, ScriptHashType as JsonScriptHashType};
+use ckb_types::core::{Capacity, CapacityError, ScriptHashType};
+use ckb_types::packed::{Bytes as PackedBytes, Script as PackedScript};
+use ckb_types::prelude::*;
+use ckb_types::{bytes::Bytes as CkBytes, H256};
 
 use thiserror::Error;
 
@@ -34,16 +21,12 @@ pub type ScriptResult<T> = Result<T, ScriptError>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Script {
-    pub (crate) args: Bytes,
-    pub (crate) code_hash: H256,
-    pub (crate) hash_type: JsonScriptHashType,
-
+    pub(crate) args: Bytes,
+    pub(crate) code_hash: H256,
+    pub(crate) hash_type: JsonScriptHashType,
 }
 
-
 impl Script {
- 
-    
     pub fn set_args(&mut self, args: impl Into<Bytes>) {
         self.args = args.into();
     }
@@ -57,28 +40,29 @@ impl Script {
     pub fn size_bytes(&self) -> usize {
         // Args bytes size + code_hash + hash_type (which is one byte)
         // script_hash is not included in this calculation since it is not present
-        // in on-chain script structure. 
+        // in on-chain script structure.
         self.args.len() + CODE_HASH_SIZE_BYTES + 1
     }
 
     pub fn calc_script_hash(&self) -> H256 {
         let packed: PackedScript = self.clone().into();
         packed.calc_script_hash().unpack()
-
     }
     /// Validate that script hash is correct
     pub fn validate(&self) -> ScriptResult<H256> {
         let packed: PackedScript = self.clone().into();
         let calc_hash = packed.calc_script_hash().unpack();
         if calc_hash != self.calc_script_hash() {
-            Err(ScriptError::MismatchedScriptHash(calc_hash, self.calc_script_hash()))
+            Err(ScriptError::MismatchedScriptHash(
+                calc_hash,
+                self.calc_script_hash(),
+            ))
         } else {
             Ok(calc_hash)
         }
     }
     pub fn required_capacity(&self) -> ScriptResult<Capacity> {
-        Capacity::bytes(self.size_bytes())
-            .map_err(|e| ScriptError::ScriptCapacityError(e))
+        Capacity::bytes(self.size_bytes()).map_err(|e| ScriptError::ScriptCapacityError(e))
     }
     pub fn code_hash(&self) -> H256 {
         self.code_hash.clone()
@@ -100,7 +84,7 @@ impl Script {
         self.args.clone().into()
     }
 
-    pub fn args_raw(&self) -> CkBytes{
+    pub fn args_raw(&self) -> CkBytes {
         self.args.clone().into()
     }
 
@@ -111,23 +95,17 @@ impl Script {
     pub fn args_packed(&self) -> PackedBytes {
         self.args.clone().into()
     }
-
-    
 }
 impl From<JsonScript> for Script {
     fn from(j: JsonScript) -> Self {
-       
         let hash_type = j.hash_type.clone();
         let code_hash = j.code_hash.clone();
         let args = j.args.clone().into();
 
-      
         Self {
             args,
             code_hash: code_hash,
             hash_type,
-     
-
         }
     }
 }
@@ -143,14 +121,17 @@ impl From<PackedScript> for Script {
             args: args.into(),
             code_hash,
             hash_type: hash_type.into(),
-
         }
     }
 }
 
 impl From<Script> for JsonScript {
     fn from(s: Script) -> Self {
-        let Script {code_hash, hash_type, args} = s;
+        let Script {
+            code_hash,
+            hash_type,
+            args,
+        } = s;
         JsonScript {
             code_hash,
             hash_type,
@@ -161,7 +142,11 @@ impl From<Script> for JsonScript {
 
 impl From<Script> for PackedScript {
     fn from(s: Script) -> Self {
-        let Script {code_hash, hash_type, args} = s;
+        let Script {
+            code_hash,
+            hash_type,
+            args,
+        } = s;
 
         PackedScript::new_builder()
             .args(args.into())
@@ -175,7 +160,7 @@ impl From<Cell> for Script {
     fn from(c: Cell) -> Self {
         let mut s = Self::default();
         s.set_code_hash(c.data_hash());
-   
+
         s
     }
 }

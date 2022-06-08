@@ -1,10 +1,6 @@
 extern crate ckb_always_success_script;
 extern crate trampoline_sdk;
 
-use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
-use trampoline_sdk::contract::*;
-use trampoline_sdk::contract::{builtins::sudt::*, generator::*, schema::*};
-
 use ckb_types::{
     bytes::Bytes,
     core::{TransactionBuilder, TransactionView},
@@ -12,6 +8,10 @@ use ckb_types::{
     prelude::*,
     H256,
 };
+use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
+use trampoline_sdk::contract::*;
+use trampoline_sdk::contract::{builtins::sudt::*, generator::*, schema::*};
+use trampoline_sdk::types::query::*;
 
 use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types::JsonBytes;

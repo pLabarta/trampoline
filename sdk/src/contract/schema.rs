@@ -3,7 +3,6 @@ pub use ckb_jsonrpc_types::JsonBytes;
 use crate::ckb_types::{bytes::Bytes, prelude::*};
 use std::marker::PhantomData;
 
-
 pub trait JsonByteConversion {
     fn to_json_bytes(&self) -> JsonBytes;
     fn from_json_bytes(bytes: JsonBytes) -> Self;
@@ -30,7 +29,10 @@ pub trait BytesConversion: MolConversion {
     fn to_bytes(&self) -> Bytes;
 }
 
-pub trait TrampolineSchema: BytesConversion + MolConversion + JsonConversion + JsonByteConversion {}
+pub trait TrampolineSchema:
+    BytesConversion + MolConversion + JsonConversion + JsonByteConversion
+{
+}
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct SchemaPrimitiveType<T, M> {

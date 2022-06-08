@@ -1,26 +1,16 @@
 extern crate ckb_always_success_script;
 extern crate trampoline_sdk;
 
-use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
-use trampoline_sdk::contract::*;
-use trampoline_sdk::contract::{builtins::sudt::*, generator::*, schema::*};
-use trampoline_sdk::types::{
-    bytes::Bytes as TBytes,
-    cell::Cell,
-    script::Script as TScript,
-    
-};
-
 use ckb_types::{
-
     core::{TransactionBuilder, TransactionView},
     packed::CellOutput,
     prelude::*,
-
 };
-
-
-
+use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
+use trampoline_sdk::contract::*;
+use trampoline_sdk::contract::{builtins::sudt::*, generator::*, schema::*};
+use trampoline_sdk::types::query::*;
+use trampoline_sdk::types::{bytes::Bytes as TBytes, cell::Cell, script::Script as TScript};
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -28,11 +18,7 @@ use std::sync::{Arc, Mutex};
 const _EXPECTED_SUDT_HASH: &str =
     "0xe1e354d6d643ad42724d40967e334984534e0367405c5ae42a9d7d63d77df419";
 
-
-fn gen_sudt_contract(
-    minter_lock: TScript,
-    initial_supply: Option<u128>,
-) -> SudtTrampolineContract {
+fn gen_sudt_contract(minter_lock: TScript, initial_supply: Option<u128>) -> SudtTrampolineContract {
     let out_dir = std::env::var_os("OUT_DIR").unwrap();
 
     let path_to_sudt_bin = Path::new(&out_dir).join("simple_udt");
@@ -42,12 +28,13 @@ fn gen_sudt_contract(
     let init_supply = SudtAmount::new(initial_supply.unwrap_or_default());
 
     // Sudt compiled executable code
-    let sudt_src: TBytes = ContractSource::load_from_path(path_to_sudt_bin).unwrap().into();
-
+    let sudt_src: TBytes = ContractSource::load_from_path(path_to_sudt_bin)
+        .unwrap()
+        .into();
 
     // Generate trampoline contract from compiled code
     let mut sudt_contract = SudtTrampolineContract::from(sudt_src);
-   
+
     let set_call_args_res = sudt_contract.set_caller_cell_args(minter_lock_hash);
     println!("SET CALL ARGS RES: {:?}", set_call_args_res);
     // Set the contract args & cell data for the cell that *uses* this contract
@@ -56,9 +43,7 @@ fn gen_sudt_contract(
     sudt_contract
 }
 
-fn _generate_always_success_lock(
-    args: Option<TBytes>,
-) -> TScript {
+fn _generate_always_success_lock(args: Option<TBytes>) -> TScript {
     let data: TBytes = ckb_always_success_script::ALWAYS_SUCCESS.to_vec().into();
     let data_hash = data.hash_256();
     let mut script = TScript::default();
@@ -71,18 +56,17 @@ fn _generate_simple_udt_cell(sudt_contract: &SudtTrampolineContract) -> CellOutp
     sudt_contract.as_cell_output().unwrap()
 }
 
-fn generate_mock_tx(
-    outputs: Vec<Cell>,
-) -> TransactionView {
+fn generate_mock_tx(outputs: Vec<Cell>) -> TransactionView {
     let outputs_data = outputs.iter().map(|c| c.data()).collect::<Vec<_>>();
-    let outputs = outputs.iter().map(|c| CellOutput::from(c)).collect::<Vec<_>>();
+    let outputs = outputs
+        .iter()
+        .map(|c| CellOutput::from(c))
+        .collect::<Vec<_>>();
     TransactionBuilder::default()
         .outputs(outputs)
         .outputs_data(outputs_data.into_iter().map(|b| b.into()))
         .build()
 }
-
-
 
 #[test]
 fn test_failed_issuance_tx_no_permissions() {
@@ -100,7 +84,6 @@ fn test_failed_issuance_tx_no_permissions() {
     minter_lock_script.set_args(vec![1_u8]);
     non_minter_lock_script.set_args(vec![200_u8]);
 
-    
     let non_minter_lock_hash = non_minter_lock_script.calc_script_hash();
     let _minter_lock_hash = minter_lock_script.calc_script_hash();
 
@@ -113,14 +96,17 @@ fn test_failed_issuance_tx_no_permissions() {
     let mut sudt_contract = gen_sudt_contract(minter_lock_script, Some(1500));
 
     let mut sudt_code_cell: Cell = sudt_contract.as_code_cell().unwrap();
-    let sudt_code_cell_outpoint = chain.create_cell((&sudt_code_cell).into(), sudt_code_cell.data().into());
-    sudt_code_cell.set_outpoint(sudt_code_cell_outpoint.clone()).ok();
+    let sudt_code_cell_outpoint =
+        chain.create_cell((&sudt_code_cell).into(), sudt_code_cell.data().into());
+    sudt_code_cell
+        .set_outpoint(sudt_code_cell_outpoint.clone())
+        .ok();
     // Create Mint SUDT transaction, using as input a cell locked with a different user's lock script
     // Should fail because the user does not have mint permissions
     sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.into()));
     //let fail_tx = TransactionBuilder::default().build();
 
-   // Add rule to sudt output generation to increase the amount field.
+    // Add rule to sudt output generation to increase the amount field.
     sudt_contract.add_output_rule(
         ContractField::Data,
         |ctx| -> ContractCellField<OwnerLockHash, SudtAmount> {
@@ -157,8 +143,6 @@ fn test_failed_issuance_tx_no_permissions() {
     assert!(!is_valid);
 }
 
-
-
 #[test]
 fn test_sudt_issuance_tx_with_contract_pipeline() {
     let mut chain = MockChain::default();
@@ -174,8 +158,6 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     minter_lock_script.set_args(vec![1_u8]);
     non_minter_lock_script.set_args(vec![200_u8]);
 
-    
-
     let minter_lock_hash = minter_lock_script.calc_script_hash();
 
     chain.create_cell(
@@ -187,12 +169,14 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     let mut sudt_contract = gen_sudt_contract(minter_lock_script, Some(1500));
 
     let mut sudt_code_cell: Cell = sudt_contract.as_code_cell().unwrap();
-    let sudt_code_cell_outpoint = chain.create_cell((&sudt_code_cell).into(), sudt_code_cell.data().into());
-    assert!(sudt_code_cell.set_outpoint(sudt_code_cell_outpoint.clone()).is_ok());
+    let sudt_code_cell_outpoint =
+        chain.create_cell((&sudt_code_cell).into(), sudt_code_cell.data().into());
+    assert!(sudt_code_cell
+        .set_outpoint(sudt_code_cell_outpoint.clone())
+        .is_ok());
     // Create Mint SUDT transaction, using as input a cell locked with a different user's lock script
     // Should fail because the user does not have mint permissions
     sudt_contract.source = Some(ContractSource::Chain(sudt_code_cell_outpoint.into()));
-
 
     // Add rule to sudt output generation to increase the amount field.
     sudt_contract.add_output_rule(
@@ -236,18 +220,16 @@ fn test_sudt_issuance_tx_with_contract_pipeline() {
     assert!(is_valid);
 }
 
-
 #[test]
 fn test_update_sudt_with_rule_pipeline() {
     // Load SUDT contract
     let mut sudt_contract = gen_sudt_contract(Default::default(), Some(2000));
     // Create SUDT Cell Output
     let _sudt_code_cell: Cell = sudt_contract.as_code_cell().unwrap();
-   
-    
+
     // Create Mint SUDT transaction, using as input a cell locked with a different user's lock script
     // Should fail because the user does not have mint permissions
-    
+
     // Mock Transaction with a single output
     let transaction = generate_mock_tx(vec![sudt_contract.as_caller_cell().unwrap()]);
 

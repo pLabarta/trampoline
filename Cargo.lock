@@ -88,15 +88,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 
 [[package]]
-name = "bitcoin_hashes"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b7a2e9773ee7ae7f2560f0426c938f57902dcb9e39321b0cbd608f47ed579a4"
-dependencies = [
- "byteorder",
-]
-
-[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -583,12 +574,10 @@ dependencies = [
 
 [[package]]
 name = "ckb-sdk"
-version = "1.0.0"
-source = "git+https://github.com/TheWaWaR/ckb-sdk#a9b0a633f5288b37222a77a332219b388c9d8237"
+version = "1.0.1"
+source = "git+https://github.com/nervosnetwork/ckb-sdk-rust#7ea15fcc6c13fca4d09a6fd7cd2b22b30b9a2c5a"
 dependencies = [
  "bech32",
- "bitcoin_hashes",
- "byteorder",
  "bytes",
  "ckb-crypto",
  "ckb-dao-utils",
@@ -597,7 +586,6 @@ dependencies = [
  "ckb-resource",
  "ckb-traits",
  "ckb-types",
- "faster-hex",
  "futures",
  "jsonrpc-core",
  "log",

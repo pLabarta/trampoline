@@ -1,21 +1,18 @@
 pub mod builtins;
 pub mod schema;
-mod types;
 mod t_contract;
-pub use types::*;
-pub use t_contract::*;
+mod types;
 use self::schema::*;
+pub use t_contract::*;
+pub use types::*;
 
 use crate::ckb_types::packed::{CellOutput, CellOutputBuilder};
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
-use crate::types::{
-    transaction::CellMetaTransaction,
-    cell::CellOutputWithData,
-};
+use crate::types::{cell::CellOutputWithData, transaction::CellMetaTransaction};
 pub mod generator;
 
-use self::generator::{CellQuery, GeneratorMiddleware};
-
+use self::generator::GeneratorMiddleware;
+use crate::types::query::CellQuery;
 
 use crate::ckb_types::core::TransactionView;
 
@@ -25,12 +22,7 @@ use ckb_hash::blake2b_256;
 
 use ckb_jsonrpc_types::{CellDep, DepType, JsonBytes, OutPoint, Script};
 
-
-
 use std::sync::{Arc, Mutex};
-
-
-
 
 pub struct Contract<A, D> {
     pub source: Option<ContractSource>,

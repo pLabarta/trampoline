@@ -1,21 +1,14 @@
-
+mod error;
 mod mock_chain;
 mod traits;
-mod error;
+pub use error::*;
 pub use mock_chain::*;
 pub use traits::*;
-pub use error::*; 
 
 use crate::contract::Contract;
 use crate::types::cell::{Cell, CellOutputWithData};
-use ckb_types::{
-   
-    core::TransactionView,
-    packed::Byte32,
-    prelude::*,
-};
+use ckb_types::{core::TransactionView, packed::Byte32, prelude::*};
 use ckb_verification::TransactionError;
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {

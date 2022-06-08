@@ -1,19 +1,14 @@
-
 use super::schema::*;
 
-use crate::ckb_types::packed::{CellInput, Uint64};
 use crate::ckb_types::bytes::Bytes;
-use crate::types::{
-    transaction::CellMetaTransaction,
-    cell::CellOutputWithData,
-};
-
+use crate::ckb_types::packed::{CellInput, Uint64};
+use crate::types::{cell::CellOutputWithData, transaction::CellMetaTransaction};
 
 use ckb_jsonrpc_types::OutPoint;
 use ckb_types::core::cell::CellMeta;
 
+use crate::types::bytes::Bytes as TBytes;
 use crate::types::cell::{Cell, CellError, CellResult};
-use crate::types::bytes::{Bytes as TBytes};
 
 use std::fs;
 use std::path::PathBuf;
@@ -31,7 +26,6 @@ impl ContractSource {
         println!("SUDT CODE SIZE: {}", file.len());
         Ok(Bytes::from(file))
     }
-
 }
 
 impl TryFrom<ContractSource> for Cell {
@@ -42,17 +36,16 @@ impl TryFrom<ContractSource> for Cell {
                 let data = ContractSource::load_from_path(p)?;
                 let data = TBytes::from(data);
                 Ok(Cell::with_data(data))
-
-            },
+            }
             ContractSource::Immediate(b) => {
                 let data = TBytes::from(b);
                 Ok(Cell::with_data(data))
-            },
-            ContractSource::Chain(outp) =>  {
+            }
+            ContractSource::Chain(outp) => {
                 let mut cell = Cell::default();
                 cell.set_outpoint(outp.into())?;
                 Ok(cell)
-            },
+            }
         }
     }
 }
@@ -169,7 +162,6 @@ impl RuleContext {
         }
     }
 }
-
 
 pub struct OutputRule<A, D> {
     pub scope: RuleScope,

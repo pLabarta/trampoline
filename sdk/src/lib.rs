@@ -16,7 +16,6 @@ pub mod precompiled {
     pub const TNFT: &'static [u8] = include_bytes!("../binaries/trampoline-nft");
 }
 
-
 // From ckb_types::conversion
 #[macro_export]
 macro_rules! impl_entity_unpack {

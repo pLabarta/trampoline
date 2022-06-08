@@ -1,10 +1,9 @@
-use crate::chain::*;
-use crate::chain::mock_chain::MAX_CYCLES;
-use crate::contract::generator::{
-    CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,
-};
-use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
 use super::genesis_info::genesis_event;
+use crate::chain::mock_chain::MAX_CYCLES;
+use crate::chain::*;
+use crate::contract::generator::{QueryProvider, TransactionProvider};
+use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
+use crate::types::query::*;
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -13,13 +12,11 @@ use ckb_types::{
     bytes::Bytes,
     core::{
         cell::{CellMeta, CellMetaBuilder},
-   HeaderView,
+        HeaderView,
     },
-    packed::{Byte32,  CellOutput, OutPoint},
+    packed::{Byte32, CellOutput, OutPoint},
 };
-use std::{cell::RefCell};
-
-
+use std::cell::RefCell;
 
 impl CellDataProvider for MockChain {
     // load Cell Data
@@ -211,16 +208,15 @@ impl Chain for MockChain {
     }
 
     fn deploy_cells(&mut self, cells: &Vec<Cell>) -> ChainResult<Vec<OutPoint>> {
-       Ok(cells.iter().map(|c| {
-            let (outp, data): CellOutputWithData = c.into();
-            self.deploy_cell_output(data, outp)
-        }).collect::<Vec<_>>())
-       
+        Ok(cells
+            .iter()
+            .map(|c| {
+                let (outp, data): CellOutputWithData = c.into();
+                self.deploy_cell_output(data, outp)
+            })
+            .collect::<Vec<_>>())
     }
 }
-
-
-
 
 impl Default for MockChain {
     fn default() -> Self {
@@ -246,8 +242,6 @@ impl Default for MockChain {
 
         // Run genesis event on the mockchain
         genesis_event(&mut chain);
-
-        
 
         // Return chain
         chain
