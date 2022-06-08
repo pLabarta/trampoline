@@ -1,6 +1,6 @@
 mod error;
 mod mock_chain;
-mod rpc_chain;
+pub mod rpc_chain;
 mod traits;
 pub use error::*;
 pub use mock_chain::*;

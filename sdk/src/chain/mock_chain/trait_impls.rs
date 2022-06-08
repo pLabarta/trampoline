@@ -183,8 +183,8 @@ impl Chain for MockChain {
     fn deploy_cell(
         &mut self,
         cell: &Cell,
-        unlockers: Unlockers,
-        inputs: &CellInputs,
+        _unlockers: Unlockers,
+        _inputs: &CellInputs,
     ) -> ChainResult<OutPoint> {
         let (outp, data): CellOutputWithData = cell.into();
         Ok(self.deploy_cell_output(data, outp))
@@ -216,8 +216,8 @@ impl Chain for MockChain {
     fn deploy_cells(
         &mut self,
         cells: &Vec<Cell>,
-        unlockers: Unlockers,
-        inputs: &CellInputs,
+        _unlockers: Unlockers,
+        _inputs: &CellInputs,
     ) -> ChainResult<Vec<OutPoint>> {
         Ok(cells
             .iter()

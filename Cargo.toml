@@ -47,5 +47,5 @@ trampoline-sdk = {path = "./sdk"}
 includedir_codegen = "0.6.0"
 
  [workspace]
- members = ["sdk"]
+ members = ["sdk", "sdk/utils"]
  #members = ["sdk", "validity-lang"]

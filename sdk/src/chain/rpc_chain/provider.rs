@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder, ConsensusProvider};
+use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder};
 use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types as json_types;
 use ckb_script::{TransactionScriptsVerifier, TxVerifyEnv};
 use ckb_sdk::traits::{TransactionDependencyError, TransactionDependencyProvider};
-use ckb_sdk::{CkbRpcClient, IndexerRpcClient};
+use ckb_sdk::{CkbRpcClient};
 use ckb_traits::{HeaderProvider, CellDataProvider};
 use ckb_types::core::cell::{resolve_transaction_with_options, CellProvider, CellMetaBuilder, CellStatus, HeaderChecker, ResolveOptions};
 use ckb_types::core::error::OutPointError;
@@ -16,18 +16,18 @@ use ckb_types::core::{cell::ResolvedTransaction, hardfork::HardForkSwitch, Trans
 use ckb_types::packed::{Byte32, OutPoint, Transaction, CellOutput};
 use ckb_types::prelude::{Pack, Unpack};
 use ckb_util::Mutex;
-use ckb_verification::{NonContextualTransactionVerifier, TransactionVerifier};
+use ckb_verification::{NonContextualTransactionVerifier};
 use lru::LruCache;
 
 use ckb_types::bytes::Bytes;
 
 use crate::contract::generator::TransactionProvider;
 use crate::types::transaction;
-
-use super::inner_client::RpcClient;
 use super::RpcChain;
 
 const MAX_CYCLES: u64 = 500_0000;
+
+
 
 
 // RpcChain Transaction provider type
@@ -111,6 +111,12 @@ impl RpcProvider {
             self,
             resolve_opts,
         )
+    }
+
+    pub fn get_tip(&self) -> Option<json_types::HeaderView> {
+        let mut inner = self.inner.lock();
+        let tip = inner.rpc_client.get_tip_header();
+        Some(tip.unwrap())
     }
 }
 
@@ -211,7 +217,7 @@ impl TransactionProvider for RpcProvider {
     }
 
     fn verify_tx(&self, tx: ckb_jsonrpc_types::TransactionView) -> bool {
-        let mut inner = self.inner.lock();
+        let inner = self.inner.lock();
         let consensus = dummy_consensus();
         let inner_tx = tx.inner;
         let packed_tx = ckb_types::packed::Transaction::from(inner_tx.clone());
