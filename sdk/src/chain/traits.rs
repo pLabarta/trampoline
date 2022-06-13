@@ -47,7 +47,6 @@ pub trait Chain {
         }
     }
 
-
     fn deploy_cell(
         &mut self,
         cell: &Cell,

@@ -273,7 +273,6 @@ mod tests {
         // Setup cell to deploy
         let lock_args = Bytes::from(b"test".to_vec());
         let cell = chain.generate_cell_with_default_lock(lock_args.into());
-    
 
         // Setup cell inputs for the tx to include
         let inputs = CellInputs::Cells(vec![]);

@@ -8,6 +8,8 @@ pub enum ChainError {
     TransactionVerificationError,
     #[error("Failed to send transaction to network")]
     TransactionSendError,
+    #[error("Failed to connect to node via RPC")]
+    RpcError,
 }
 
 // Most of this is taken from https://github.com/nervosnetwork/ckb-tool.

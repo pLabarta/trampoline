@@ -7,28 +7,31 @@ use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types as json_types;
 use ckb_script::{TransactionScriptsVerifier, TxVerifyEnv};
 use ckb_sdk::traits::{TransactionDependencyError, TransactionDependencyProvider};
-use ckb_sdk::{CkbRpcClient};
-use ckb_traits::{HeaderProvider, CellDataProvider};
-use ckb_types::core::cell::{resolve_transaction_with_options, CellProvider, CellMetaBuilder, CellStatus, HeaderChecker, ResolveOptions};
+use ckb_sdk::CkbRpcClient;
+use ckb_traits::{CellDataProvider, HeaderProvider};
+use ckb_types::core::cell::{
+    resolve_transaction_with_options, CellMetaBuilder, CellProvider, CellStatus, HeaderChecker,
+    ResolveOptions,
+};
 use ckb_types::core::error::OutPointError;
-use ckb_types::core::{HeaderView, EpochNumberWithFraction};
 use ckb_types::core::{cell::ResolvedTransaction, hardfork::HardForkSwitch, TransactionView};
-use ckb_types::packed::{Byte32, OutPoint, Transaction, CellOutput};
+use ckb_types::core::{EpochNumberWithFraction, HeaderView};
+use ckb_types::packed::{Byte32, CellOutput, OutPoint, Transaction};
 use ckb_types::prelude::{Pack, Unpack};
+use ckb_types::H256;
 use ckb_util::Mutex;
-use ckb_verification::{NonContextualTransactionVerifier};
+use ckb_verification::NonContextualTransactionVerifier;
+use json_types::TransactionWithStatus;
 use lru::LruCache;
 
 use ckb_types::bytes::Bytes;
 
+use super::RpcChain;
+use crate::chain::ChainError;
 use crate::contract::generator::TransactionProvider;
 use crate::types::transaction;
-use super::RpcChain;
 
 const MAX_CYCLES: u64 = 500_0000;
-
-
-
 
 // RpcChain Transaction provider type
 pub struct RpcProvider {
@@ -68,6 +71,15 @@ impl RpcProvider {
         }
     }
 
+    pub fn get_tx(&self, hash: H256) -> Result<Option<TransactionWithStatus>, ChainError> {
+        let mut inner = self.inner.lock();
+        let tx = inner.rpc_client.get_transaction(hash);
+        match tx {
+            Ok(tx) => return Ok(tx),
+            Err(e) => return Err(ChainError::RpcError),
+        }
+    }
+
     pub fn get_cell_with_data(
         &self,
         out_point: &OutPoint,
@@ -98,19 +110,12 @@ impl RpcProvider {
     pub fn resolve_tx(&self, tx: TransactionView) -> Result<ResolvedTransaction, OutPointError> {
         let mut seen_inputs = HashSet::new();
         let hardfork_switch = HardForkSwitch::new_without_any_enabled()
-        .as_builder()
-        .rfc_0032(200)
-        .build()
-        .unwrap();
-        let resolve_opts = ResolveOptions::new()
-            .apply_current_features(&hardfork_switch, 300);
-        resolve_transaction_with_options(
-            tx,
-            &mut seen_inputs,
-            self,
-            self,
-            resolve_opts,
-        )
+            .as_builder()
+            .rfc_0032(200)
+            .build()
+            .unwrap();
+        let resolve_opts = ResolveOptions::new().apply_current_features(&hardfork_switch, 300);
+        resolve_transaction_with_options(tx, &mut seen_inputs, self, self, resolve_opts)
     }
 
     pub fn get_tip(&self) -> Option<json_types::HeaderView> {
@@ -212,7 +217,10 @@ impl TransactionProvider for RpcProvider {
         let hash = inner.rpc_client.send_transaction(tx.inner, None);
         match hash {
             Ok(hash) => Some(hash.pack().into()),
-            _ => None,
+            Err(e) => {
+                println!("{:?}",e);
+                None
+            },
         }
     }
 
@@ -239,7 +247,7 @@ impl TransactionProvider for RpcProvider {
         let rtx = resolved_tx.unwrap();
         let converted_tx_view = packed_tx.as_advanced_builder().build();
         let non_contextual = NonContextualTransactionVerifier::new(&converted_tx_view, &consensus);
-        let transaction_verifier = TransactionScriptsVerifier::new(&rtx, &consensus, self,&tx_env);
+        let transaction_verifier = TransactionScriptsVerifier::new(&rtx, &consensus, self, &tx_env);
         if transaction_verifier.verify(MAX_CYCLES).is_ok() && non_contextual.verify().is_ok() {
             return true;
         } else {

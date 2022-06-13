@@ -81,7 +81,6 @@ impl MockChain {
     }
 
     pub fn deploy_cell_output(&mut self, data: Bytes, output: CellOutput) -> OutPoint {
-        
         match data.len() {
             0 => {}
             _ => {
@@ -92,8 +91,6 @@ impl MockChain {
             }
         }
 
-
-        
         let tx_hash = random_hash();
         let out_point = OutPoint::new(tx_hash, 0);
         self.create_cell_with_outpoint(out_point.clone(), output, data);
@@ -153,7 +150,6 @@ impl MockChain {
         self.cells_by_data_hash.insert(data_hash, outp.clone());
 
         self.cells.insert(outp.clone(), (cell.clone(), data));
-
 
         let cells = self.get_cells_by_lock_hash(cell.calc_lock_hash());
         if let Some(mut cells) = cells {
