@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap, hash_map::Entry};
 use std::sync::Arc;
 
 use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder};
@@ -10,13 +10,12 @@ use ckb_sdk::traits::{TransactionDependencyError, TransactionDependencyProvider}
 use ckb_sdk::CkbRpcClient;
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{
-    resolve_transaction_with_options, CellMetaBuilder, CellProvider, CellStatus, HeaderChecker,
-    ResolveOptions,
+    CellMetaBuilder, CellProvider, CellStatus, HeaderChecker, CellMeta
 };
 use ckb_types::core::error::OutPointError;
 use ckb_types::core::{cell::ResolvedTransaction, hardfork::HardForkSwitch, TransactionView};
-use ckb_types::core::{EpochNumberWithFraction, HeaderView};
-use ckb_types::packed::{Byte32, CellOutput, OutPoint, Transaction};
+use ckb_types::core::{EpochNumberWithFraction, HeaderView, TransactionInfo};
+use ckb_types::packed::{Byte32, CellOutput, OutPoint, Transaction as CkbTransaction};
 use ckb_types::prelude::{Pack, Unpack};
 use ckb_types::H256;
 use ckb_util::Mutex;
@@ -26,10 +25,11 @@ use lru::LruCache;
 
 use ckb_types::bytes::Bytes;
 
+use crate::types::transaction::Transaction;
+
 use super::RpcChain;
-use crate::chain::ChainError;
+use crate::chain::{ChainError, TransactionResolver, TransactionResolverError};
 use crate::contract::generator::TransactionProvider;
-use crate::types::transaction;
 
 const MAX_CYCLES: u64 = 500_0000;
 
@@ -76,7 +76,7 @@ impl RpcProvider {
         let tx = inner.rpc_client.get_transaction(hash);
         match tx {
             Ok(tx) => return Ok(tx),
-            Err(e) => return Err(ChainError::RpcError),
+            Err(e) => return Err(ChainError::RpcError(e)),
         }
     }
 
@@ -107,21 +107,48 @@ impl RpcProvider {
         Ok((output, output_data))
     }
 
-    pub fn resolve_tx(&self, tx: TransactionView) -> Result<ResolvedTransaction, OutPointError> {
-        let mut seen_inputs = HashSet::new();
-        let hardfork_switch = HardForkSwitch::new_without_any_enabled()
-            .as_builder()
-            .rfc_0032(200)
-            .build()
-            .unwrap();
-        let resolve_opts = ResolveOptions::new().apply_current_features(&hardfork_switch, 300);
-        resolve_transaction_with_options(tx, &mut seen_inputs, self, self, resolve_opts)
-    }
-
     pub fn get_tip(&self) -> Option<json_types::HeaderView> {
         let mut inner = self.inner.lock();
         let tip = inner.rpc_client.get_tip_header();
         Some(tip.unwrap())
+    }
+
+    pub fn get_tx_info(&self, block_hash: &H256, tx_hash: &H256) -> Result<TransactionInfo, ChainError> {
+        let tx = {
+            let result = self.get_transaction(&tx_hash.pack());
+            match result {
+                Ok(tx) => tx,
+                Err(e) => {return Err(ChainError::TransactionNotIncluded(tx_hash.clone()))}
+            }
+        };
+
+        let block = {
+            let mut inner = self.inner.lock();
+            let block = inner.rpc_client.get_block(block_hash.clone());
+            match block {
+                Ok(Some(block)) => block,
+                Ok(None) => {return Err(ChainError::BlockNotFound(block_hash.clone()))},
+                Err(e) => {return Err(ChainError::RpcError(e));},
+            }
+        };
+
+        let index = {
+            let finding = block.transactions.into_iter()
+            .enumerate()
+            .find(|tx|{
+                tx.1.hash == tx_hash.clone()
+            });
+            // Unwrap is safe because TX must exist in Block
+            finding.unwrap().0
+        };
+
+        Ok(TransactionInfo {
+            block_hash: block.header.hash.pack(),
+            block_number: block.header.inner.number.into(),
+            block_epoch: EpochNumberWithFraction::from_full_value(block.header.inner.epoch.into()),
+            index,
+        })
+        
     }
 }
 
@@ -145,7 +172,7 @@ impl TransactionDependencyProvider for RpcProvider {
                 format!("invalid transaction status: {:?}", tx_with_status.tx_status).into(),
             ));
         }
-        let tx = Transaction::from(tx_with_status.transaction.unwrap().inner).into_view();
+        let tx = CkbTransaction::from(tx_with_status.transaction.unwrap().inner).into_view();
         inner.tx_cache.put(tx_hash.clone(), tx.clone());
         Ok(tx)
     }
@@ -225,16 +252,14 @@ impl TransactionProvider for RpcProvider {
     }
 
     fn verify_tx(&self, tx: ckb_jsonrpc_types::TransactionView) -> bool {
-        let inner = self.inner.lock();
         let consensus = dummy_consensus();
-        let inner_tx = tx.inner;
-        let packed_tx = ckb_types::packed::Transaction::from(inner_tx.clone());
-        let core_tx = transaction::Transaction::from(inner_tx);
-        let core_tx_view = TransactionView::from(core_tx);
-        let resolved_tx = self.resolve_tx(core_tx_view);
+        let transaction = Transaction::from(tx.inner.clone());
+        println!("Starting to resolve TX");
+        let resolved_tx = self.resolve_tx(transaction);
         if resolved_tx.is_err() {
             return false;
         }
+        println!("Resolved TX: Ok");
 
         let tx_env = {
             let epoch = EpochNumberWithFraction::new(300, 0, 1);
@@ -243,11 +268,30 @@ impl TransactionProvider for RpcProvider {
                 .build();
             TxVerifyEnv::new_commit(&header)
         };
-
+        let packed_tx = CkbTransaction::from(tx.inner);
         let rtx = resolved_tx.unwrap();
         let converted_tx_view = packed_tx.as_advanced_builder().build();
         let non_contextual = NonContextualTransactionVerifier::new(&converted_tx_view, &consensus);
         let transaction_verifier = TransactionScriptsVerifier::new(&rtx, &consensus, self, &tx_env);
+        
+       
+        {
+            let script_verif = transaction_verifier.verify(MAX_CYCLES);
+            let non_context_verif = non_contextual.verify();
+            match script_verif {
+                Ok(_) => println!("OK: Script verification passed"),
+                Err(e) => {
+                    println!("ERR: Script verification error: {:?}", e);
+                    println!("{:?}", &rtx.resolved_inputs[0]);
+                }
+            }
+
+            match non_context_verif {
+                Ok(_) => println!("OK: Non-contextual verification passed"),
+                Err(e) => println!("ERR: Non-contextual erification error")
+            }
+        }
+        
         if transaction_verifier.verify(MAX_CYCLES).is_ok() && non_contextual.verify().is_ok() {
             return true;
         } else {
@@ -285,4 +329,79 @@ pub fn dummy_consensus() -> Consensus {
     ConsensusBuilder::default()
         .hardfork_switch(hardfork_switch)
         .build()
+}
+
+impl TransactionResolver for RpcProvider {
+    fn resolve_tx(&self, tx: Transaction) -> Result<ResolvedTransaction, TransactionResolverError> {
+
+        // let inner_tx = CkbTransaction::from(tx.inner);
+        let transaction = TransactionView::from(tx);
+        
+        let mut resolved_cells: HashMap<(OutPoint, bool), CellMeta> = HashMap::new();
+
+        let mut seen_inputs = HashSet::new();
+
+        // Taken from ckb::util::types::cell
+        let mut resolve_cell = |out_point: &OutPoint, eager_load: bool| -> Result<CellMeta, TransactionResolverError> {
+            if seen_inputs.contains(out_point) {
+                return Err(TransactionResolverError::DeadOutPoint(out_point.clone()));
+            }
+
+            match resolved_cells.entry((out_point.clone(), eager_load)) {
+                Entry::Occupied(entry) => Ok(entry.get().clone()),
+                Entry::Vacant(entry) => {
+                    let cell_status = self.cell(out_point, eager_load);
+                    match cell_status {
+                        CellStatus::Dead => Err(TransactionResolverError::DeadOutPoint(out_point.clone())),
+                        CellStatus::Unknown => Err(TransactionResolverError::UnknownOutPoint(out_point.clone())),
+                        CellStatus::Live(cell_meta) => {
+                            entry.insert(cell_meta.clone());
+                            seen_inputs.insert(out_point.clone());
+                            Ok(cell_meta)
+                        }
+                    }
+                }
+            }
+        };
+
+        let mut current_inputs = HashSet::new();
+
+        let resolved_inputs = {
+            let mut inputs = Vec::with_capacity(transaction.inputs().len());
+            if !transaction.is_cellbase() {
+                for out_point in transaction.input_pts_iter() {
+                    if !current_inputs.insert(out_point.to_owned()) {
+                        return Err(TransactionResolverError::DeadOutPoint(out_point));
+                    }
+                    inputs.push(resolve_cell(&out_point, false)?);
+                }
+            }
+            inputs
+        };
+
+        let resolved_cell_deps = transaction
+            .cell_deps()
+            .into_iter()
+            .map(
+                |cell_dep| {
+                    let (dep_output, dep_data) = self.get_cell_with_data(&cell_dep.out_point()).expect("Failed to get cell with data for dep");
+                    
+                    CellMetaBuilder::from_cell_output(
+                        dep_output.to_owned(),
+                        dep_data.to_vec().into()
+                    )
+                    .out_point(cell_dep.out_point())
+                    .build()
+                }
+            ).collect();
+
+        let result: Result<ResolvedTransaction, TransactionResolverError> = Ok(ResolvedTransaction {
+            transaction,
+            resolved_inputs,
+            resolved_cell_deps,
+            resolved_dep_groups: vec![],
+        });
+
+        result
+    }
 }
