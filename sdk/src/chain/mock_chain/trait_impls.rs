@@ -190,13 +190,9 @@ impl Chain for MockChain {
         Ok(self.deploy_cell_output(data, outp))
     }
 
-    fn set_default_lock<A, D>(&mut self, lock: Contract<A, D>)
-    where
-        D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-        A: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-    {
-        let (outp, data) = lock.as_code_cell();
-        let outpoint = self.deploy_cell_output(data, outp);
+    fn set_default_lock<A, D>(&mut self, lock: Cell) {
+        let (outp, data) = (lock.clone().into(), lock.data());
+        let outpoint = self.deploy_cell_output(data.into(), outp);
         self.default_lock = Some(outpoint);
     }
 

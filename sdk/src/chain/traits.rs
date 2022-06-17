@@ -64,9 +64,7 @@ pub trait Chain {
     // fn genesis_info(&self) -> Option<GenesisInfo>;
     // fn set_genesis_info(&mut self, genesis_info: GenesisInfo);
 
-    fn set_default_lock<A, D>(&mut self, lock: Contract<A, D>)
-    where
-        D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-        A: JsonByteConversion + MolConversion + BytesConversion + Clone + Default;
+    fn set_default_lock<A, D>(&mut self, cell: Cell);
+    
     fn generate_cell_with_default_lock(&self, lock_args: Bytes) -> Cell;
 }
