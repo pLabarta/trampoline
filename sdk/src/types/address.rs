@@ -1,3 +1,4 @@
+use std::fmt;
 use std::str::FromStr;
 
 use ckb_sdk::{Address as CKBAddress, AddressPayload};
@@ -6,6 +7,8 @@ use ckb_types::packed::Script as PackedScript;
 use ckb_sdk::NetworkType;
 use secp256k1::PublicKey;
 use super::script::Script;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
     inner: CKBAddress
 }
@@ -74,3 +77,9 @@ impl FromStr for Address {
     }
 }
 
+
+impl fmt::Display for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        self.inner().fmt(f)
+    }
+}
