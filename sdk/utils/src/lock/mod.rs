@@ -3,7 +3,7 @@ use ckb_types::{core::ScriptHashType, prelude::{Pack, Builder}, packed::{Byte32,
 
 use crate::{account::Account, hex::parse_hex};
 
-type UnlockerPair = (ScriptId, Box<dyn ScriptUnlocker>);
+pub type UnlockerPair = (ScriptId, Box<dyn ScriptUnlocker>);
 
 /// Create unlocker pair of ScriptId and ScriptUnlocker for a given account
 pub fn create_secp_sighash_unlocker(account: &Account, password: &[u8]) -> UnlockerPair {

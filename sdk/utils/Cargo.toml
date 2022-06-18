@@ -11,7 +11,7 @@ anyhow = "1.0.57"
 ckb-crypto = "0.103.0"
 ckb-fixed-hash = "0.103.0"
 ckb-hash = "0.103.0"
-ckb-sdk = "1.0.1"
+ckb-sdk = {git = "https://github.com/nervosnetwork/ckb-sdk-rust"}
 ckb-types = "0.103.0"
 ctr = "0.9.1"
 hex = "0.4.3"
