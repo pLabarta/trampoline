@@ -5,6 +5,8 @@ use crate::contract::generator::{
     CellQuery, CellQueryAttribute, QueryProvider, QueryStatement, TransactionProvider,
 };
 use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
+use crate::types::query::*;
+
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -210,6 +212,7 @@ impl Chain for MockChain {
         cell
     }
 
+
     fn deploy_cells(
         &mut self,
         cells: &Vec<Cell>,
@@ -255,6 +258,7 @@ impl Default for MockChain {
         chain
     }
 }
+
 
 #[cfg(test)]
 mod tests {

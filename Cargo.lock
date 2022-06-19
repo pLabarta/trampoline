@@ -602,36 +602,6 @@ dependencies = [
 [[package]]
 name = "ckb-sdk"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c89d5a9733ae7e8cd9312dc130ba91cf44dba52e37b2844fa9758c1f4a78079"
-dependencies = [
- "bech32",
- "bytes",
- "ckb-crypto",
- "ckb-dao-utils",
- "ckb-hash",
- "ckb-jsonrpc-types",
- "ckb-resource",
- "ckb-traits",
- "ckb-types",
- "futures",
- "jsonrpc-core",
- "log",
- "lru",
- "parking_lot 0.11.2",
- "reqwest",
- "secp256k1 0.20.3",
- "serde",
- "serde_derive",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-util 0.6.9",
-]
-
-[[package]]
-name = "ckb-sdk"
-version = "1.0.1"
 source = "git+https://github.com/nervosnetwork/ckb-sdk-rust#7ea15fcc6c13fca4d09a6fd7cd2b22b30b9a2c5a"
 dependencies = [
  "bech32",

@@ -1,16 +1,18 @@
-use ckb_types::core::cell::CellMeta;
-use ckb_types::prelude::*;
-use ckb_types::core::{TransactionView,TransactionBuilder};
-use ckb_types::packed::{Transaction as PackedTransaction, TransactionView as PackedTransactionView, TransactionViewBuilder};
-use ckb_jsonrpc_types::{TransactionView as JsonTransactionView, Transaction as JsonTransaction};
 use super::cell::CellOutputWithData;
+use ckb_jsonrpc_types::{Transaction as JsonTransaction, TransactionView as JsonTransactionView};
+use ckb_types::core::cell::CellMeta;
+use ckb_types::core::{TransactionBuilder, TransactionView};
+use ckb_types::packed::{
+    Transaction as PackedTransaction, TransactionView as PackedTransactionView,
+    TransactionViewBuilder,
+};
+use ckb_types::prelude::*;
 // core::TransactionView has Transaction, hash, and witness_hash
 // ckb_jsonrpc_types::TransactionView has Transaction and hash
 
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct Transaction {
-    pub (crate) inner: JsonTransaction,
+    pub(crate) inner: JsonTransaction,
 }
 
 #[derive(Clone, Debug)]
@@ -19,20 +21,15 @@ pub struct CellMetaTransaction {
     pub inputs: Vec<CellMeta>,
 }
 
-
 impl From<JsonTransactionView> for Transaction {
     fn from(view: JsonTransactionView) -> Self {
-        Self {
-            inner: view.inner
-        }
+        Self { inner: view.inner }
     }
 }
 
 impl From<JsonTransaction> for Transaction {
     fn from(tx: JsonTransaction) -> Self {
-        Self {
-            inner: tx
-        }
+        Self { inner: tx }
     }
 }
 
@@ -40,7 +37,7 @@ impl From<TransactionView> for Transaction {
     fn from(core_view: TransactionView) -> Self {
         let json_view = JsonTransactionView::from(core_view);
         Self {
-            inner: json_view.inner
+            inner: json_view.inner,
         }
     }
 }
@@ -48,7 +45,7 @@ impl From<TransactionView> for Transaction {
 impl From<PackedTransaction> for Transaction {
     fn from(packed_tx: PackedTransaction) -> Self {
         Self {
-            inner: packed_tx.into()
+            inner: packed_tx.into(),
         }
     }
 }
@@ -56,7 +53,7 @@ impl From<PackedTransaction> for Transaction {
 impl From<PackedTransactionView> for Transaction {
     fn from(packed_view: PackedTransactionView) -> Self {
         Self {
-            inner: JsonTransactionView::from(packed_view.unpack()).inner
+            inner: JsonTransactionView::from(packed_view.unpack()).inner,
         }
     }
 }
@@ -102,7 +99,7 @@ impl From<Transaction> for CellMetaTransaction {
     fn from(trampoline_tx: Transaction) -> Self {
         Self {
             tx: trampoline_tx.into(),
-            inputs: vec![]
+            inputs: vec![],
         }
     }
 }
@@ -112,7 +109,6 @@ impl From<CellMetaTransaction> for Transaction {
         cm_tx.tx.into()
     }
 }
-
 
 impl CellMetaTransaction {
     pub fn tx(self, tx: TransactionView) -> Self {

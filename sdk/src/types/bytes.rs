@@ -1,10 +1,13 @@
-use ckb_types::prelude::*;
+use crate::contract::schema::{BytesConversion, SchemaPrimitiveType};
+use ckb_hash::blake2b_256;
+use ckb_jsonrpc_types::JsonBytes;
 use ckb_types::bytes::Bytes as CkBytes;
 use ckb_types::packed::Bytes as PackedBytes;
-use ckb_jsonrpc_types::JsonBytes;
-use ckb_types::{H256, core::{Capacity, CapacityError}};
-use ckb_hash::blake2b_256;
-use crate::contract::schema::{SchemaPrimitiveType, BytesConversion};
+use ckb_types::prelude::*;
+use ckb_types::{
+    core::{Capacity, CapacityError},
+    H256,
+};
 use thiserror::Error;
 // use molecule::bytes::Bytes as MolBytes; // This is equivalent to CkBytes when in std mode
 
@@ -17,11 +20,10 @@ pub enum BytesError {
 pub type BytesResult<T> = Result<T, BytesError>;
 
 #[derive(Clone, Debug, Default)]
-pub struct Bytes(pub (crate) JsonBytes);
-
+pub struct Bytes(pub(crate) JsonBytes);
 
 impl Bytes {
-   pub fn hash_256(&self) -> H256 {
+    pub fn hash_256(&self) -> H256 {
         let raw_bytes: CkBytes = self.clone().into();
         H256(blake2b_256(raw_bytes))
     }
@@ -32,8 +34,7 @@ impl Bytes {
     }
 
     pub fn required_capacity(&self) -> BytesResult<Capacity> {
-        Capacity::bytes(self.len())
-            .map_err(|e| BytesError::CapacityCalcError(e))
+        Capacity::bytes(self.len()).map_err(BytesError::CapacityCalcError)
     }
 }
 
@@ -48,7 +49,6 @@ impl From<PackedBytes> for Bytes {
         Self(packed_bytes.into())
     }
 }
-
 
 impl From<JsonBytes> for Bytes {
     fn from(json_bytes: JsonBytes) -> Self {
@@ -113,12 +113,12 @@ impl From<&Bytes> for JsonBytes {
     }
 }
 
-impl<T, M> From<SchemaPrimitiveType<T,M>> for Bytes 
+impl<T, M> From<SchemaPrimitiveType<T, M>> for Bytes
 where
     M: Entity + Unpack<T>,
     T: Pack<M>,
 {
-    fn from(schema_obj: SchemaPrimitiveType<T,M>) -> Self {
+    fn from(schema_obj: SchemaPrimitiveType<T, M>) -> Self {
         schema_obj.to_bytes().into()
     }
 }

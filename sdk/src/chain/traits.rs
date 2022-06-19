@@ -1,3 +1,4 @@
+
 use std::collections::HashMap;
 
 use crate::types::{bytes::Bytes, cell::Cell};
@@ -10,10 +11,12 @@ use crate::{
     types::script::Script,
 };
 use ckb_sdk::{traits::CellQueryOptions, unlock::ScriptUnlocker, ScriptId};
+
 use ckb_types::{
     core::TransactionView,
     packed::{Byte32, OutPoint},
 };
+
 
 pub type Unlockers = HashMap<ScriptId, Box<dyn ScriptUnlocker>>;
 
@@ -49,7 +52,7 @@ pub trait Chain {
     }
 
     fn send_tx<T: Into<TransactionView> + Clone>(&self, tx: T) -> ChainResult<Byte32> {
-        let view_tx: TransactionView = tx.clone().into();
+        let view_tx: TransactionView = tx.into();
         let json_tx = JsonTransaction::from(view_tx);
         match self.inner().send_tx(json_tx) {
             Some(hash) => Ok(hash.into()),
@@ -69,10 +72,6 @@ pub trait Chain {
         unlockers: Unlockers,
         inputs: &CellInputs,
     ) -> ChainResult<Vec<OutPoint>>;
-
-    // Removed due to changes in ckb-sdk-rust crate
-    // fn genesis_info(&self) -> Option<GenesisInfo>;
-    // fn set_genesis_info(&mut self, genesis_info: GenesisInfo);
 
     fn set_default_lock(&mut self, cell: Cell) -> Result<(), ChainError>;
 

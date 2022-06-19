@@ -78,7 +78,7 @@ fn main() -> Result<()> {
             match command {
                 NetworkCommands::Launch {} => {
                     let image = DockerImage {
-                        name: "iamm/trampoline-env".to_string(),
+                        name: "tempest/trampoline-env".to_string(),
                         tag: Some("latest".to_string()),
                         file_path: Some("./".to_string()),
                         host_mappings: vec![],
@@ -169,7 +169,7 @@ fn main() -> Result<()> {
                 }
                 NetworkCommands::Indexer {} => {
                     let image = DockerImage {
-                        name: "iamm/trampoline-indexer".to_string(),
+                        name: "tempest/trampoline-indexer".to_string(),
                         tag: Some("latest".to_string()),
                         file_path: Some("./".to_string()),
                         host_mappings: vec![],

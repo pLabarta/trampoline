@@ -1,20 +1,21 @@
-use ckb_types::core::Capacity;
-use ckb_types::bytes::Bytes as CkBytes;
-use ckb_types::packed::Bytes as PackedBytes;
 use ckb_jsonrpc_types::JsonBytes;
+use ckb_types::bytes::Bytes as CkBytes;
+use ckb_types::core::Capacity;
+use ckb_types::packed::Bytes as PackedBytes;
 
-pub mod transaction;
-pub mod cell;
-pub mod script;
 pub mod bytes;
+pub mod cell;
 pub mod constants;
+pub mod script;
+pub mod transaction;
 pub mod ckb_json {
     pub use ckb_jsonrpc_types::*;
 }
 pub mod ckb_builtin {
     pub use ckb_types::*;
 }
-
+pub mod query;
+pub mod address;
 // TO DO: Implement this trait for all types
 
 pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> + Into<JsonBytes> {
@@ -30,12 +31,13 @@ pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> + Into<JsonBytes
 mod tests {
 
     use super::*;
+    use ckb_always_success_script::ALWAYS_SUCCESS;
+    use ckb_hash::blake2b_256;
+    use ckb_types::core::ScriptHashType;
+    use ckb_types::packed::{CellOutput, Script};
     use ckb_types::prelude::*;
     use ckb_types::H256;
-    use ckb_types::{packed::{CellOutput, Script}};
-    use ckb_hash::{blake2b_256};
-    use ckb_types::core::ScriptHashType;
-    use ckb_always_success_script::ALWAYS_SUCCESS;
+
     #[test]
     fn test_cell_data_hash() {
         let first = blake2b_256(ALWAYS_SUCCESS);
@@ -56,7 +58,9 @@ mod tests {
             .build();
         let hash_1: H256 = packed_script.calc_script_hash().unpack();
         let mut cell_with_lock = cell::Cell::default();
-        assert!(cell_with_lock.set_lock_script(packed_script.clone()).is_ok());
+        assert!(cell_with_lock
+            .set_lock_script(packed_script)
+            .is_ok());
         let hash_2 = cell_with_lock.lock_hash().unwrap();
         assert_eq!(hash_1, hash_2);
     }

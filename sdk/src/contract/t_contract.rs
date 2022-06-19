@@ -1,25 +1,19 @@
 use std::sync::{Arc, Mutex};
 
+use super::generator::GeneratorMiddleware;
 use super::schema::TrampolineSchema;
 use super::types::*;
-use super::generator::{CellQuery, GeneratorMiddleware};
-use crate::types::cell::{Cell, CellError, CellResult};
-use crate::types::bytes::{Bytes as TBytes};
-use crate::types::script::Script as TScript;
 use crate::ckb_types::packed::CellOutput;
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
-use crate::types::{
-    transaction::CellMetaTransaction,
-    cell::CellOutputWithData,
-};
-
-
-
+use crate::types::bytes::Bytes as TBytes;
+use crate::types::cell::{Cell, CellError, CellResult};
+use crate::types::query::CellQuery;
+use crate::types::script::Script as TScript;
+use crate::types::{cell::CellOutputWithData, transaction::CellMetaTransaction};
 
 use crate::ckb_types::core::TransactionView;
 
 use crate::ckb_types::{core::TransactionBuilder, H256};
-
 
 use thiserror::Error;
 
@@ -28,11 +22,30 @@ pub enum TContractError {
     #[error(transparent)]
     CellError(#[from] CellError),
     #[error("Cannot convert contract to CellDep. Please set Contract::Source to `Chain` or set inner code cell's outpoint")]
-    MissingOutpointOnCellDep
+    MissingOutpointOnCellDep,
 }
 pub type TContractResult<T> = Result<T, TContractError>;
 // Replacement for Contract
 
+// pub struct OutputRule<ArgEntity, ArgStruct, DataEntity, DataStruct> {
+//     pub scope: RuleScope,
+//     pub rule: Box<dyn Fn(RuleContext) -> ContractCellField<A, D>>,
+// }
+
+// impl<A, D> OutputRule<A, D> {
+//     pub fn new<F>(scope: impl Into<RuleScope>, rule: F) -> Self
+//     where
+//         F: 'static + Fn(RuleContext) -> ContractCellField<A, D>,
+//     {
+//         OutputRule {
+//             scope: scope.into(),
+//             rule: Box::new(rule),
+//         }
+//     }
+//     pub fn exec(&self, ctx: &RuleContext) -> ContractCellField<A, D> {
+//         self.rule.as_ref()(ctx.clone()) //call((ctx,))
+//     }
+// }
 pub struct TContract<A: Default, D: Default> {
     pub source: Option<ContractSource>,
     inner_code_cell: Cell,
@@ -61,18 +74,16 @@ where
     }
 }
 
-
 impl<A, D> From<TBytes> for TContract<A, D>
 where
     A: Default,
     D: Default,
 {
-    
     fn from(bytes: TBytes) -> Self {
         let code_cell = Cell::with_data(bytes.clone());
         let mut caller_cell = Cell::default();
         let script = TScript::from(&code_cell);
-        
+
         assert!(caller_cell.set_type_script(script).is_ok());
 
         Self {
@@ -89,15 +100,14 @@ where
 
 enum InnerCellType {
     Code,
-    Caller
+    Caller,
 }
 
-impl<A,D> TContract<A,D>
+impl<A, D> TContract<A, D>
 where
     A: Into<TBytes> + Default + TrampolineSchema,
     D: Into<TBytes> + Default + TrampolineSchema,
 {
-
     fn safe_cell_update(&mut self, cell: Cell, cell_type: InnerCellType) -> TContractResult<()> {
         // In the case where the code cell hash been updated, ensure that
         // the usage cell's relevant script (lock or type) uses the correct code_hash
@@ -105,40 +115,40 @@ where
             InnerCellType::Caller => {
                 self.inner_usage_cell = cell;
                 Ok(())
-            },
+            }
             InnerCellType::Code => {
-               let new_code_hash = cell.data_hash();
-               self.inner_code_cell = cell;
-               match self.contract_type {
+                let new_code_hash = cell.data_hash();
+                self.inner_code_cell = cell;
+                match self.contract_type {
                     ContractType::Type => {
                         let script = self.inner_usage_cell.type_script()?;
                         if let Some(mut script) = script {
                             script.set_code_hash(new_code_hash);
-                            self.inner_usage_cell.set_type_script(script).map_err(|e| e.into())
+                            self.inner_usage_cell
+                                .set_type_script(script)
+                                .map_err(|e| e.into())
                         } else {
                             Ok(())
                         }
-                    
-                    },
+                    }
                     ContractType::Lock => {
                         let mut script = self.inner_usage_cell.lock_script()?;
                         script.set_code_hash(new_code_hash);
-                        self.inner_usage_cell.set_lock_script(script).map_err(|e| e.into())
-                    },
+                        self.inner_usage_cell
+                            .set_lock_script(script)
+                            .map_err(|e| e.into())
+                    }
                 }
             }
         }
     }
-    fn update_inner_cells<F>(&mut self, update: F, cell_type: InnerCellType)  -> TContractResult<()> 
-        where F: FnOnce(Cell) -> CellResult<Cell>, 
+    fn update_inner_cells<F>(&mut self, update: F, cell_type: InnerCellType) -> TContractResult<()>
+    where
+        F: FnOnce(Cell) -> CellResult<Cell>,
     {
         let cell_to_update = match &cell_type {
-            InnerCellType::Caller => {
-                update(self.inner_usage_cell.clone())
-            },
-            InnerCellType::Code => {
-                update(self.inner_code_cell.clone())
-            }
+            InnerCellType::Caller => update(self.inner_usage_cell.clone()),
+            InnerCellType::Code => update(self.inner_code_cell.clone()),
         }?;
         self.safe_cell_update(cell_to_update, cell_type)?;
         // check if self.script_hash() == self.inner_usage_cell.lock_script_hash() or type_script_hash()
@@ -146,45 +156,53 @@ where
     }
 
     // unfortunate clones here
-    pub fn set_lock(&mut self, lock: impl Into<TScript>) -> TContractResult<()>{
+    pub fn set_lock(&mut self, lock: impl Into<TScript>) -> TContractResult<()> {
         //let lock: TScript = lock.into();
-        self.update_inner_cells(|mut cell| {
-            //let mut cell = cell.clone();
-            cell.set_lock_script(lock)?;
-            Ok(cell)
-        }, InnerCellType::Code)
+        self.update_inner_cells(
+            |mut cell| {
+                //let mut cell = cell.clone();
+                cell.set_lock_script(lock)?;
+                Ok(cell)
+            },
+            InnerCellType::Code,
+        )
     }
 
     pub fn set_type(&mut self, type_: impl Into<TScript>) -> TContractResult<()> {
-       // let type_ = type_.into();
-        self.update_inner_cells(|mut cell| {
-            //let mut cell = cell.clone();
-            cell.set_type_script(type_)?;
-            Ok(cell)
-        }, InnerCellType::Code)
+        // let type_ = type_.into();
+        self.update_inner_cells(
+            |mut cell| {
+                //let mut cell = cell.clone();
+                cell.set_type_script(type_)?;
+                Ok(cell)
+            },
+            InnerCellType::Code,
+        )
     }
 
     pub fn set_caller_cell_data(&mut self, data: D) -> TContractResult<()> {
-         let data:TBytes = data.to_bytes().into();
-         println!("data in set caller cell data: {:?}", data);
-        self.update_inner_cells(move |cell| {
-            let mut cell = cell.clone();
-            cell.set_data(data)?;
-            Ok(cell)
-        }, InnerCellType::Caller)
+        let data: TBytes = data.to_bytes().into();
+        println!("data in set caller cell data: {:?}", data);
+        self.update_inner_cells(
+            move |cell| {
+                let mut cell = cell;
+                cell.set_data(data)?;
+                Ok(cell)
+            },
+            InnerCellType::Caller,
+        )
     }
 
     pub fn set_caller_cell_args(&mut self, args: A) -> TContractResult<()> {
         match self.contract_type {
             ContractType::Type => {
-               self.inner_usage_cell.set_type_args(args)?;
-               Ok(())
-                
-            },
+                self.inner_usage_cell.set_type_args(args)?;
+                Ok(())
+            }
             ContractType::Lock => {
                 self.inner_usage_cell.set_lock_args(args)?;
                 Ok(())
-            },
+            }
         }
     }
 
@@ -192,16 +210,11 @@ where
         self.inner_code_cell.data_hash()
     }
 
-
-    pub fn script_hash(&self) ->Option<H256> {
+    pub fn script_hash(&self) -> Option<H256> {
         match self.contract_type {
-            ContractType::Type => {
-                self.inner_usage_cell.type_hash().ok().unwrap_or_default()            
-            },
-            ContractType::Lock => {
-                self.inner_usage_cell.lock_hash().ok()
-            },
-        }        
+            ContractType::Type => self.inner_usage_cell.type_hash().ok().unwrap_or_default(),
+            ContractType::Lock => self.inner_usage_cell.lock_hash().ok(),
+        }
     }
 
     pub fn caller_cell_data_hash(&self) -> H256 {
@@ -222,43 +235,36 @@ where
         Ok(cell.into())
     }
 
-
     // Can be used to retrieve packed script or json script struct
-    pub fn as_script<S: From<TScript>>(&self) -> TContractResult<Option<S>> 
-    {
+    pub fn as_script<S: From<TScript>>(&self) -> TContractResult<Option<S>> {
         match self.contract_type {
-            ContractType::Type => {
-                Ok(self.inner_usage_cell.type_script()?.map(|s| s.into()))
-                
-            },
-            ContractType::Lock => {
-                Ok(Some(self.inner_usage_cell.lock_script()?.into()))
-            },
+            ContractType::Type => Ok(self.inner_usage_cell.type_script()?.map(|s| s.into())),
+            ContractType::Lock => Ok(Some(self.inner_usage_cell.lock_script()?.into())),
         }
     }
 
     // Get code cell as a cell dep
     pub fn as_code_cell_dep(&self) -> TContractResult<ckb_types::packed::CellDep> {
-        match self.inner_code_cell.as_cell_dep(ckb_types::core::DepType::Code) {
+        match self
+            .inner_code_cell
+            .as_cell_dep(ckb_types::core::DepType::Code)
+        {
             Ok(dep) => Ok(dep),
             Err(_) => {
                 if let Some(src) = &self.source {
                     if let ContractSource::Chain(outp) = src {
-                        return Ok(packed::CellDep::new_builder()
-                             .out_point(outp.clone().into())
-                             .dep_type(ckb_types::core::DepType::Code.into())
-                             .build());
-                     } else {
-                         return Err(TContractError::MissingOutpointOnCellDep);
-                     }
+                        Ok(packed::CellDep::new_builder()
+                            .out_point(outp.clone().into())
+                            .dep_type(ckb_types::core::DepType::Code.into())
+                            .build())
+                    } else {
+                        Err(TContractError::MissingOutpointOnCellDep)
+                    }
                 } else {
-                    return Err(TContractError::MissingOutpointOnCellDep);
+                    Err(TContractError::MissingOutpointOnCellDep)
                 }
-               
-                
-                    
-            },
-        }  
+            }
+        }
     }
 
     // Get caller cell as a cell output
@@ -290,9 +296,7 @@ where
 
         for _ in 0..self.outputs_count {
             tx = tx
-                .output(
-                   self.as_cell_output().unwrap()
-                )
+                .output(self.as_cell_output().unwrap())
                 .output_data(self.as_caller_cell::<Cell>()?.data().into());
         }
 
@@ -303,8 +307,6 @@ where
         Ok(tx.build())
     }
 }
-
-
 
 impl<A, D> GeneratorMiddleware for TContract<A, D>
 where

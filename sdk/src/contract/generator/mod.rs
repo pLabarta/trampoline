@@ -1,13 +1,16 @@
-use ckb_jsonrpc_types::{Byte32, Capacity, OutPoint, Script, TransactionView as JsonTransaction};
-use ckb_types::packed::{CellDepBuilder};
+use ckb_jsonrpc_types::{Byte32, OutPoint, TransactionView as JsonTransaction};
+use ckb_types::packed::CellDepBuilder;
 
-use crate::{ckb_types::{
-    core::{cell::CellMeta, TransactionBuilder},
-    packed::CellInputBuilder,
-    prelude::*,
-}, chain::Chain};
+use crate::types::query::*;
 use crate::types::transaction::CellMetaTransaction;
-
+use crate::{
+    chain::Chain,
+    ckb_types::{
+        core::{cell::CellMeta, TransactionBuilder},
+        packed::CellInputBuilder,
+        prelude::*,
+    },
+};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
@@ -33,31 +36,6 @@ pub trait GeneratorMiddleware {
     );
 }
 
-// TODO: implement from for CellQueryAttribute on json_types and packed types
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum CellQueryAttribute {
-    LockHash(Byte32),
-    LockScript(Script),
-    TypeScript(Script),
-    MinCapacity(Capacity),
-    MaxCapacity(Capacity),
-    DataHash(Byte32),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum QueryStatement {
-    Single(CellQueryAttribute),
-    FilterFrom(CellQueryAttribute, CellQueryAttribute),
-    Any(Vec<CellQueryAttribute>),
-    All(Vec<CellQueryAttribute>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CellQuery {
-    pub _query: QueryStatement,
-    pub _limit: u64,
-}
-
 pub trait QueryProvider {
     fn query(&self, query: CellQuery) -> Option<Vec<OutPoint>>;
     fn query_cell_meta(&self, query: CellQuery) -> Option<Vec<CellMeta>>;
@@ -72,8 +50,9 @@ pub struct Generator<'a, 'b, C: Chain> {
     query_queue: Arc<Mutex<Vec<CellQuery>>>,
 }
 
-impl<'a, 'b, C> Generator<'a, 'b, C> 
-where C: Chain
+impl<'a, 'b, C> Generator<'a, 'b, C>
+where
+    C: Chain,
 {
     pub fn new() -> Self {
         Generator {
@@ -101,12 +80,12 @@ where C: Chain
     }
 
     pub fn query(&self, query: CellQuery) -> Option<Vec<CellMeta>> {
-        let res = self.query_service.unwrap().query_cell_meta(query.clone());
+        
         // println!(
         //     "Res in generator.query for cell_query {:?} is {:?}",
         //     query, res
         // );
-        res
+        self.query_service.unwrap().query_cell_meta(query)
     }
 
     pub fn generate(&self) -> CellMetaTransaction {
@@ -140,7 +119,7 @@ impl<C: Chain> GeneratorMiddleware for Generator<'_, '_, C> {
     ) -> CellMetaTransaction {
         self.update_query_register(tx.clone(), query_register.clone());
         let inputs = self.resolve_queries(query_register.clone());
-       // println!("RESOLVED INPUTS IN GENERATOR PIPE: {:?}", inputs);
+        // println!("RESOLVED INPUTS IN GENERATOR PIPE: {:?}", inputs);
         let inner_tx = tx
             .as_advanced_builder()
             .set_inputs(

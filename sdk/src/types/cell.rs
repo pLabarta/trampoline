@@ -1,18 +1,15 @@
 use ckb_types::{
-    H256,
-    core::{
-        Capacity,
-        CapacityError, DepType,
-    },
-    packed::{CellOutput, OutPoint, CellDep},
+    core::{Capacity, CapacityError, DepType},
+    packed::{CellDep, CellOutput, OutPoint},
     prelude::*,
+    H256,
 };
 
-use std::{io::Error as IoError, borrow::Borrow};
+use std::{borrow::Borrow, io::Error as IoError};
 use thiserror::Error;
 
-use super::script::{Script, ScriptError};
 use super::bytes::{Bytes, BytesError};
+use super::script::{Script, ScriptError};
 
 pub type CellOutputWithData = (CellOutput, ckb_types::bytes::Bytes);
 
@@ -31,7 +28,7 @@ pub enum CellError {
     #[error("Type script is currently None")]
     MissingTypeScript,
     #[error("Cannot convert cell to CellDep: no outpoint")]
-    MissingOutpoint
+    MissingOutpoint,
 }
 
 pub type CellResult<T> = Result<T, CellError>;
@@ -46,10 +43,9 @@ pub struct Cell {
 }
 
 impl Cell {
-
     pub fn with_data(data: impl Into<Bytes>) -> Self {
         let data: Bytes = data.into();
-       
+
         let mut cell = Self {
             data,
             outpoint: None,
@@ -76,45 +72,46 @@ impl Cell {
     pub fn required_capacity(&self) -> CellResult<Capacity> {
         let type_script_size = match &self.type_script {
             Some(script) => {
-               // script.validate()?;
+                // script.validate()?;
                 script.required_capacity()?
-            },
-            None => Capacity::zero()
+            }
+            None => Capacity::zero(),
         };
         //self.lock_script.validate()?;
         let lock_script_size = self.lock_script.required_capacity()?;
         let other_fields_size = self.data.required_capacity()?;
         let capacity_field_req = Capacity::bytes(8)?;
-        let total_size = 
-             type_script_size
-             .safe_add(lock_script_size)?
-             .safe_add(other_fields_size)?
-             .safe_add(capacity_field_req)?;
+        let total_size = type_script_size
+            .safe_add(lock_script_size)?
+            .safe_add(other_fields_size)?
+            .safe_add(capacity_field_req)?;
         Ok(total_size)
     }
     /// Ensure the total cell size <= min required capacity
     /// Ensure that the capacity in the cell >= min required capacity
     pub fn validate(&self) -> CellResult<Capacity> {
-       match &self.type_script {
-           Some(script) => {
-               script.validate()?;
-           },
-           None => {}
-       };
-       self.lock_script.validate()?;
-       self.required_capacity()
+        match &self.type_script {
+            Some(script) => {
+                script.validate()?;
+            }
+            None => {}
+        };
+        self.lock_script.validate()?;
+        self.required_capacity()
     }
 
     pub fn lock_hash(&self) -> CellResult<H256> {
-        self.lock_script.validate()
-            .map_err(|e| CellError::ScriptError(e))
+        self.lock_script
+            .validate()
+            .map_err(CellError::ScriptError)
     }
 
     pub fn type_hash(&self) -> CellResult<Option<H256>> {
         if let Some(script) = &self.type_script {
-            script.validate()
-                .map_err(|e| CellError::ScriptError(e))
-                .map(|hash| Some(hash))
+            script
+                .validate()
+                .map_err(CellError::ScriptError)
+                .map(Some)
         } else {
             Ok(None)
         }
@@ -136,7 +133,7 @@ impl Cell {
     }
 
     pub fn outpoint(&self) -> Option<OutPoint> {
-       self.outpoint.clone()
+        self.outpoint.clone()
     }
 
     pub fn data_hash(&self) -> H256 {
@@ -146,7 +143,6 @@ impl Cell {
     pub fn data(&self) -> Bytes {
         self.data.clone()
     }
-
 
     pub fn set_lock_script(&mut self, script: impl Into<Script>) -> CellResult<()> {
         self.lock_script = script.into();
@@ -191,18 +187,18 @@ impl Cell {
         self.capacity = Capacity::shannons(capacity);
         Ok(())
     }
-    
+
     pub fn as_cell_dep(&self, _dep_type: DepType) -> CellResult<CellDep> {
         if let Some(outp) = self.outpoint() {
-            Ok(CellDep::new_builder().dep_type(_dep_type.into())
-            .out_point(outp).build())
+            Ok(CellDep::new_builder()
+                .dep_type(_dep_type.into())
+                .out_point(outp)
+                .build())
         } else {
             Err(CellError::MissingOutpoint)
         }
-       
     }
 }
-
 
 impl TryFrom<Cell> for CellDep {
     type Error = CellError;
@@ -212,44 +208,40 @@ impl TryFrom<Cell> for CellDep {
     }
 }
 
-
 impl From<Cell> for CellOutput {
     fn from(cell: Cell) -> Self {
         CellOutput::new_builder()
             .capacity(cell.capacity.as_u64().pack())
             .lock(cell.lock_script.into())
-            .type_(cell
-                    .type_script.map(|script| ckb_types::packed::Script::from(script))
-                    .pack()
+            .type_(
+                cell.type_script
+                    .map(ckb_types::packed::Script::from)
+                    .pack(),
             )
             .build()
     }
 }
 
-
 impl From<CellOutput> for Cell {
     fn from(celloutput: CellOutput) -> Self {
-       let mut cell = Cell::default();
-       cell.set_lock_script(celloutput.lock()).ok();
-       if let Some(typ) = celloutput.type_().to_opt() {
-           cell.set_type_script(typ).ok();
-       }
-       cell.set_capacity_shannons(celloutput.capacity().unpack()).ok();
-       cell
+        let mut cell = Cell::default();
+        cell.set_lock_script(celloutput.lock()).ok();
+        if let Some(typ) = celloutput.type_().to_opt() {
+            cell.set_type_script(typ).ok();
+        }
+        cell.set_capacity_shannons(celloutput.capacity().unpack())
+            .ok();
+        cell
     }
 }
 
 impl From<Cell> for CellOutputWithData {
     fn from(cell: Cell) -> Self {
-        
         let outp: CellOutput = cell.clone().into();
         let data = cell.data;
         (outp, data.into())
-        
     }
 }
-
-
 
 impl TryFrom<&Cell> for CellDep {
     type Error = CellError;
@@ -257,7 +249,6 @@ impl TryFrom<&Cell> for CellDep {
         value.as_cell_dep(DepType::Code)
     }
 }
-
 
 impl From<&Cell> for CellOutput {
     fn from(cell: &Cell) -> Self {
