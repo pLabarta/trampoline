@@ -132,3 +132,8 @@ where
         Self::from_json_bytes(json)
     }
 }
+
+impl<T,M> TrampolineSchema for SchemaPrimitiveType<T, M> where
+M: Entity + Unpack<T>,
+T: Pack<M>,
+{}

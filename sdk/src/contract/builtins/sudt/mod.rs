@@ -16,8 +16,7 @@ struct InnerSudtAmount(u128);
 pub type OwnerLockHash = SchemaPrimitiveType<H256, Byte32>;
 pub type SudtAmount = SchemaPrimitiveType<u128, Uint128>;
 
-impl TrampolineSchema for OwnerLockHash {}
-impl TrampolineSchema for SudtAmount {}
+
 pub type SudtContract = Contract<OwnerLockHash, SudtAmount>;
 
 pub type SudtTrampolineContract = TContract<OwnerLockHash, SudtAmount>;

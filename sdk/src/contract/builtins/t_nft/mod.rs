@@ -1,5 +1,3 @@
-use std::prelude::v1::*;
-
 pub mod mol_defs;
 use crate::ckb_types::{bytes::Bytes, prelude::*};
 

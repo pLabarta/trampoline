@@ -187,6 +187,7 @@ pub enum ContractType {
     Lock,
 }
 
+#[derive(Clone)]
 pub enum ContractCellField<A, D> {
     Args(A),
     Data(D),
