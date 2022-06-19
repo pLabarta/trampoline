@@ -1,12 +1,19 @@
-use std::{str::FromStr, collections::HashMap, thread, time::Duration};
+use std::{collections::HashMap, str::FromStr, thread, time::Duration};
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
-use ckb_types::{prelude::{Unpack, Pack}, H256, packed::CellOutput};
-use trampoline_sdk::{chain::{Chain, RpcChain, TransactionBuilder, CellInputs}, types::{bytes::Bytes, cell::Cell, script::Script}};
+use ckb_types::{
+    packed::CellOutput,
+    prelude::{Pack, Unpack},
+    H256,
+};
+use trampoline_sdk::{
+    chain::{CellInputs, Chain, RpcChain, TransactionBuilder},
+    types::{bytes::Bytes, cell::Cell, script::Script},
+};
 
 use trampoline_utils::{
     account::Account,
-    lock::{Lock, SigHashAllLock, create_secp_sighash_unlocker},
+    lock::{create_secp_sighash_unlocker, Lock, SigHashAllLock},
     transaction::TransactionHelper,
 };
 
@@ -132,15 +139,14 @@ fn test_send_tx_get_tx() {
 fn new_rpc_dev_chain_has_sighash_all_as_default_lock() {
     let chain = default_chain();
     assert!(chain.default_lock.is_some());
-    let cell = chain.inner().get_cell_with_data(&chain.default_lock.unwrap())
+    let cell = chain
+        .inner()
+        .get_cell_with_data(&chain.default_lock.unwrap())
         .expect("Failed to get default lock cell from chain");
     let data_hash = CellOutput::calc_data_hash(&cell.1);
     let sighash_all_code_hash = ckb_system_scripts::CODE_HASH_SECP256K1_BLAKE160_SIGHASH_ALL;
 
-    assert_eq!(
-       data_hash,
-       sighash_all_code_hash.pack()
-    );
+    assert_eq!(data_hash, sighash_all_code_hash.pack());
 }
 
 #[test]
@@ -148,7 +154,8 @@ fn create_cell_with_default_lock_from_default_rpcchain_has_sighashall_lock() {
     let chain = default_chain();
     let cell = chain.generate_cell_with_default_lock(Bytes::default());
     let code_hash = cell.lock_script().unwrap().code_hash();
-    let sighash_all_code_hash = H256::from(ckb_system_scripts::CODE_HASH_SECP256K1_BLAKE160_SIGHASH_ALL);
+    let sighash_all_code_hash =
+        H256::from(ckb_system_scripts::CODE_HASH_SECP256K1_BLAKE160_SIGHASH_ALL);
     assert_eq!(code_hash, sighash_all_code_hash);
 }
 
@@ -162,15 +169,16 @@ fn deploy_ass_and_set_as_default_lock() {
     // Create AlwaysSuccessScript cell
     let ass_script_bin = ALWAYS_SUCCESS;
     let mut ass_cell = Cell::with_data(ass_script_bin.to_vec());
-    ass_cell.set_lock_script(dev_account_lock.clone()).expect("Failed to set lock script for ASL cell");
-
+    ass_cell
+        .set_lock_script(dev_account_lock.clone())
+        .expect("Failed to set lock script for ASL cell");
 
     let unlockers = {
-            let (script_id, unlocker) = create_secp_sighash_unlocker(&dev.account, password);
-            let mut unlockers = HashMap::new();
-            unlockers.insert(script_id, unlocker);
-            unlockers
-        };
+        let (script_id, unlocker) = create_secp_sighash_unlocker(&dev.account, password);
+        let mut unlockers = HashMap::new();
+        unlockers.insert(script_id, unlocker);
+        unlockers
+    };
 
     // let unlockers = unlocker.as_group();
     // unlockers.push(another_unlocker);
@@ -178,23 +186,27 @@ fn deploy_ass_and_set_as_default_lock() {
     // Create inputs
     let inputs = CellInputs::from(Script::from(dev_account_lock));
 
-    let deploy_outpoint = chain.clone().deploy_cell(&ass_cell, unlockers, &inputs).expect("Failed to deploy AlwaysSuccessLock cell");
+    let deploy_outpoint = chain
+        .clone()
+        .deploy_cell(&ass_cell, unlockers, &inputs)
+        .expect("Failed to deploy AlwaysSuccessLock cell");
 
     // Wait for 15 seconds
     thread::sleep(Duration::from_secs(20));
 
-    chain.set_default_lock(ass_cell).expect("Failed to set default lock");
+    chain
+        .set_default_lock(ass_cell)
+        .expect("Failed to set default lock");
 
     // Check that default lock outpoint and deploy output are the same
     let default_lock_outpoint = chain.default_lock().unwrap();
 
-    let ass_script_cell = chain.inner().get_cell_with_data(&default_lock_outpoint)
+    let ass_script_cell = chain
+        .inner()
+        .get_cell_with_data(&default_lock_outpoint)
         .expect("Failed to get script cell");
 
     let from_chain_data_hash = Bytes::from(ass_script_cell.1.clone()).hash_256();
     let from_deploy_data_hash = Bytes::from(ass_script_bin.to_vec()).hash_256();
     assert_eq!(from_chain_data_hash, from_deploy_data_hash);
-
-
-
 }

@@ -190,10 +190,11 @@ impl Chain for MockChain {
         Ok(self.deploy_cell_output(data, outp))
     }
 
-    fn set_default_lock<A, D>(&mut self, lock: Cell) {
+    fn set_default_lock(&mut self, lock: Cell) -> Result<(), ChainError> {
         let (outp, data) = (lock.clone().into(), lock.data());
         let outpoint = self.deploy_cell_output(data.into(), outp);
         self.default_lock = Some(outpoint);
+        Ok(())
     }
 
     fn generate_cell_with_default_lock(&self, lock_args: crate::types::bytes::Bytes) -> Cell {
@@ -271,7 +272,7 @@ mod tests {
         let cell = chain.generate_cell_with_default_lock(lock_args.into());
 
         // Setup cell inputs for the tx to include
-        let inputs = CellInputs::Cells(vec![]);
+        let inputs = CellInputs::Empty;
 
         // Deploy cell and get outpoint
         let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
@@ -294,7 +295,7 @@ mod tests {
         let lock_args = Bytes::from(b"test".to_vec());
         let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
         let cell2 = chain.generate_cell_with_default_lock(lock_args.clone().into());
-        let inputs = CellInputs::Cells(vec![]);
+        let inputs = CellInputs::Empty;
         let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
         let outpoint2 = chain.deploy_cell(&cell2, HashMap::new(), &inputs).unwrap();
         let fetched_cell = chain.get_cell(&outpoint).unwrap();

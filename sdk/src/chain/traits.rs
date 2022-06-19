@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
-use crate::contract::{
-    generator::TransactionProvider,
-    schema::{BytesConversion, JsonByteConversion, MolConversion},
-    Contract,
-};
 use crate::types::{bytes::Bytes, cell::Cell};
+use crate::{
+    contract::{
+        generator::TransactionProvider,
+        schema::{BytesConversion, JsonByteConversion, MolConversion},
+        Contract,
+    },
+    types::script::Script,
+};
 use ckb_sdk::{traits::CellQueryOptions, unlock::ScriptUnlocker, ScriptId};
 use ckb_types::{
     core::TransactionView,
@@ -14,9 +17,16 @@ use ckb_types::{
 
 pub type Unlockers = HashMap<ScriptId, Box<dyn ScriptUnlocker>>;
 
+#[derive(Debug, Clone)]
 pub enum CellInputs {
-    Cells(Vec<Cell>),
-    Query(CellQueryOptions),
+    ScriptQuery(Script),
+    Empty,
+}
+
+impl From<Script> for CellInputs {
+    fn from(script: Script) -> Self {
+        CellInputs::ScriptQuery(script)
+    }
 }
 
 use super::{ChainError, ChainResult};
@@ -64,7 +74,7 @@ pub trait Chain {
     // fn genesis_info(&self) -> Option<GenesisInfo>;
     // fn set_genesis_info(&mut self, genesis_info: GenesisInfo);
 
-    fn set_default_lock<A, D>(&mut self, cell: Cell);
-    
+    fn set_default_lock(&mut self, cell: Cell) -> Result<(), ChainError>;
+
     fn generate_cell_with_default_lock(&self, lock_args: Bytes) -> Cell;
 }
