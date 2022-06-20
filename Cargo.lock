@@ -100,6 +100,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95916998c798756098a4eb1b3f2cd510659705a9817bf203d61abd30fbec3e7b"
 
 [[package]]
+name = "blake2b-ref"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88756126a7634ad9c13ed0a6da9aa3376a6b7000eb5fcdbb89d153196326bbcd"
+
+[[package]]
 name = "blake2b-rs"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -431,7 +437,7 @@ version = "0.103.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "380702c09207ac378708f075d72b336adeb17b8887dcfcc1bf9460e10ea1e285"
 dependencies = [
- "blake2b-ref",
+ "blake2b-ref 0.2.1",
  "blake2b-rs",
 ]
 
@@ -1595,6 +1601,12 @@ dependencies = [
  "security-framework-sys",
  "tempfile",
 ]
+
+[[package]]
+name = "no-std-compat"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b93853da6d84c2e3c7d730d6473e8817692dd89be387eb01b94d7f108ecb5b8c"
 
 [[package]]
 name = "ntapi"
@@ -2825,10 +2837,10 @@ name = "trampoline-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "blake2b-ref 0.3.0",
  "blake2b-rs",
  "bytes",
  "ckb-always-success-script",
- "ckb-app-config",
  "ckb-chain-spec",
  "ckb-crypto",
  "ckb-error",
@@ -2847,18 +2859,16 @@ dependencies = [
  "includedir",
  "jsonrpc-core",
  "molecule",
- "molecule-codegen",
+ "no-std-compat",
  "phf 0.10.1",
  "rand 0.8.5",
  "reqwest",
  "secp256k1",
  "serde",
  "serde_json",
- "structopt",
  "thiserror",
  "tokio",
  "toml",
- "walkdir",
 ]
 
 [[package]]

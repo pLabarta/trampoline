@@ -1,17 +1,21 @@
+#![no_std]
+extern crate no_std_compat as std;
+
+#[cfg(not(feature = "script"))]
+pub mod account;
+#[cfg(not(feature = "script"))]
+pub mod chain;
+#[cfg(not(feature = "script"))]
 pub mod rpc;
 
-pub mod chain;
-
 pub mod contract;
-
-pub mod account;
 
 pub mod types;
 
 pub mod ckb_types {
-    #[cfg(no_std)]
+    #[cfg(feature = "script")]
     pub use ckb_standalone_types::*;
-    #[cfg(not(no_std))]
+    #[cfg(not(feature = "script"))]
     pub use ckb_types::*;
 }
 

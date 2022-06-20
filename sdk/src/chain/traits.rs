@@ -8,6 +8,7 @@ use ckb_types::{
     core::TransactionView,
     packed::{Byte32, OutPoint},
 };
+use std::prelude::v1::*;
 
 use super::{ChainError, ChainResult};
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;

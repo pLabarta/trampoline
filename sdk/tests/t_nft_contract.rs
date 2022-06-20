@@ -16,8 +16,8 @@ use trampoline_sdk::ckb_types::{
     H256,
 };
 use trampoline_sdk::contract::*;
+use trampoline_sdk::contract::{auxiliary_types::*, schema::*};
 use trampoline_sdk::contract::{builtins::t_nft::*, generator::*};
-use trampoline_sdk::contract::{schema::*, ContractSource};
 use trampoline_sdk::types::query::*;
 // TO DO
 // Should just add a Bytes type to trampoline which provides a single interface for all these

@@ -1,139 +1,159 @@
-pub use ckb_jsonrpc_types::JsonBytes;
+use std::prelude::v1::*;
 
-use crate::ckb_types::{bytes::Bytes, prelude::*};
-use std::marker::PhantomData;
+mod core_schema {
+    use crate::ckb_types::{bytes::Bytes, prelude::*};
+    use std::marker::PhantomData;
 
-pub trait JsonByteConversion {
-    fn to_json_bytes(&self) -> JsonBytes;
-    fn from_json_bytes(bytes: JsonBytes) -> Self;
-}
-
-pub trait JsonConversion {
-    type JsonType;
-    fn to_json(&self) -> Self::JsonType;
-
-    fn from_json(json: Self::JsonType) -> Self;
-}
-
-pub trait MolConversion {
-    type MolType: Entity;
-
-    fn to_mol(&self) -> Self::MolType;
-
-    fn from_mol(entity: Self::MolType) -> Self;
-}
-
-pub trait BytesConversion: MolConversion {
-    fn from_bytes(bytes: Bytes) -> Self;
-
-    fn to_bytes(&self) -> Bytes;
-}
-
-pub trait TrampolineSchema:
-    BytesConversion + MolConversion + JsonConversion + JsonByteConversion
-{
-}
-
-#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
-pub struct SchemaPrimitiveType<T, M> {
-    pub inner: T,
-    _entity_type: std::marker::PhantomData<M>,
-}
-
-impl<T, M> SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    pub fn byte_size(&self) -> usize {
-        self.to_mol().as_builder().expected_length()
+    #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
+    pub struct SchemaPrimitiveType<T, M> {
+        pub inner: T,
+        _entity_type: std::marker::PhantomData<M>,
     }
-}
-impl<T, M> SchemaPrimitiveType<T, M> {
-    pub fn new(inner: T) -> Self {
-        Self {
-            inner,
-            _entity_type: std::marker::PhantomData::<M>,
+
+    pub trait MolConversion {
+        type MolType: Entity;
+
+        fn to_mol(&self) -> Self::MolType;
+
+        fn from_mol(entity: Self::MolType) -> Self;
+    }
+
+    pub trait BytesConversion: MolConversion {
+        fn from_bytes(bytes: Bytes) -> Self;
+
+        fn to_bytes(&self) -> Bytes;
+    }
+
+    impl<T, M> SchemaPrimitiveType<T, M>
+    where
+        M: Entity + Unpack<T>,
+        T: Pack<M>,
+    {
+        pub fn byte_size(&self) -> usize {
+            self.to_mol().as_builder().expected_length()
+        }
+    }
+    impl<T, M> SchemaPrimitiveType<T, M> {
+        pub fn new(inner: T) -> Self {
+            Self {
+                inner,
+                _entity_type: std::marker::PhantomData::<M>,
+            }
+        }
+
+        pub fn from(native_type: T) -> Self {
+            SchemaPrimitiveType::new(native_type)
+        }
+
+        pub fn into(self) -> T {
+            self.inner
         }
     }
 
-    pub fn from(native_type: T) -> Self {
-        SchemaPrimitiveType::new(native_type)
-    }
-
-    pub fn into(self) -> T {
-        self.inner
-    }
-}
-
-impl<T, M> MolConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    type MolType = M;
-    fn to_mol(&self) -> Self::MolType {
-        self.inner.pack()
-    }
-
-    fn from_mol(entity: Self::MolType) -> Self {
-        Self {
-            inner: entity.unpack(),
-            _entity_type: std::marker::PhantomData::<M>,
+    impl<T, M> MolConversion for SchemaPrimitiveType<T, M>
+    where
+        M: Entity + Unpack<T>,
+        T: Pack<M>,
+    {
+        type MolType = M;
+        fn to_mol(&self) -> Self::MolType {
+            self.inner.pack()
         }
-    }
-}
 
-impl<T, M> BytesConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    fn from_bytes(bytes: Bytes) -> Self {
-        Self {
-            inner: M::from_compatible_slice(bytes.as_ref())
-                .expect("Unable to build primitive type from bytes")
-                .unpack(),
-            _entity_type: PhantomData::<M>,
+        fn from_mol(entity: Self::MolType) -> Self {
+            Self {
+                inner: entity.unpack(),
+                _entity_type: std::marker::PhantomData::<M>,
+            }
         }
     }
 
-    fn to_bytes(&self) -> Bytes {
-        self.to_mol().as_bytes()
+    impl<T, M> BytesConversion for SchemaPrimitiveType<T, M>
+    where
+        M: Entity + Unpack<T>,
+        T: Pack<M>,
+    {
+        fn from_bytes(bytes: Bytes) -> Self {
+            Self {
+                inner: M::from_compatible_slice(bytes.as_ref())
+                    .expect("Unable to build primitive type from bytes")
+                    .unpack(),
+                _entity_type: PhantomData::<M>,
+            }
+        }
+
+        fn to_bytes(&self) -> Bytes {
+            self.to_mol().as_bytes()
+        }
+    }
+
+    pub trait TrampolineBaseSchema: BytesConversion + MolConversion {}
+
+    impl<T, M> TrampolineBaseSchema for SchemaPrimitiveType<T, M>
+    where
+        M: Entity + Unpack<T>,
+        T: Pack<M>,
+    {
     }
 }
 
-impl<T, M> JsonByteConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    fn to_json_bytes(&self) -> JsonBytes {
-        self.to_mol().as_bytes().pack().into()
+#[cfg(not(feature = "script"))]
+mod extension {
+    use super::core_schema::*;
+    use crate::ckb_types::prelude::*;
+    use ckb_jsonrpc_types::JsonBytes;
+    pub trait JsonByteConversion {
+        fn to_json_bytes(&self) -> JsonBytes;
+        fn from_json_bytes(bytes: JsonBytes) -> Self;
     }
 
-    fn from_json_bytes(bytes: JsonBytes) -> Self {
-        Self::from_bytes(bytes.into_bytes())
+    pub trait JsonConversion {
+        type JsonType;
+        fn to_json(&self) -> Self::JsonType;
+
+        fn from_json(json: Self::JsonType) -> Self;
+    }
+
+    impl<T, M> JsonByteConversion for SchemaPrimitiveType<T, M>
+    where
+        M: Entity + Unpack<T>,
+        T: Pack<M>,
+    {
+        fn to_json_bytes(&self) -> JsonBytes {
+            self.to_mol().as_bytes().pack().into()
+        }
+
+        fn from_json_bytes(bytes: JsonBytes) -> Self {
+            Self::from_bytes(bytes.into_bytes())
+        }
+    }
+
+    impl<T, M> JsonConversion for SchemaPrimitiveType<T, M>
+    where
+        M: Entity + Unpack<T>,
+        T: Pack<M>,
+    {
+        type JsonType = JsonBytes;
+
+        fn to_json(&self) -> Self::JsonType {
+            self.to_json_bytes()
+        }
+
+        fn from_json(json: Self::JsonType) -> Self {
+            Self::from_json_bytes(json)
+        }
+    }
+
+    pub trait TrampolineSchema: TrampolineBaseSchema + JsonConversion + JsonByteConversion {}
+
+    impl<T, M> TrampolineSchema for SchemaPrimitiveType<T, M>
+    where
+        M: Entity + Unpack<T>,
+        T: Pack<M>,
+    {
     }
 }
 
-impl<T, M> JsonConversion for SchemaPrimitiveType<T, M>
-where
-    M: Entity + Unpack<T>,
-    T: Pack<M>,
-{
-    type JsonType = JsonBytes;
-
-    fn to_json(&self) -> Self::JsonType {
-        self.to_json_bytes()
-    }
-
-    fn from_json(json: Self::JsonType) -> Self {
-        Self::from_json_bytes(json)
-    }
-}
-
-impl<T,M> TrampolineSchema for SchemaPrimitiveType<T, M> where
-M: Entity + Unpack<T>,
-T: Pack<M>,
-{}
+pub use core_schema::*;
+#[cfg(not(feature = "script"))]
+pub use extension::*;

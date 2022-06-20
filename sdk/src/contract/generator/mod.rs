@@ -1,5 +1,6 @@
 use ckb_jsonrpc_types::{Byte32, OutPoint, TransactionView as JsonTransaction};
 use ckb_types::packed::CellDepBuilder;
+use std::prelude::v1::*;
 
 use crate::types::query::*;
 use crate::types::transaction::CellMetaTransaction;
@@ -80,7 +81,6 @@ where
     }
 
     pub fn query(&self, query: CellQuery) -> Option<Vec<CellMeta>> {
-        
         // println!(
         //     "Res in generator.query for cell_query {:?} is {:?}",
         //     query, res

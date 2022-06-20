@@ -4,6 +4,7 @@ use ckb_types::{
     prelude::*,
     H256,
 };
+use std::prelude::v1::*;
 
 use std::{borrow::Borrow, io::Error as IoError};
 use thiserror::Error;
@@ -33,13 +34,25 @@ pub enum CellError {
 
 pub type CellResult<T> = Result<T, CellError>;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone)]
 pub struct Cell {
     data: Bytes,
     outpoint: Option<OutPoint>,
     capacity: Capacity,
     lock_script: Script,
     type_script: Option<Script>,
+}
+
+impl Default for Cell {
+    fn default() -> Self {
+        Self {
+            data: Default::default(),
+            outpoint: Default::default(),
+            capacity: Default::default(),
+            lock_script: Default::default(),
+            type_script: Default::default(),
+        }
+    }
 }
 
 impl Cell {
@@ -101,17 +114,12 @@ impl Cell {
     }
 
     pub fn lock_hash(&self) -> CellResult<H256> {
-        self.lock_script
-            .validate()
-            .map_err(CellError::ScriptError)
+        self.lock_script.validate().map_err(CellError::ScriptError)
     }
 
     pub fn type_hash(&self) -> CellResult<Option<H256>> {
         if let Some(script) = &self.type_script {
-            script
-                .validate()
-                .map_err(CellError::ScriptError)
-                .map(Some)
+            script.validate().map_err(CellError::ScriptError).map(Some)
         } else {
             Ok(None)
         }
@@ -213,11 +221,7 @@ impl From<Cell> for CellOutput {
         CellOutput::new_builder()
             .capacity(cell.capacity.as_u64().pack())
             .lock(cell.lock_script.into())
-            .type_(
-                cell.type_script
-                    .map(ckb_types::packed::Script::from)
-                    .pack(),
-            )
+            .type_(cell.type_script.map(ckb_types::packed::Script::from).pack())
             .build()
     }
 }

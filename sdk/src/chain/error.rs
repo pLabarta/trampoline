@@ -1,4 +1,5 @@
 use ckb_verification::TransactionError;
+use std::prelude::v1::*;
 use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ChainError {

@@ -1,4 +1,5 @@
 use super::schema::*;
+use std::prelude::v1::*;
 
 use crate::ckb_types::bytes::Bytes;
 use crate::ckb_types::packed::{CellInput, Uint64};

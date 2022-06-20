@@ -1,16 +1,17 @@
 use std::fmt;
+use std::prelude::v1::*;
 use std::str::FromStr;
 
-use ckb_sdk::{Address as CKBAddress, AddressPayload};
-use ckb_types::H160;
-use ckb_types::packed::Script as PackedScript;
-use ckb_sdk::NetworkType;
-use secp256k1::PublicKey;
 use super::script::Script;
+use crate::ckb_types::packed::Script as PackedScript;
+use crate::ckb_types::H160;
+use ckb_sdk::NetworkType;
+use ckb_sdk::{Address as CKBAddress, AddressPayload};
+use secp256k1::PublicKey;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
-    inner: CKBAddress
+    inner: CKBAddress,
 }
 
 impl Address {
@@ -21,7 +22,6 @@ impl Address {
     pub fn inner(&self) -> &CKBAddress {
         &self.inner
     }
-    
 }
 
 impl From<Address> for CKBAddress {
@@ -76,7 +76,6 @@ impl FromStr for Address {
         Ok(Self { inner })
     }
 }
-
 
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

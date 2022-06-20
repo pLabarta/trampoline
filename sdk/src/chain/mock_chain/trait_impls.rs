@@ -4,6 +4,7 @@ use crate::chain::*;
 use crate::contract::generator::{QueryProvider, TransactionProvider};
 use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
 use crate::types::query::*;
+use std::prelude::v1::*;
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;

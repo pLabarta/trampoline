@@ -2,6 +2,7 @@ use ckb_jsonrpc_types::JsonBytes;
 use ckb_types::bytes::Bytes as CkBytes;
 use ckb_types::core::Capacity;
 use ckb_types::packed::Bytes as PackedBytes;
+use std::prelude::v1::*;
 
 pub mod bytes;
 pub mod cell;
@@ -14,8 +15,8 @@ pub mod ckb_json {
 pub mod ckb_builtin {
     pub use ckb_types::*;
 }
-pub mod query;
 pub mod address;
+pub mod query;
 // TO DO: Implement this trait for all types
 
 pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> + Into<JsonBytes> {
@@ -58,9 +59,7 @@ mod tests {
             .build();
         let hash_1: H256 = packed_script.calc_script_hash().unpack();
         let mut cell_with_lock = cell::Cell::default();
-        assert!(cell_with_lock
-            .set_lock_script(packed_script)
-            .is_ok());
+        assert!(cell_with_lock.set_lock_script(packed_script).is_ok());
         let hash_2 = cell_with_lock.lock_hash().unwrap();
         assert_eq!(hash_1, hash_2);
     }

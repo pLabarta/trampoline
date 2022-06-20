@@ -8,7 +8,7 @@ use ckb_types::{
 };
 use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
 use trampoline_sdk::contract::*;
-use trampoline_sdk::contract::{builtins::sudt::*, generator::*, schema::*};
+use trampoline_sdk::contract::{auxiliary_types::*, builtins::sudt::*, generator::*};
 use trampoline_sdk::types::query::*;
 use trampoline_sdk::types::{bytes::Bytes as TBytes, cell::Cell, script::Script as TScript};
 
@@ -58,10 +58,7 @@ fn _generate_simple_udt_cell(sudt_contract: &SudtTrampolineContract) -> CellOutp
 
 fn generate_mock_tx(outputs: Vec<Cell>) -> TransactionView {
     let outputs_data = outputs.iter().map(|c| c.data()).collect::<Vec<_>>();
-    let outputs = outputs
-        .iter()
-        .map(CellOutput::from)
-        .collect::<Vec<_>>();
+    let outputs = outputs.iter().map(CellOutput::from).collect::<Vec<_>>();
     TransactionBuilder::default()
         .outputs(outputs)
         .outputs_data(outputs_data.into_iter().map(|b| b.into()))

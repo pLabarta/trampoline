@@ -1,4 +1,5 @@
 use ckb_jsonrpc_types::{Byte32, Capacity, Script};
+use std::prelude::v1::*;
 
 // TODO: implement from for CellQueryAttribute on json_types and packed types
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

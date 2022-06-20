@@ -1,8 +1,9 @@
+use std::prelude::v1::*;
 use std::sync::{Arc, Mutex};
 
+use super::auxiliary_types::*;
 use super::generator::GeneratorMiddleware;
 use super::schema::TrampolineSchema;
-use super::types::*;
 use crate::ckb_types::packed::CellOutput;
 use crate::ckb_types::{bytes::Bytes, packed, prelude::*};
 use crate::types::bytes::Bytes as TBytes;
@@ -224,7 +225,6 @@ where
     // Can be used to retrieve cell output, cell output with data, cell input, etc...
     pub fn as_caller_cell<C: From<Cell>>(&self) -> TContractResult<C> {
         let cell = self.inner_usage_cell.clone();
-        println!("CALLER CELL: {:?}", cell);
         cell.validate()?;
         Ok(cell.into())
     }

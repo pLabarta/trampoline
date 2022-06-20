@@ -1,3 +1,4 @@
+use std::prelude::v1::*;
 mod error;
 mod mock_chain;
 mod traits;
