@@ -26,10 +26,10 @@ use crate::ckb_types::{
 //    ckb_types::packed::Bytes = Bytes(Molecule::bytes::Bytes)
 //    ckb_types::bytes::Bytes = bytes::Bytes = Molecule::bytes::Bytes
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod bytes_error {
     use thiserror::Error;
-    use super::CapacityError;
+    use super::*;
     #[derive(Debug, Error)]
     pub enum BytesError {
         #[error(transparent)]
@@ -39,8 +39,7 @@ pub mod bytes_error {
 
 #[cfg(feature = "script")]
 pub mod bytes_error {
-    use std::prelude::v1::*;
-    use super::CapacityError;
+    use super::*;
     use core::fmt;
     pub enum BytesError {
         CapacityCalcError(CapacityError)
@@ -66,9 +65,7 @@ pub use bytes_error::*;
 pub type BytesResult<T> = Result<T, BytesError>;
 
 mod core_bytes {
-
-    use std::prelude::v1::*;
-
+    use core::fmt;
     // When in no-std mode, both CKBytes and PackedBytes are the same
     use crate::ckb_types::bytes::Bytes as CkBytes;
     use crate::ckb_types::packed::Bytes as PackedBytes;
@@ -140,7 +137,7 @@ mod core_bytes {
 
     impl From<Bytes> for CkBytes {
         fn from(b: Bytes) -> Self {
-            CkBytes::copy_from_slice(&b.0)
+            CkBytes::from(b.0)
         }
     }
 
@@ -175,7 +172,7 @@ mod core_bytes {
     }
 }
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 mod extended {
     use super::core_bytes::*;
     use ckb_jsonrpc_types::JsonBytes;
@@ -199,5 +196,5 @@ mod extended {
 }
 
 pub use self::core_bytes::*;
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub use extended::*;

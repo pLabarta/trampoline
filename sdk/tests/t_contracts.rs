@@ -9,8 +9,8 @@ use ckb_types::{
 use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
 use trampoline_sdk::contract::*;
 use trampoline_sdk::contract::{auxiliary_types::*, builtins::sudt::*, generator::*};
-use trampoline_sdk::types::query::*;
-use trampoline_sdk::types::{bytes::Bytes as TBytes, cell::Cell, script::Script as TScript};
+use trampoline_sdk::query::*;
+use trampoline_sdk::{bytes::Bytes as TBytes, cell::Cell, script::Script as TScript};
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};

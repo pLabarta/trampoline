@@ -4,16 +4,14 @@ pub use schema::*;
 pub mod builtins;
 pub use builtins::*;
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod auxiliary_types;
-
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod generator;
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod t_contract;
-
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 mod contract_gen_1 {
     use super::{
         auxiliary_types::{ContractSource, RuleContext},
@@ -46,7 +44,7 @@ mod contract_gen_1 {
         #[allow(clippy::type_complexity)]
         pub output_rules: Vec<OutputRule<A, D>>,
         pub input_rules: Vec<Box<dyn Fn(TransactionView) -> CellQuery>>,
-        #[cfg(not(feature = "script"))]
+        #[cfg(all(feature = "std", not(feature = "script")))]
         pub outputs_count: usize,
     }
 
@@ -248,7 +246,7 @@ mod contract_gen_1 {
 
             query_register.lock().unwrap().extend(queries);
         }
-        #[cfg(not(feature = "script"))]
+        #[cfg(all(feature = "std", not(feature = "script")))]
         fn pipe(
             &self,
             tx_meta: CellMetaTransaction,
@@ -391,7 +389,7 @@ mod contract_gen_1 {
     }
 }
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub use contract_gen_1::*;
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub use t_contract::*;

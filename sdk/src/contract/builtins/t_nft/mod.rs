@@ -60,7 +60,7 @@ mod core_nft {
     }
 }
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 mod extension {
     use super::core_nft::*;
     use crate::contract::schema::SchemaPrimitiveType;
@@ -83,5 +83,5 @@ mod extension {
 }
 
 pub use core_nft::*;
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub use extension::*;

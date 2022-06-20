@@ -18,7 +18,7 @@ use trampoline_sdk::ckb_types::{
 use trampoline_sdk::contract::*;
 use trampoline_sdk::contract::{auxiliary_types::*};
 use trampoline_sdk::contract::{builtins::t_nft::*, generator::*};
-use trampoline_sdk::types::query::*;
+use trampoline_sdk::query::*;
 // TO DO
 // Should just add a Bytes type to trampoline which provides a single interface for all these
 // Various byte types

@@ -5,7 +5,7 @@ use std::prelude::v1::*;
 
 
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 mod script_error {
     use super::*;
     use thiserror::Error;
@@ -22,7 +22,6 @@ mod script_error {
 
 #[cfg(feature = "script")]
 mod script_error {
-    use std::prelude::v1::*;
     use super::*;
     use crate::ckb_types::core::{Capacity, CapacityError, ScriptHashType};
     use crate::ckb_types::H256;
@@ -51,12 +50,13 @@ mod core_script {
    
 
 
-    use crate::types::{bytes::Bytes, cell::Cell};
+    use crate::{bytes::Bytes, cell::Cell};
 
     use crate::ckb_types::core::{Capacity, CapacityError, ScriptHashType};
     use crate::ckb_types::packed::{Bytes as PackedBytes, Script as PackedScript};
     use crate::ckb_types::prelude::*;
     use crate::ckb_types::{bytes::Bytes as CkBytes, H256};
+    use crate::ckb_hash::blake2b_256;
 
     #[derive(Clone)]
     pub struct Script {
@@ -90,16 +90,20 @@ mod core_script {
             // script_hash is not included in this calculation since it is not present
             // in on-chain script structure.
             self.args.len() + CODE_HASH_SIZE_BYTES + 1
-        }
+        }        
 
+        #[cfg(feature = "script")]
         pub fn calc_script_hash(&self) -> H256 {
             let packed: PackedScript = self.clone().into();
-            packed.calc_script_hash().unpack()
+            let packed = packed.as_reader().as_slice().to_vec();
+            blake2b_256(CkBytes::from(packed)).into()
         }
+
         /// Validate that script hash is correct
         pub fn validate(&self) -> ScriptResult<H256> {
             let packed: PackedScript = self.clone().into();
-            let calc_hash = packed.calc_script_hash().unpack();
+            let packed = packed.as_reader().as_slice().to_vec();
+            let calc_hash = blake2b_256(CkBytes::from(packed)).into();
 
             if calc_hash != self.calc_script_hash() {
                 Err(ScriptError::MismatchedScriptHash(
@@ -186,7 +190,7 @@ mod core_script {
         }
     }
 
-    #[cfg(not(feature = "script"))]
+    #[cfg(all(feature = "std", not(feature = "script")))]
     mod extended {
         use super::*;
         use ckb_jsonrpc_types::{
@@ -200,6 +204,11 @@ mod core_script {
 
             pub fn args_json(&self) -> JsonBytes {
                 self.args.clone().into()
+            }
+
+            pub fn calc_script_hash(&self) -> H256 {
+                let packed: PackedScript = self.clone().into();
+                packed.calc_script_hash().unpack()
             }
         }
 
@@ -232,6 +241,9 @@ mod core_script {
             }
         }
     }
+
+    #[cfg(all(feature = "std", not(feature = "script")))]
+    pub use extended::*;
 }
 
 pub use self::core_script::*;

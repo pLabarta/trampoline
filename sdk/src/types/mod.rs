@@ -11,11 +11,11 @@ pub mod cell;
 pub mod constants;
 pub mod script;
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod transaction;
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod address;
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod query;
 
 // TO DO: Implement this trait for all types

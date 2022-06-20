@@ -1,11 +1,13 @@
 #![no_std]
 extern crate no_std_compat as std;
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod account;
-#[cfg(not(feature = "script"))]
+
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod chain;
-#[cfg(not(feature = "script"))]
+
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod rpc;
 
 pub mod contract;
@@ -14,7 +16,8 @@ pub (crate) mod types;
 
 pub use types::{bytes, cell, constants, script};
 
-#[cfg(not(feature = "script"))]
+
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub use types::{query, transaction, address};
 
 #[cfg(feature = "script")]
@@ -89,7 +92,7 @@ pub mod ckb_hash {
         result
     }
 }
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod ckb_hash {
     pub use ckb_hash::*;
 }
@@ -102,12 +105,13 @@ pub mod ckb_types {
 
     #[cfg(feature = "script")]
     pub mod core {
-        pub use ckb_standalone_types::core::*;
+        use ckb_standalone_types::core as ckb_core;
         pub use ckb_standalone_types::packed::*;
         use super::prelude::*;
         use crate::impl_std_convert;
         mod capacity {
             use std::prelude::v1::*;
+            use core::fmt;
             
 
             
@@ -192,9 +196,24 @@ pub mod ckb_types {
             //     }
             // }
 
-            pub type CapacityError = String;
+            // Should include the str contents in this likely
+            // Overflow variant should probably have the values involved in the overflow
+            pub enum CapacityError {
+                Overflow,
+                ParseInt,
+            }
+
+            impl fmt::Debug for CapacityError {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    let err_str = match self {
+                       CapacityError::Overflow => "Capacity Error: Overflow",
+                       CapacityError::ParseInt => "Capacity Error: ParseInt",
+                    };
+                    write!(f, "{}",err_str)
+                }
+            }
             /// Numeric operation result.
-            pub type CapacityResult<T> = core::result::Result<T, String>;
+            pub type CapacityResult<T> = core::result::Result<T, CapacityError>;
 
             impl Capacity {
                 /// Capacity of zero Shannons.
@@ -217,7 +236,7 @@ pub mod ckb_types {
                     (val as u64)
                         .checked_mul(BYTE_SHANNONS)
                         .map(Capacity::shannons)
-                        .ok_or("Overflow".to_string())
+                        .ok_or(CapacityError::Overflow)
                 }
 
                 /// Views the capacity as Shannons.
@@ -230,7 +249,7 @@ pub mod ckb_types {
                     self.0
                         .checked_add(rhs.into_capacity().0)
                         .map(Capacity::shannons)
-                        .ok_or("Overflow".to_string())
+                        .ok_or(CapacityError::Overflow)
                 }
 
                 /// Subtracts self and rhs and checks overflow error.
@@ -238,7 +257,7 @@ pub mod ckb_types {
                     self.0
                         .checked_sub(rhs.into_capacity().0)
                         .map(Capacity::shannons)
-                        .ok_or("Overflow".to_string())
+                        .ok_or(CapacityError::Overflow)
                 }
 
                 /// Multiplies self and rhs and checks overflow error.
@@ -246,7 +265,7 @@ pub mod ckb_types {
                     self.0
                         .checked_mul(rhs.into_capacity().0)
                         .map(Capacity::shannons)
-                        .ok_or("Overflow".to_string())
+                        .ok_or(CapacityError::Overflow)
                 }
 
                 /// Multiplies self with a ratio and checks overflow error.
@@ -255,7 +274,7 @@ pub mod ckb_types {
                         .checked_mul(ratio.numer())
                         .and_then(|ret| ret.checked_div(ratio.denom()))
                         .map(Capacity::shannons)
-                        .ok_or("Overflow".to_string())
+                        .ok_or(CapacityError::Overflow)
                 }
             }
 
@@ -263,7 +282,7 @@ pub mod ckb_types {
                 type Err = CapacityError;
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
-                    Ok(Capacity(s.parse::<u64>().map_err(|e| "ParseInt Error".to_string())?))
+                    Ok(Capacity(s.parse::<u64>().map_err(|e| CapacityError::ParseInt)?)) 
                 }
             }
 
@@ -281,6 +300,119 @@ pub mod ckb_types {
 
         }
         pub use capacity::*;
+
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        pub enum ScriptHashType {
+            Data = 0,
+            Type = 1,
+            Data1 = 2,
+
+        }
+
+        impl From<ScriptHashType> for u8 {
+            fn from(s: ScriptHashType) -> Self {
+                s as u8
+            }
+        }
+
+        impl From<u8> for ScriptHashType {
+            fn from(b: u8) -> Self {
+                match b {
+                    0 => ScriptHashType::Data,
+                    1 => ScriptHashType::Type,
+                    2 => ScriptHashType::Data1,
+                    _ => ScriptHashType::Data
+                }
+            }
+        }
+
+        impl From<ScriptHashType> for ckb_core::ScriptHashType {
+            fn from(s: ScriptHashType) -> Self {
+                match s {
+                    ScriptHashType::Data => ckb_core::ScriptHashType::Data,
+                    ScriptHashType::Type => ckb_core::ScriptHashType::Type,
+                    ScriptHashType::Data1 => ckb_core::ScriptHashType::Data1,
+                }
+            }
+        }
+
+        impl From<ckb_core::ScriptHashType> for ScriptHashType {
+            fn from(s: ckb_core::ScriptHashType) -> Self {
+                match s {
+                    ckb_core::ScriptHashType::Data => ScriptHashType::Data,
+                    ckb_core::ScriptHashType::Type => ScriptHashType::Type,
+                    ckb_core::ScriptHashType::Data1 => ScriptHashType::Data1 ,
+                }
+            }
+        }
+
+        impl From<molecule::prelude::Byte> for ScriptHashType {
+            fn from(b: molecule::prelude::Byte) -> Self {
+                let b: u8 = b.into();
+                // let b = match b {
+                //     0 => ckb_core::ScriptHashType::Data,
+                //     1 => ckb_core::ScriptHashType::Type,
+                //     2 => ckb_core::ScriptHashType::Data1,
+                //     _ => ckb_core::ScriptHashType::Data
+                // };
+                Self::from(b)
+            }
+        }
+
+        impl From<ScriptHashType> for molecule::prelude::Byte {
+            fn from(s: ScriptHashType) -> molecule::prelude::Byte {
+                let b: u8 = s.into();
+                Byte::new(b)
+            }
+        }
+
+
+        #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+        pub enum DepType {
+            /// TODO(doc): @quake
+            Code = 0,
+            /// TODO(doc): @quake
+            DepGroup = 1,
+        }
+
+        impl Default for DepType {
+            fn default() -> Self {
+                DepType::Code
+            }
+        }
+
+        impl TryFrom<super::packed::Byte> for DepType {
+            type Error = ();
+
+            fn try_from(v: super::packed::Byte) -> Result<Self, Self::Error> {
+                match Into::<u8>::into(v) {
+                    0 => Ok(DepType::Code),
+                    1 => Ok(DepType::DepGroup),
+                    _ => core::prelude::v1::Err(()),
+                }
+            }
+        }
+
+        impl Into<u8> for DepType {
+            #[inline]
+            fn into(self) -> u8 {
+                self as u8
+            }
+        }
+
+        impl Into<super::packed::Byte> for DepType {
+            #[inline]
+            fn into(self) -> super::packed::Byte {
+                (self as u8).into()
+            }
+        }
+
+        impl DepType {
+            #[inline]
+            pub(crate) fn verify_value(v: u8) -> bool {
+                v <= 1
+            }
+        }
     }
     
     
@@ -306,7 +438,7 @@ pub mod ckb_types {
 
 
 
-    #[cfg(not(feature = "script"))]
+    #[cfg(all(feature = "std", not(feature = "script")))]
     pub use ckb_types::*;
 }
 

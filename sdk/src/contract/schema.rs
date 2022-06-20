@@ -97,7 +97,7 @@ mod core_schema {
     }
 }
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 mod extension {
     use super::core_schema::*;
     use crate::ckb_types::prelude::*;
@@ -155,5 +155,5 @@ mod extension {
 }
 
 pub use core_schema::*;
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub use extension::*;

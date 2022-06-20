@@ -11,7 +11,7 @@ use ckb_types::{
 use trampoline_sdk::chain::{MockChain, MockChainTxProvider as ChainRpc};
 use trampoline_sdk::contract::*;
 use trampoline_sdk::contract::{auxiliary_types::*, builtins::sudt::*, generator::*};
-use trampoline_sdk::types::query::*;
+use trampoline_sdk::query::*;
 
 use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types::JsonBytes;

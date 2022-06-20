@@ -7,7 +7,7 @@ use crate::ckb_types::{
 };
 
 
-use std::{borrow::Borrow, io::Error as IoError};
+use no_std_compat::borrow::Borrow;
 
 
 use crate::bytes::{Bytes, BytesError};
@@ -15,8 +15,9 @@ use crate::script::{Script, ScriptError};
 
 pub type CellOutputWithData = (CellOutput, crate::ckb_types::bytes::Bytes);
 
-#[cfg(not(feature = "script"))]
+#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod cell_error {
+
     use crate::{bytes::BytesError, script::ScriptError};
     use crate::ckb_types::core::CapacityError;
     use std::io::Error as IoError;
@@ -42,7 +43,6 @@ pub mod cell_error {
 
 #[cfg(feature = "script")]
 pub mod cell_error {
-    use std::prelude::v1::*;
     use crate::{bytes::BytesError, script::ScriptError};
     use crate::ckb_types::core::CapacityError;
     use core::fmt::{self, write};
