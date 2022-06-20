@@ -46,16 +46,35 @@ pub mod cell_error {
     use crate::{bytes::BytesError, script::ScriptError};
     use crate::ckb_types::core::CapacityError;
     use core::fmt::{self, write};
-    use std::error::Error;
-    #[repr(i8)]
+
     pub enum CellError {
         CapacityNotEnough,
         CapacityCalcError,
-        ScriptError,
+        UnknownCapacityError,
+        ScriptError(ScriptError),
         BytesError,
-        IoError,
         MissingTypeScript,
         MissingOutpoint,
+
+    }
+
+    impl From<CapacityError> for CellError {
+        fn from(e: CapacityError) -> Self {
+            match e {
+                CapacityError::Overflow => CellError::CapacityCalcError,
+                _ => CellError::UnknownCapacityError
+            }
+        }
+    }
+    impl From<ScriptError> for CellError {
+        fn from(e: ScriptError) -> Self {
+           CellError::ScriptError(e)
+        }
+    }
+    impl From<BytesError> for CellError {
+        fn from(e: BytesError) -> Self {
+            CellError::BytesError
+        }
     }
 
     impl core::fmt::Debug for CellError {
@@ -63,11 +82,11 @@ pub mod cell_error {
             let err_str = match self {
                 CellError::CapacityNotEnough => "Capacity Not Enough",
                 CellError::CapacityCalcError => "Capacity Calc Error",
-                CellError::ScriptError => "Script Error",
+                CellError::ScriptError(_) => "Script Error",
                 CellError::BytesError => "Bytes Error",
-                CellError::IoError => "Io Error",
                 CellError::MissingTypeScript => "Missing type script",
                 CellError::MissingOutpoint => "Missing OutPoint",
+                CellError::UnknownCapacityError => "Unknown err capacity",
             };
             write!(f, "{}",err_str)
         }

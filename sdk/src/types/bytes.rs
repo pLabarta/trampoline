@@ -8,7 +8,7 @@ use crate::ckb_types::{
     H256,
 };
 
-use thiserror::Error;
+
 // use molecule::bytes::Bytes as MolBytes; // This is equivalent to CkBytes when in std mode
 // Molecule bytes are newtype around Vec<u8> when no_std is enabled and is bytes::Bytes when std is enabled
 // CkBytes is equivalent to molecule bytes when "script" feature is enabled because ckb_types will refer to ckb_standalone_types::bytes::Bytes which
@@ -26,12 +26,43 @@ use thiserror::Error;
 //    ckb_types::packed::Bytes = Bytes(Molecule::bytes::Bytes)
 //    ckb_types::bytes::Bytes = bytes::Bytes = Molecule::bytes::Bytes
 
-#[derive(Debug, Error)]
-pub enum BytesError {
-    #[error(transparent)]
-    CapacityCalcError(#[from] CapacityError),
+#[cfg(not(feature = "script"))]
+pub mod bytes_error {
+    use thiserror::Error;
+    use super::CapacityError;
+    #[derive(Debug, Error)]
+    pub enum BytesError {
+        #[error(transparent)]
+        CapacityCalcError(#[from] CapacityError),
+    }
 }
 
+#[cfg(feature = "script")]
+pub mod bytes_error {
+    use std::prelude::v1::*;
+    use super::CapacityError;
+    use core::fmt;
+    pub enum BytesError {
+        CapacityCalcError(CapacityError)
+    }
+
+    impl From<CapacityError> for BytesError {
+        fn from(e: CapacityError) -> Self {
+            Self::CapacityCalcError(e)
+        }
+    }
+
+    impl fmt::Debug for BytesError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            let err_str = match self {
+                BytesError::CapacityCalcError(cap_err) => format!("{:?}", cap_err)
+            };
+            write!(f, "{}",err_str)
+        }
+    }
+}
+
+pub use bytes_error::*;
 pub type BytesResult<T> = Result<T, BytesError>;
 
 mod core_bytes {
@@ -48,7 +79,7 @@ mod core_bytes {
     };
     use crate::ckb_types::packed::Byte;
     use crate::contract::schema::{BytesConversion, SchemaPrimitiveType};
-    use ckb_hash::blake2b_256;
+    use crate::ckb_hash::blake2b_256;
 
 
     use super::*;

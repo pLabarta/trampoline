@@ -21,7 +21,7 @@ pub mod query;
 // TO DO: Implement this trait for all types
 
 pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> {
-    type Error: std::error::Error;
+    type Error;
     fn validate(&self) -> Result<(), Self::Error>;
 
     fn required_capacity(&self) -> Result<Capacity, Self::Error>;
