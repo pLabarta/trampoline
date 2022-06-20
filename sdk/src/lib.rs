@@ -12,16 +12,58 @@ pub mod contract;
 
 pub (crate) mod types;
 
-pub use types::{bytes, cell, constants, query, script, transaction, address};
+pub use types::{bytes, cell, constants, script};
+
+#[cfg(not(feature = "script"))]
+pub use types::{query, transaction, address};
+
+#[cfg(feature = "script")]
+#[macro_export]
+macro_rules! impl_std_convert {
+    ($name:ident, $bytes_size:expr) => {
+        impl ::core::convert::AsRef<[u8]> for $name {
+            #[inline]
+            fn as_ref(&self) -> &[u8] {
+                &self.0[..]
+            }
+        }
+        impl ::core::convert::AsMut<[u8]> for $name {
+            #[inline]
+            fn as_mut(&mut self) -> &mut [u8] {
+                &mut self.0[..]
+            }
+        }
+        impl ::core::convert::From<[u8; $bytes_size]> for $name {
+            #[inline]
+            fn from(bytes: [u8; $bytes_size]) -> Self {
+                $name(bytes)
+            }
+        }
+        impl ::core::convert::From<$name> for [u8; $bytes_size] {
+            #[inline]
+            fn from(hash: $name) -> Self {
+                hash.0
+            }
+        }
+    };
+}
 
 pub mod ckb_types {
     #[cfg(feature = "script")]
     pub use ckb_standalone_types::{self, prelude, bytes, packed};
     #[cfg(feature = "script")]
+    pub use ckb_standalone_types::prelude::{Pack, Unpack, PackVec, Entity, Reader, Builder};
+ 
+
+    #[cfg(feature = "script")]
     pub mod core {
         pub use ckb_standalone_types::core::*;
+        pub use ckb_standalone_types::packed::*;
+        use super::prelude::*;
+        use crate::impl_std_convert;
         mod capacity {
             use std::prelude::v1::*;
+            
 
             
             /// CKB capacity.
@@ -198,7 +240,7 @@ pub mod ckb_types {
     
     
     #[cfg(feature = "script")]
-    #[derive(Clone)]
+    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
     pub struct H160(pub [u8; 20]);
 
     /// The 32-byte fixed-length binary data.
@@ -207,11 +249,16 @@ pub mod ckb_types {
     ///
     /// In JSONRPC, it is encoded as a 0x-prefixed hex string.
     #[cfg(feature = "script")]
-    #[derive(Clone)]
+    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
     pub struct H256(pub [u8; 32]);
 
-   
-   
+    #[cfg(feature = "script")]
+    impl_std_convert!(H160, 20);
+
+    #[cfg(feature = "script")]
+    impl_std_convert!(H256, 32);
+
+
 
 
     #[cfg(not(feature = "script"))]
@@ -276,3 +323,5 @@ macro_rules! impl_pack_for_fixed_byte_array {
         }
     };
 }
+
+

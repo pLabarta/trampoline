@@ -1,5 +1,10 @@
 use std::prelude::v1::*;
 
+
+
+
+
+
 #[cfg(not(feature = "script"))]
 mod script_error {
     use super::*;
@@ -21,6 +26,7 @@ mod script_error {
     use super::*;
     use crate::ckb_types::core::{Capacity, CapacityError, ScriptHashType};
     use crate::ckb_types::H256;
+
     use core::fmt;
     pub enum ScriptError {
         ScriptCapacityError(CapacityError),

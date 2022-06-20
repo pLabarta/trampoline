@@ -1,26 +1,26 @@
-use ckb_jsonrpc_types::JsonBytes;
-use ckb_types::bytes::Bytes as CkBytes;
-use ckb_types::core::Capacity;
-use ckb_types::packed::Bytes as PackedBytes;
 use std::prelude::v1::*;
+
+
+use crate::ckb_types::bytes::Bytes as CkBytes;
+use crate::ckb_types::core::Capacity;
+use crate::ckb_types::packed::Bytes as PackedBytes;
+
 
 pub mod bytes;
 pub mod cell;
 pub mod constants;
 pub mod script;
+
+#[cfg(not(feature = "script"))]
 pub mod transaction;
-pub mod ckb_json {
-    pub use ckb_jsonrpc_types::*;
-}
-pub mod ckb_builtin {
-    pub use ckb_types::*;
-}
+#[cfg(not(feature = "script"))]
 pub mod address;
+#[cfg(not(feature = "script"))]
 pub mod query;
 
 // TO DO: Implement this trait for all types
 
-pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> + Into<JsonBytes> {
+pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> {
     type Error: std::error::Error;
     fn validate(&self) -> Result<(), Self::Error>;
 
@@ -31,6 +31,7 @@ pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> + Into<JsonBytes
 
 #[cfg(test)]
 mod tests {
+    
 
     use super::*;
     use ckb_always_success_script::ALWAYS_SUCCESS;

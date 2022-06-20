@@ -1,12 +1,8 @@
-use crate::contract::schema::{BytesConversion, SchemaPrimitiveType};
-use ckb_hash::blake2b_256;
+
 
 use std::prelude::v1::*;
 
 // When in no-std mode, both CKBytes and PackedBytes are the same
-use crate::ckb_types::bytes::Bytes as CkBytes;
-use crate::ckb_types::packed::Bytes as PackedBytes;
-use crate::ckb_types::prelude::*;
 use crate::ckb_types::{
     core::{Capacity, CapacityError},
     H256,
@@ -39,7 +35,21 @@ pub enum BytesError {
 pub type BytesResult<T> = Result<T, BytesError>;
 
 mod core_bytes {
-    use ckb_types::packed::Byte;
+
+    use std::prelude::v1::*;
+
+    // When in no-std mode, both CKBytes and PackedBytes are the same
+    use crate::ckb_types::bytes::Bytes as CkBytes;
+    use crate::ckb_types::packed::Bytes as PackedBytes;
+    use crate::ckb_types::prelude::*;
+    use crate::ckb_types::{
+        core::{Capacity, CapacityError},
+        H256,
+    };
+    use crate::ckb_types::packed::Byte;
+    use crate::contract::schema::{BytesConversion, SchemaPrimitiveType};
+    use ckb_hash::blake2b_256;
+
 
     use super::*;
     #[derive(Clone, Debug, Default)]

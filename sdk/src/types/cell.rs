@@ -1,37 +1,80 @@
-use ckb_types::{
+use std::prelude::v1::*;
+use crate::ckb_types::{
     core::{Capacity, CapacityError, DepType},
     packed::{CellDep, CellOutput, OutPoint},
     prelude::*,
     H256,
 };
-use std::prelude::v1::*;
+
 
 use std::{borrow::Borrow, io::Error as IoError};
-use thiserror::Error;
 
-use super::bytes::{Bytes, BytesError};
-use super::script::{Script, ScriptError};
 
-pub type CellOutputWithData = (CellOutput, ckb_types::bytes::Bytes);
+use crate::bytes::{Bytes, BytesError};
+use crate::script::{Script, ScriptError};
 
-#[derive(Debug, Error)]
-pub enum CellError {
-    #[error("Capacity not enough for cell size")]
-    CapacityNotEnough,
-    #[error(transparent)]
-    CapacityCalcError(#[from] CapacityError),
-    #[error(transparent)]
-    ScriptError(#[from] ScriptError),
-    #[error(transparent)]
-    BytesError(#[from] BytesError),
-    #[error(transparent)]
-    IoError(#[from] IoError),
-    #[error("Type script is currently None")]
-    MissingTypeScript,
-    #[error("Cannot convert cell to CellDep: no outpoint")]
-    MissingOutpoint,
+pub type CellOutputWithData = (CellOutput, crate::ckb_types::bytes::Bytes);
+
+#[cfg(not(feature = "script"))]
+pub mod cell_error {
+    use crate::{bytes::BytesError, script::ScriptError};
+    use crate::ckb_types::core::CapacityError;
+    use std::io::Error as IoError;
+    use thiserror::Error;
+    #[derive(Debug, Error)]
+    pub enum CellError {
+        #[error("Capacity not enough for cell size")]
+        CapacityNotEnough,
+        #[error(transparent)]
+        CapacityCalcError(#[from] CapacityError),
+        #[error(transparent)]
+        ScriptError(#[from] ScriptError),
+        #[error(transparent)]
+        BytesError(#[from] BytesError),
+        #[error(transparent)]
+        IoError(#[from] IoError),
+        #[error("Type script is currently None")]
+        MissingTypeScript,
+        #[error("Cannot convert cell to CellDep: no outpoint")]
+        MissingOutpoint,
+    }
 }
 
+#[cfg(feature = "script")]
+pub mod cell_error {
+    use std::prelude::v1::*;
+    use crate::{bytes::BytesError, script::ScriptError};
+    use crate::ckb_types::core::CapacityError;
+    use core::fmt::{self, write};
+    use std::error::Error;
+    #[repr(i8)]
+    pub enum CellError {
+        CapacityNotEnough,
+        CapacityCalcError,
+        ScriptError,
+        BytesError,
+        IoError,
+        MissingTypeScript,
+        MissingOutpoint,
+    }
+
+    impl core::fmt::Debug for CellError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            let err_str = match self {
+                CellError::CapacityNotEnough => "Capacity Not Enough",
+                CellError::CapacityCalcError => "Capacity Calc Error",
+                CellError::ScriptError => "Script Error",
+                CellError::BytesError => "Bytes Error",
+                CellError::IoError => "Io Error",
+                CellError::MissingTypeScript => "Missing type script",
+                CellError::MissingOutpoint => "Missing OutPoint",
+            };
+            write!(f, "{}",err_str)
+        }
+    }
+    
+}
+pub use cell_error::*;
 pub type CellResult<T> = Result<T, CellError>;
 
 #[derive(Clone)]
@@ -221,7 +264,7 @@ impl From<Cell> for CellOutput {
         CellOutput::new_builder()
             .capacity(cell.capacity.as_u64().pack())
             .lock(cell.lock_script.into())
-            .type_(cell.type_script.map(ckb_types::packed::Script::from).pack())
+            .type_(cell.type_script.map(crate::ckb_types::packed::Script::from).pack())
             .build()
     }
 }
