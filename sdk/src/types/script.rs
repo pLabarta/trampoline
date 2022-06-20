@@ -1,10 +1,10 @@
 use std::prelude::v1::*;
 
-mod core_script {
+#[cfg(not(feature = "script"))]
+mod script_error {
     use super::*;
-    pub const CODE_HASH_SIZE_BYTES: usize = 32;
     use thiserror::Error;
-
+    use crate::ckb_types::{core::CapacityError, H256};
     #[derive(Debug, Error)]
     pub enum ScriptError {
         #[error(transparent)]
@@ -12,8 +12,38 @@ mod core_script {
         #[error("Calculated script hash {0} does not match stored script hash {1}")]
         MismatchedScriptHash(H256, H256),
     }
+    pub type ScriptResult<T> = Result<T, ScriptError>;
+}
+
+#[cfg(feature = "script")]
+mod script_error {
+    use std::prelude::v1::*;
+    use super::*;
+    use crate::ckb_types::core::{Capacity, CapacityError, ScriptHashType};
+    use crate::ckb_types::H256;
+    use core::fmt;
+    pub enum ScriptError {
+        ScriptCapacityError(CapacityError),
+        MismatchedScriptHash(H256, H256)
+    }
+
+    impl core::fmt::Debug for ScriptError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "invalid first item to double")
+        }
+    }
 
     pub type ScriptResult<T> = Result<T, ScriptError>;
+    
+}
+
+pub use script_error::*;
+mod core_script {
+    use super::*;
+    pub const CODE_HASH_SIZE_BYTES: usize = 32;
+
+   
+
 
     use crate::types::{bytes::Bytes, cell::Cell};
 
@@ -78,11 +108,11 @@ mod core_script {
             Capacity::bytes(self.size_bytes()).map_err(ScriptError::ScriptCapacityError)
         }
         pub fn code_hash(&self) -> H256 {
-            self.code_hash.clone().into()
+            self.code_hash.into()
         }
 
         pub fn hash_type_raw(&self) -> ScriptHashType {
-            self.hash_type.clone().into()
+            self.hash_type
         }
 
         pub fn args(&self) -> Bytes {
@@ -112,7 +142,7 @@ mod core_script {
             Self {
                 args: args.into(),
                 code_hash,
-                hash_type: hash_type.into(),
+                hash_type,
             }
         }
     }
@@ -128,7 +158,7 @@ mod core_script {
             PackedScript::new_builder()
                 .args(args.into())
                 .code_hash(code_hash.pack())
-                .hash_type(ScriptHashType::from(hash_type).into())
+                .hash_type(hash_type.into())
                 .build()
         }
     }
@@ -159,7 +189,7 @@ mod core_script {
 
         impl Script {
             pub fn hash_type_json(&self) -> JsonScriptHashType {
-                self.hash_type.clone().into()
+                self.hash_type.into()
             }
 
             pub fn args_json(&self) -> JsonBytes {

@@ -1,10 +1,11 @@
+use std::prelude::v1::*;
 use super::genesis_info::genesis_event;
 use crate::chain::mock_chain::MAX_CYCLES;
 use crate::chain::*;
 use crate::contract::generator::{QueryProvider, TransactionProvider};
 use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
 use crate::types::query::*;
-use std::prelude::v1::*;
+
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -208,7 +209,7 @@ impl Chain for MockChain {
         cell
     }
 
-    fn deploy_cells(&mut self, cells: &Vec<Cell>) -> ChainResult<Vec<OutPoint>> {
+    fn deploy_cells(&mut self, cells: &[Cell]) -> ChainResult<Vec<OutPoint>> {
         Ok(cells
             .iter()
             .map(|c| {

@@ -1,6 +1,6 @@
 use crate::contract::schema::{BytesConversion, SchemaPrimitiveType};
 use ckb_hash::blake2b_256;
-use ckb_jsonrpc_types::JsonBytes;
+
 use std::prelude::v1::*;
 
 // When in no-std mode, both CKBytes and PackedBytes are the same
@@ -56,6 +56,10 @@ mod core_bytes {
             packed.len()
         }
 
+        pub fn is_empty(&self) -> bool {
+            self.len() == 0
+        }
+
         pub fn required_capacity(&self) -> BytesResult<Capacity> {
             Capacity::bytes(self.len()).map_err(BytesError::CapacityCalcError)
         }
@@ -81,7 +85,7 @@ mod core_bytes {
 
     impl From<&[u8]> for Bytes {
         fn from(slice: &[u8]) -> Self {
-            Self(slice.clone().to_vec())
+            Self(slice.to_vec())
         }
     }
 
@@ -102,7 +106,7 @@ mod core_bytes {
     impl From<Bytes> for PackedBytes {
         fn from(b: Bytes) -> Self {
             PackedBytes::new_builder()
-                .extend(b.0.iter().map(|byte| Byte::new(byte.clone())))
+                .extend(b.0.iter().map(|byte| Byte::new(*byte)))
                 .build()
         }
     }

@@ -16,7 +16,7 @@ use trampoline_sdk::ckb_types::{
     H256,
 };
 use trampoline_sdk::contract::*;
-use trampoline_sdk::contract::{auxiliary_types::*, schema::*};
+use trampoline_sdk::contract::{auxiliary_types::*};
 use trampoline_sdk::contract::{builtins::t_nft::*, generator::*};
 use trampoline_sdk::types::query::*;
 // TO DO

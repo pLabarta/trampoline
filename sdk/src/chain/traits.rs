@@ -39,7 +39,7 @@ pub trait Chain {
     }
 
     fn deploy_cell(&mut self, cell: &Cell) -> ChainResult<OutPoint>;
-    fn deploy_cells(&mut self, cells: &Vec<Cell>) -> ChainResult<Vec<OutPoint>>;
+    fn deploy_cells(&mut self, cells: &[Cell]) -> ChainResult<Vec<OutPoint>>;
 
     // Removed due to changes in ckb-sdk-rust crate
     // fn genesis_info(&self) -> Option<GenesisInfo>;
