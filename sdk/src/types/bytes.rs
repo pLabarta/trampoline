@@ -127,6 +127,12 @@ mod core_bytes {
         }
     }
 
+    impl From<Bytes> for Vec<u8> {
+        fn from(b: Bytes) -> Vec<u8> {
+            b.0
+        }
+    }
+
     // impl<T: AsRef<[u8]>> From<T> for Bytes {
     //     fn from(bytes: T) -> Self {
     //         let bytes = bytes.as_ref();
@@ -195,6 +201,6 @@ mod extended {
     }
 }
 
-pub use self::core_bytes::*;
+pub use core_bytes::*;
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub use extended::*;
