@@ -349,12 +349,6 @@ pub mod ckb_types {
         impl From<molecule::prelude::Byte> for ScriptHashType {
             fn from(b: molecule::prelude::Byte) -> Self {
                 let b: u8 = b.into();
-                // let b = match b {
-                //     0 => ckb_core::ScriptHashType::Data,
-                //     1 => ckb_core::ScriptHashType::Type,
-                //     2 => ckb_core::ScriptHashType::Data1,
-                //     _ => ckb_core::ScriptHashType::Data
-                // };
                 Self::from(b)
             }
         }
@@ -369,9 +363,7 @@ pub mod ckb_types {
 
         #[derive(Clone, Copy, PartialEq, Eq, Hash)]
         pub enum DepType {
-            /// TODO(doc): @quake
             Code = 0,
-            /// TODO(doc): @quake
             DepGroup = 1,
         }
 
