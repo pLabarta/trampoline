@@ -1,6 +1,6 @@
 use std::prelude::v1::*;
 use crate::ckb_types::{
-    core::{Capacity, CapacityError, DepType},
+    core::{Capacity, DepType},
     packed::{CellDep, CellOutput, OutPoint},
     prelude::*,
     H256,
@@ -10,8 +10,8 @@ use crate::ckb_types::{
 use no_std_compat::borrow::Borrow;
 
 
-use crate::bytes::{Bytes, BytesError};
-use crate::script::{Script, ScriptError};
+use crate::bytes::{Bytes};
+use crate::script::{Script};
 
 pub type CellOutputWithData = (CellOutput, crate::ckb_types::bytes::Bytes);
 

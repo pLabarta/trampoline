@@ -4,8 +4,7 @@ use std::prelude::v1::*;
 
 // When in no-std mode, both CKBytes and PackedBytes are the same
 use crate::ckb_types::{
-    core::{Capacity, CapacityError},
-    H256,
+    core::{CapacityError},
 };
 
 
@@ -65,13 +64,13 @@ pub use bytes_error::*;
 pub type BytesResult<T> = Result<T, BytesError>;
 
 mod core_bytes {
-    use core::fmt;
+    
     // When in no-std mode, both CKBytes and PackedBytes are the same
     use crate::ckb_types::bytes::Bytes as CkBytes;
     use crate::ckb_types::packed::Bytes as PackedBytes;
     use crate::ckb_types::prelude::*;
     use crate::ckb_types::{
-        core::{Capacity, CapacityError},
+        core::{Capacity},
         H256,
     };
     use crate::ckb_types::packed::Byte;

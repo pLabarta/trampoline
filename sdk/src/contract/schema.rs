@@ -31,7 +31,7 @@ mod core_schema {
         pub fn from_slice(s: impl AsRef<[u8]>) -> Self {
             let s_1 = s.as_ref();
             let s_1 = s_1.to_vec();
-            Self::from_bytes(Bytes::from(s_1).into())
+            Self::from_bytes(Bytes::from(s_1))
 
         }
     }

@@ -52,7 +52,7 @@ mod core_script {
 
     use crate::{bytes::Bytes, cell::Cell};
 
-    use crate::ckb_types::core::{Capacity, CapacityError, ScriptHashType};
+    use crate::ckb_types::core::{Capacity, ScriptHashType};
     use crate::ckb_types::packed::{Bytes as PackedBytes, Script as PackedScript};
     use crate::ckb_types::prelude::*;
     use crate::ckb_types::{bytes::Bytes as CkBytes, H256};
