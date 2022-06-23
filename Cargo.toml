@@ -46,6 +46,6 @@ trampoline-sdk = {path = "./sdk", features = ["std"], default-features = true}
 [build-dependencies]
 includedir_codegen = "0.6.0"
 
-[workspace]
-members = ["sdk"]
+ [workspace]
+ members = ["sdk", "sdk/utils"]
  #members = ["sdk", "validity-lang"]

@@ -1,14 +1,36 @@
-use crate::contract::{
-    generator::TransactionProvider,
-    schema::{BytesConversion, JsonByteConversion, MolConversion},
-    Contract,
-};
+
+use std::prelude::v1::*;
+use std::collections::HashMap;
 use crate::types::{bytes::Bytes, cell::Cell};
-use ckb_types::{
+use crate::{
+    contract::{
+        generator::TransactionProvider,
+        schema::{BytesConversion, JsonByteConversion, MolConversion},
+        Contract,
+    },
+    types::script::Script,
+};
+use ckb_sdk::{traits::CellQueryOptions, unlock::ScriptUnlocker, ScriptId};
+
+use crate::ckb_types::{
     core::TransactionView,
     packed::{Byte32, OutPoint},
 };
-use std::prelude::v1::*;
+
+
+pub type Unlockers = HashMap<ScriptId, Box<dyn ScriptUnlocker>>;
+
+#[derive(Debug, Clone)]
+pub enum CellInputs {
+    ScriptQuery(Script),
+    Empty,
+}
+
+impl From<Script> for CellInputs {
+    fn from(script: Script) -> Self {
+        CellInputs::ScriptQuery(script)
+    }
+}
 
 use super::{ChainError, ChainResult};
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -38,16 +60,20 @@ pub trait Chain {
         }
     }
 
-    fn deploy_cell(&mut self, cell: &Cell) -> ChainResult<OutPoint>;
-    fn deploy_cells(&mut self, cells: &[Cell]) -> ChainResult<Vec<OutPoint>>;
+    fn deploy_cell(
+        &mut self,
+        cell: &Cell,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<OutPoint>;
+    fn deploy_cells(
+        &mut self,
+        cells: &Vec<Cell>,
+        unlockers: Unlockers,
+        inputs: &CellInputs,
+    ) -> ChainResult<Vec<OutPoint>>;
 
-    // Removed due to changes in ckb-sdk-rust crate
-    // fn genesis_info(&self) -> Option<GenesisInfo>;
-    // fn set_genesis_info(&mut self, genesis_info: GenesisInfo);
+    fn set_default_lock(&mut self, cell: Cell) -> Result<(), ChainError>;
 
-    fn set_default_lock<A, D>(&mut self, lock: Contract<A, D>)
-    where
-        D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-        A: JsonByteConversion + MolConversion + BytesConversion + Clone + Default;
     fn generate_cell_with_default_lock(&self, lock_args: Bytes) -> Cell;
 }

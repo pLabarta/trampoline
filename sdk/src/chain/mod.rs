@@ -1,9 +1,11 @@
 use std::prelude::v1::*;
 mod error;
 mod mock_chain;
+pub mod rpc_chain;
 mod traits;
 pub use error::*;
 pub use mock_chain::*;
+pub use rpc_chain::*;
 pub use traits::*;
 
 use crate::contract::Contract;

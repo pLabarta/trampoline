@@ -58,6 +58,7 @@ mod core_script {
     use crate::ckb_types::{bytes::Bytes as CkBytes, H256};
     use crate::ckb_hash::blake2b_256;
 
+    #[cfg_attr(all(feature = "std", not(feature = "script")), derive(Debug))]
     #[derive(Clone)]
     pub struct Script {
         pub(crate) args: Bytes,

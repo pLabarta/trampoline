@@ -39,6 +39,10 @@ toml = { version = "0.5.8", optional = true}
 ckb-standalone-types = { version = "0.1.2", default-features = false, optional = true}
 secp256k1 = { version = "0.20", features = ["recovery"], optional = true }
 no-std-compat = { version = "0.4.1", features = ["alloc"] }
+lru = { version = "0.7.6", optional = true }
+
+[dev-dependencies]
+trampoline-utils = {path = "utils"}
 
 [features]
 default = ["std"]
@@ -47,5 +51,7 @@ std = ["no-std-compat/std", "tokio/full", "molecule/std", "ckb-always-success-sc
     "ckb-chain-spec", "ckb-crypto", "ckb-error", "ckb-hash", "ckb-jsonrpc-types", "ckb-resource",
     "ckb-script", "ckb-system-scripts", "ckb-traits", "ckb-types", "ckb-util", "ckb-verification", "anyhow",
     "bytes", "blake2b-rs", "hex", "jsonrpc-core", "phf", "rand", "reqwest",
-    "serde", "serde_json", "tokio", "toml", "includedir", "ckb-sdk", "secp256k1", "thiserror"
+    "serde", "serde_json", "tokio", "toml", "includedir", "ckb-sdk", "secp256k1", "thiserror", "lru"
 ]
+
+

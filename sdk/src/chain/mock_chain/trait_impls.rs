@@ -2,6 +2,9 @@ use std::prelude::v1::*;
 use super::genesis_info::genesis_event;
 use crate::chain::mock_chain::MAX_CYCLES;
 use crate::chain::*;
+use crate::query::{
+    CellQuery, CellQueryAttribute, QueryStatement
+};
 use crate::contract::generator::{QueryProvider, TransactionProvider};
 use crate::contract::schema::{BytesConversion, JsonByteConversion, MolConversion};
 use crate::types::query::*;
@@ -181,19 +184,21 @@ impl Chain for MockChain {
         MockChainTxProvider::new(self.clone())
     }
 
-    fn deploy_cell(&mut self, cell: &Cell) -> ChainResult<OutPoint> {
+    fn deploy_cell(
+        &mut self,
+        cell: &Cell,
+        _unlockers: Unlockers,
+        _inputs: &CellInputs,
+    ) -> ChainResult<OutPoint> {
         let (outp, data): CellOutputWithData = cell.into();
         Ok(self.deploy_cell_output(data, outp))
     }
 
-    fn set_default_lock<A, D>(&mut self, lock: Contract<A, D>)
-    where
-        D: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-        A: JsonByteConversion + MolConversion + BytesConversion + Clone + Default,
-    {
-        let (outp, data) = lock.as_code_cell();
-        let outpoint = self.deploy_cell_output(data, outp);
+    fn set_default_lock(&mut self, lock: Cell) -> Result<(), ChainError> {
+        let (outp, data) = (lock.clone().into(), lock.data());
+        let outpoint = self.deploy_cell_output(data.into(), outp);
         self.default_lock = Some(outpoint);
+        Ok(())
     }
 
     fn generate_cell_with_default_lock(&self, lock_args: crate::types::bytes::Bytes) -> Cell {
@@ -209,7 +214,13 @@ impl Chain for MockChain {
         cell
     }
 
-    fn deploy_cells(&mut self, cells: &[Cell]) -> ChainResult<Vec<OutPoint>> {
+
+    fn deploy_cells(
+        &mut self,
+        cells: &Vec<Cell>,
+        _unlockers: Unlockers,
+        _inputs: &CellInputs,
+    ) -> ChainResult<Vec<OutPoint>> {
         Ok(cells
             .iter()
             .map(|c| {
@@ -247,5 +258,61 @@ impl Default for MockChain {
 
         // Return chain
         chain
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    #[test]
+    fn test_deploy_cell_and_fetch_cell() {
+        // Setup chain
+        let mut chain = MockChain::default();
+
+        // Setup cell to deploy
+        let lock_args = Bytes::from(b"test".to_vec());
+        let cell = chain.generate_cell_with_default_lock(lock_args.into());
+
+        // Setup cell inputs for the tx to include
+        let inputs = CellInputs::Empty;
+
+        // Deploy cell and get outpoint
+        let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
+
+        // Retrieve the deployed cell
+        let fetched_cell = chain.get_cell(&outpoint).unwrap();
+
+        let cells = chain.cells;
+        println!("{:?}", cells.get(&outpoint).unwrap().0.lock().args());
+
+        assert_eq!(
+            format!("{:?}", CellOutputWithData::from(cell).0.lock().args()),
+            format!("{:?}", fetched_cell.0.lock().args())
+        );
+    }
+
+    #[test]
+    fn test_deploy_two_cells_and_fetch_them() {
+        let mut chain = MockChain::default();
+        let lock_args = Bytes::from(b"test".to_vec());
+        let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let cell2 = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let inputs = CellInputs::Empty;
+        let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
+        let outpoint2 = chain.deploy_cell(&cell2, HashMap::new(), &inputs).unwrap();
+        let fetched_cell = chain.get_cell(&outpoint).unwrap();
+        let fetched_cell2 = chain.get_cell(&outpoint2).unwrap();
+        assert_eq!(
+            format!("{:?}", cell),
+            format!("{:?}", Cell::from(fetched_cell.0))
+        );
+        assert_eq!(
+            format!("{:?}", cell2),
+            format!("{:?}", Cell::from(fetched_cell2.0))
+        );
     }
 }

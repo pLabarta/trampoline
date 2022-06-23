@@ -96,6 +96,7 @@ pub mod cell_error {
 pub use cell_error::*;
 pub type CellResult<T> = Result<T, CellError>;
 
+#[cfg_attr(all(feature = "std", not(feature = "script")), derive(Debug))]
 #[derive(Clone)]
 pub struct Cell {
     data: Bytes,

@@ -81,10 +81,16 @@ impl MockChain {
     }
 
     pub fn deploy_cell_output(&mut self, data: Bytes, output: CellOutput) -> OutPoint {
-        let data_hash = CellOutput::calc_data_hash(&data);
-        if let Some(out_point) = self.cells_by_data_hash.get(&data_hash) {
-            return out_point.to_owned();
+        match data.len() {
+            0 => {}
+            _ => {
+                let data_hash = CellOutput::calc_data_hash(&data);
+                if let Some(out_point) = self.cells_by_data_hash.get(&data_hash) {
+                    return out_point.to_owned();
+                }
+            }
         }
+
         let tx_hash = random_hash();
         let out_point = OutPoint::new(tx_hash, 0);
         self.create_cell_with_outpoint(out_point.clone(), output, data);
@@ -142,7 +148,9 @@ impl MockChain {
     pub fn create_cell_with_outpoint(&mut self, outp: OutPoint, cell: CellOutput, data: Bytes) {
         let data_hash = CellOutput::calc_data_hash(&data);
         self.cells_by_data_hash.insert(data_hash, outp.clone());
+
         self.cells.insert(outp.clone(), (cell.clone(), data));
+
         let cells = self.get_cells_by_lock_hash(cell.calc_lock_hash());
         if let Some(mut cells) = cells {
             cells.push(outp.clone());
