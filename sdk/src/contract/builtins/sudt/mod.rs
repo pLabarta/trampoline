@@ -7,7 +7,7 @@ use crate::ckb_types::packed::{Byte32, Uint128};
 #[cfg(all(feature = "std", not(feature = "script")))]
 use crate::contract::{Contract, TContract};
 
-use crate::contract::schema::{SchemaPrimitiveType};
+use crate::contract::schema::SchemaPrimitiveType;
 
 #[derive(Debug, Clone, Default)]
 struct InnerOwnerLockHash([u8; 32]);

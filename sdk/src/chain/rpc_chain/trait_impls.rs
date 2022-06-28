@@ -1,13 +1,11 @@
-use std::prelude::v1::*;
 use super::*;
-use crate::{
-    chain::{CellInputs, Chain},
-};
-use ckb_sdk::{rpc::ckb_indexer::Order, traits::CellQueryOptions};
+use crate::chain::{CellInputs, Chain};
 use crate::ckb_types::prelude::{Builder, Entity};
-use ckb_types::packed::Script as CkbScript;
+use ckb_sdk::{rpc::ckb_indexer::Order, traits::CellQueryOptions};
 use ckb_types::packed::CellOutput;
+use ckb_types::packed::Script as CkbScript;
 use provider::RpcProvider;
+use std::prelude::v1::*;
 
 impl Chain for RpcChain {
     type Inner = RpcProvider;
@@ -101,7 +99,7 @@ impl Chain for RpcChain {
     fn set_default_lock(&mut self, lock: Cell) -> Result<(), ChainError> {
         // Check if script is already deployed
         let deployer_lock = lock.lock_script().unwrap();
-        let mut indexer = IndexerRpcClient::new(&self.indexer_url.as_str());
+        let mut indexer = IndexerRpcClient::new(self.indexer_url.as_str());
         let query = CellQueryOptions::new_lock(deployer_lock.into());
         let search_key = query.into();
         let deployed_cells = indexer.get_cells(search_key, Order::Desc, 100.into(), None);

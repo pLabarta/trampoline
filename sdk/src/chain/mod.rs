@@ -8,7 +8,6 @@ pub use mock_chain::*;
 pub use rpc_chain::*;
 pub use traits::*;
 
-
 use crate::types::cell::{Cell, CellOutputWithData};
 use ckb_types::{core::TransactionView, packed::Byte32, prelude::*};
 use ckb_verification::TransactionError;

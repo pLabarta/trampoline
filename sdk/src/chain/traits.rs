@@ -1,20 +1,13 @@
-
-use std::prelude::v1::*;
-use std::collections::HashMap;
 use crate::types::{bytes::Bytes, cell::Cell};
-use crate::{
-    contract::{
-        generator::TransactionProvider,
-    },
-    types::script::Script,
-};
+use crate::{contract::generator::TransactionProvider, types::script::Script};
 use ckb_sdk::{unlock::ScriptUnlocker, ScriptId};
+use std::collections::HashMap;
+use std::prelude::v1::*;
 
 use crate::ckb_types::{
     core::TransactionView,
     packed::{Byte32, OutPoint},
 };
-
 
 pub type Unlockers = HashMap<ScriptId, Box<dyn ScriptUnlocker>>;
 

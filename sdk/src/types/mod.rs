@@ -1,10 +1,8 @@
 use std::prelude::v1::*;
 
-
 use crate::ckb_types::bytes::Bytes as CkBytes;
 use crate::ckb_types::core::Capacity;
 use crate::ckb_types::packed::Bytes as PackedBytes;
-
 
 pub mod bytes;
 pub mod cell;
@@ -12,11 +10,11 @@ pub mod constants;
 pub mod script;
 
 #[cfg(all(feature = "std", not(feature = "script")))]
-pub mod transaction;
-#[cfg(all(feature = "std", not(feature = "script")))]
 pub mod address;
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub mod query;
+#[cfg(all(feature = "std", not(feature = "script")))]
+pub mod transaction;
 
 // TO DO: Implement this trait for all types
 
@@ -31,7 +29,6 @@ pub trait TrampolineBaseType: Into<CkBytes> + Into<PackedBytes> {
 
 #[cfg(test)]
 mod tests {
-    
 
     use super::*;
     use ckb_always_success_script::ALWAYS_SUCCESS;

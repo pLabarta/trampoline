@@ -1,5 +1,5 @@
-use std::prelude::v1::*;
 use crate::types::{cell::Cell, script::Script};
+use std::prelude::v1::*;
 
 use super::{Chain, ChainError};
 
@@ -14,11 +14,7 @@ pub use resolve::*;
 pub mod tx_builder;
 pub use tx_builder::*;
 
-use ckb_types::{
-    core::BlockView,
-    packed::OutPoint,
-    H256,
-};
+use ckb_types::{core::BlockView, packed::OutPoint, H256};
 
 #[allow(dead_code)]
 pub struct DefaultLock {
@@ -55,7 +51,7 @@ impl RpcChain {
         self.default_lock = Some(lock_outpoint);
     }
     pub fn get_tip(&self) -> Option<ckb_jsonrpc_types::HeaderView> {
-        self.inner().get_tip().clone()
+        self.inner().get_tip()
     }
 
     pub fn get_tx(&self, hash: H256) -> Result<Option<TransactionWithStatus>, ChainError> {

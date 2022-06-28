@@ -1,15 +1,10 @@
 use std::prelude::v1::*;
 
-
-
-
-
-
 #[cfg(all(feature = "std", not(feature = "script")))]
 mod script_error {
     use super::*;
-    use thiserror::Error;
     use crate::ckb_types::{core::CapacityError, H256};
+    use thiserror::Error;
     #[derive(Debug, Error)]
     pub enum ScriptError {
         #[error(transparent)]
@@ -29,7 +24,7 @@ mod script_error {
     use core::fmt;
     pub enum ScriptError {
         ScriptCapacityError(CapacityError),
-        MismatchedScriptHash(H256, H256)
+        MismatchedScriptHash(H256, H256),
     }
 
     impl core::fmt::Debug for ScriptError {
@@ -39,7 +34,6 @@ mod script_error {
     }
 
     pub type ScriptResult<T> = Result<T, ScriptError>;
-    
 }
 
 pub use script_error::*;
@@ -47,16 +41,13 @@ mod core_script {
     use super::*;
     pub const CODE_HASH_SIZE_BYTES: usize = 32;
 
-   
-
-
     use crate::{bytes::Bytes, cell::Cell};
 
+    use crate::ckb_hash::blake2b_256;
     use crate::ckb_types::core::{Capacity, ScriptHashType};
     use crate::ckb_types::packed::{Bytes as PackedBytes, Script as PackedScript};
     use crate::ckb_types::prelude::*;
     use crate::ckb_types::{bytes::Bytes as CkBytes, H256};
-    use crate::ckb_hash::blake2b_256;
 
     #[cfg_attr(all(feature = "std", not(feature = "script")), derive(Debug))]
     #[derive(Clone)]
@@ -91,7 +82,7 @@ mod core_script {
             // script_hash is not included in this calculation since it is not present
             // in on-chain script structure.
             self.args.len() + CODE_HASH_SIZE_BYTES + 1
-        }        
+        }
 
         #[cfg(feature = "script")]
         pub fn calc_script_hash(&self) -> H256 {

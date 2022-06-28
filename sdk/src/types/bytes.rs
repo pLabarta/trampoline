@@ -1,12 +1,7 @@
-
-
 use std::prelude::v1::*;
 
 // When in no-std mode, both CKBytes and PackedBytes are the same
-use crate::ckb_types::{
-    core::{CapacityError},
-};
-
+use crate::ckb_types::core::CapacityError;
 
 // use molecule::bytes::Bytes as MolBytes; // This is equivalent to CkBytes when in std mode
 // Molecule bytes are newtype around Vec<u8> when no_std is enabled and is bytes::Bytes when std is enabled
@@ -27,8 +22,8 @@ use crate::ckb_types::{
 
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub mod bytes_error {
-    use thiserror::Error;
     use super::*;
+    use thiserror::Error;
     #[derive(Debug, Error)]
     pub enum BytesError {
         #[error(transparent)]
@@ -41,7 +36,7 @@ pub mod bytes_error {
     use super::*;
     use core::fmt;
     pub enum BytesError {
-        CapacityCalcError(CapacityError)
+        CapacityCalcError(CapacityError),
     }
 
     impl From<CapacityError> for BytesError {
@@ -53,9 +48,9 @@ pub mod bytes_error {
     impl fmt::Debug for BytesError {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let err_str = match self {
-                BytesError::CapacityCalcError(cap_err) => format!("{:?}", cap_err)
+                BytesError::CapacityCalcError(cap_err) => format!("{:?}", cap_err),
             };
-            write!(f, "{}",err_str)
+            write!(f, "{}", err_str)
         }
     }
 }
@@ -64,19 +59,15 @@ pub use bytes_error::*;
 pub type BytesResult<T> = Result<T, BytesError>;
 
 mod core_bytes {
-    
+
     // When in no-std mode, both CKBytes and PackedBytes are the same
+    use crate::ckb_hash::blake2b_256;
     use crate::ckb_types::bytes::Bytes as CkBytes;
+    use crate::ckb_types::packed::Byte;
     use crate::ckb_types::packed::Bytes as PackedBytes;
     use crate::ckb_types::prelude::*;
-    use crate::ckb_types::{
-        core::{Capacity},
-        H256,
-    };
-    use crate::ckb_types::packed::Byte;
+    use crate::ckb_types::{core::Capacity, H256};
     use crate::contract::schema::{BytesConversion, SchemaPrimitiveType};
-    use crate::ckb_hash::blake2b_256;
-
 
     use super::*;
     #[derive(Clone, Debug, Default)]

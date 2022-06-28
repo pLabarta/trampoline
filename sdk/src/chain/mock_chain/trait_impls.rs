@@ -1,13 +1,9 @@
-use std::prelude::v1::*;
 use super::genesis_info::genesis_event;
 use crate::chain::mock_chain::MAX_CYCLES;
 use crate::chain::*;
-use crate::query::{
-    CellQuery, CellQueryAttribute, QueryStatement
-};
 use crate::contract::generator::{QueryProvider, TransactionProvider};
-
-
+use crate::query::{CellQuery, CellQueryAttribute, QueryStatement};
+use std::prelude::v1::*;
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -213,7 +209,6 @@ impl Chain for MockChain {
         cell
     }
 
-
     fn deploy_cells(
         &mut self,
         cells: &Vec<Cell>,
@@ -260,7 +255,6 @@ impl Default for MockChain {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -299,7 +293,7 @@ mod tests {
         let mut chain = MockChain::default();
         let lock_args = Bytes::from(b"test".to_vec());
         let cell = chain.generate_cell_with_default_lock(lock_args.clone().into());
-        let cell2 = chain.generate_cell_with_default_lock(lock_args.clone().into());
+        let cell2 = chain.generate_cell_with_default_lock(lock_args.into());
         let inputs = CellInputs::Empty;
         let outpoint = chain.deploy_cell(&cell, HashMap::new(), &inputs).unwrap();
         let outpoint2 = chain.deploy_cell(&cell2, HashMap::new(), &inputs).unwrap();

@@ -12,13 +12,12 @@ pub mod rpc;
 
 pub mod contract;
 
-pub (crate) mod types;
+pub(crate) mod types;
 
 pub use types::{bytes, cell, constants, script};
 
-
 #[cfg(all(feature = "std", not(feature = "script")))]
-pub use types::{query, transaction, address};
+pub use types::{address, query, transaction};
 
 #[cfg(feature = "script")]
 #[macro_export]
@@ -53,9 +52,9 @@ macro_rules! impl_std_convert {
 
 #[cfg(feature = "script")]
 pub mod ckb_hash {
-    use std::prelude::v1::*;
-    use blake2b_ref::{Blake2b, blake2b, Blake2bBuilder};
     use crate::ckb_types::bytes::Bytes;
+    use blake2b_ref::{blake2b, Blake2b, Blake2bBuilder};
+    use std::prelude::v1::*;
 
     #[doc(hidden)]
     pub const BLAKE2B_KEY: &[u8] = &[];
@@ -66,8 +65,8 @@ pub mod ckb_hash {
 
     /// ```
     pub const BLANK_HASH: [u8; 32] = [
-        68, 244, 198, 151, 68, 213, 248, 197, 93, 100, 32, 98, 148, 157, 202, 228, 155, 196, 231, 239,
-        67, 211, 136, 197, 161, 47, 66, 181, 99, 61, 22, 62,
+        68, 244, 198, 151, 68, 213, 248, 197, 93, 100, 32, 98, 148, 157, 202, 228, 155, 196, 231,
+        239, 67, 211, 136, 197, 161, 47, 66, 181, 99, 61, 22, 62,
     ];
 
     pub fn new_blake2b() -> Blake2b {
@@ -98,29 +97,24 @@ pub mod ckb_hash {
 }
 pub mod ckb_types {
     #[cfg(feature = "script")]
-    pub use ckb_standalone_types::{self, prelude, bytes, packed};
+    pub use ckb_standalone_types::prelude::{Builder, Entity, Pack, PackVec, Reader, Unpack};
     #[cfg(feature = "script")]
-    pub use ckb_standalone_types::prelude::{Pack, Unpack, PackVec, Entity, Reader, Builder};
- 
+    pub use ckb_standalone_types::{self, bytes, packed, prelude};
 
     #[cfg(feature = "script")]
     pub mod core {
-        use ckb_standalone_types::core as ckb_core;
-        pub use ckb_standalone_types::packed::*;
         use super::prelude::*;
         use crate::impl_std_convert;
+        use ckb_standalone_types::core as ckb_core;
+        pub use ckb_standalone_types::packed::*;
         mod capacity {
-            use std::prelude::v1::*;
             use core::fmt;
-            
+            use std::prelude::v1::*;
 
-            
             /// CKB capacity.
             ///
             /// It is encoded as the amount of `Shannons` internally.
-            #[derive(
-                Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord
-            )]
+            #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
             pub struct Capacity(u64);
 
             /// Represents the ratio `numerator / denominator`, where `numerator` and `denominator` are both
@@ -189,7 +183,6 @@ pub mod ckb_types {
             // A `Byte` contains how many `Shannons`.
             const BYTE_SHANNONS: u64 = 100_000_000;
 
-        
             // impl ::std::fmt::Display for Error {
             //     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
             //         write!(f, "OccupiedCapacity: overflow")
@@ -206,10 +199,10 @@ pub mod ckb_types {
             impl fmt::Debug for CapacityError {
                 fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                     let err_str = match self {
-                       CapacityError::Overflow => "Capacity Error: Overflow",
-                       CapacityError::ParseInt => "Capacity Error: ParseInt",
+                        CapacityError::Overflow => "Capacity Error: Overflow",
+                        CapacityError::ParseInt => "Capacity Error: ParseInt",
                     };
-                    write!(f, "{}",err_str)
+                    write!(f, "{}", err_str)
                 }
             }
             /// Numeric operation result.
@@ -282,7 +275,9 @@ pub mod ckb_types {
                 type Err = CapacityError;
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
-                    Ok(Capacity(s.parse::<u64>().map_err(|e| CapacityError::ParseInt)?)) 
+                    Ok(Capacity(
+                        s.parse::<u64>().map_err(|e| CapacityError::ParseInt)?,
+                    ))
                 }
             }
 
@@ -297,7 +292,6 @@ pub mod ckb_types {
             //         self.0.fmt(f)
             //     }
             // }
-
         }
         pub use capacity::*;
 
@@ -306,7 +300,6 @@ pub mod ckb_types {
             Data = 0,
             Type = 1,
             Data1 = 2,
-
         }
 
         impl From<ScriptHashType> for u8 {
@@ -321,7 +314,7 @@ pub mod ckb_types {
                     0 => ScriptHashType::Data,
                     1 => ScriptHashType::Type,
                     2 => ScriptHashType::Data1,
-                    _ => ScriptHashType::Data
+                    _ => ScriptHashType::Data,
                 }
             }
         }
@@ -341,7 +334,7 @@ pub mod ckb_types {
                 match s {
                     ckb_core::ScriptHashType::Data => ScriptHashType::Data,
                     ckb_core::ScriptHashType::Type => ScriptHashType::Type,
-                    ckb_core::ScriptHashType::Data1 => ScriptHashType::Data1 ,
+                    ckb_core::ScriptHashType::Data1 => ScriptHashType::Data1,
                 }
             }
         }
@@ -359,7 +352,6 @@ pub mod ckb_types {
                 Byte::new(b)
             }
         }
-
 
         #[derive(Clone, Copy, PartialEq, Eq, Hash)]
         pub enum DepType {
@@ -406,8 +398,7 @@ pub mod ckb_types {
             }
         }
     }
-    
-    
+
     #[cfg(feature = "script")]
     #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
     pub struct H160(pub [u8; 20]);
@@ -426,9 +417,6 @@ pub mod ckb_types {
 
     #[cfg(feature = "script")]
     impl_std_convert!(H256, 32);
-
-
-
 
     #[cfg(all(feature = "std", not(feature = "script")))]
     pub use ckb_types::*;
@@ -492,5 +480,3 @@ macro_rules! impl_pack_for_fixed_byte_array {
         }
     };
 }
-
-

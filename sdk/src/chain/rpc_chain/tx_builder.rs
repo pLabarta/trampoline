@@ -1,5 +1,4 @@
-use std::prelude::v1::*;
-use ckb_sdk::traits::{DefaultCellCollector, DefaultCellDepResolver,DefaultHeaderDepResolver};
+use ckb_sdk::traits::{DefaultCellCollector, DefaultCellDepResolver, DefaultHeaderDepResolver};
 use ckb_sdk::tx_builder::{
     balance_tx_capacity, unlock_tx, BalanceTxCapacityError, CapacityBalancer,
 };
@@ -9,6 +8,7 @@ use ckb_types::{
     core::{TransactionBuilder as CkbTxBuilder, TransactionView},
     packed::CellInput,
 };
+use std::prelude::v1::*;
 
 use crate::chain::{Chain, ChainError, Unlockers};
 use crate::types::{cell::Cell, transaction::Transaction};
@@ -91,7 +91,7 @@ impl TransactionBuilder {
         let mut collector =
             DefaultCellCollector::new(chain.indexer_url.as_str(), chain.ckb_url.as_str());
 
-        let mut provider = chain.inner().clone();
+        let mut provider = chain.inner();
 
         let cell_dep_resolver =
             DefaultCellDepResolver::from_genesis(&chain.genesis_block().unwrap())

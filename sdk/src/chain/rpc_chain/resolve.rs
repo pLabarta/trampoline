@@ -1,10 +1,5 @@
 use crate::types::transaction::Transaction;
-use ckb_types::{
-    core::cell::ResolvedTransaction,
-    packed::OutPoint,
-};
-
-
+use ckb_types::{core::cell::ResolvedTransaction, packed::OutPoint};
 
 use thiserror::Error;
 

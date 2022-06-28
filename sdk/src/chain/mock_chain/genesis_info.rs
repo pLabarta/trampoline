@@ -1,7 +1,7 @@
-use std::prelude::v1::*;
 use ckb_system_scripts::BUNDLED_CELL;
 use ckb_types::core::{BlockBuilder, BlockView, TransactionBuilder};
 use ckb_types::{bytes::Bytes, packed::Byte32, prelude::*};
+use std::prelude::v1::*;
 
 use super::MockChain;
 pub struct GenesisScripts {

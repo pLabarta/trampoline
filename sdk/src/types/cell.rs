@@ -1,25 +1,23 @@
-use std::prelude::v1::*;
 use crate::ckb_types::{
     core::{Capacity, DepType},
     packed::{CellDep, CellOutput, OutPoint},
     prelude::*,
     H256,
 };
-
+use std::prelude::v1::*;
 
 use no_std_compat::borrow::Borrow;
 
-
-use crate::bytes::{Bytes};
-use crate::script::{Script};
+use crate::bytes::Bytes;
+use crate::script::Script;
 
 pub type CellOutputWithData = (CellOutput, crate::ckb_types::bytes::Bytes);
 
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub mod cell_error {
 
-    use crate::{bytes::BytesError, script::ScriptError};
     use crate::ckb_types::core::CapacityError;
+    use crate::{bytes::BytesError, script::ScriptError};
     use std::io::Error as IoError;
     use thiserror::Error;
     #[derive(Debug, Error)]
@@ -43,8 +41,8 @@ pub mod cell_error {
 
 #[cfg(feature = "script")]
 pub mod cell_error {
-    use crate::{bytes::BytesError, script::ScriptError};
     use crate::ckb_types::core::CapacityError;
+    use crate::{bytes::BytesError, script::ScriptError};
     use core::fmt::{self, write};
 
     pub enum CellError {
@@ -55,20 +53,19 @@ pub mod cell_error {
         BytesError,
         MissingTypeScript,
         MissingOutpoint,
-
     }
 
     impl From<CapacityError> for CellError {
         fn from(e: CapacityError) -> Self {
             match e {
                 CapacityError::Overflow => CellError::CapacityCalcError,
-                _ => CellError::UnknownCapacityError
+                _ => CellError::UnknownCapacityError,
             }
         }
     }
     impl From<ScriptError> for CellError {
         fn from(e: ScriptError) -> Self {
-           CellError::ScriptError(e)
+            CellError::ScriptError(e)
         }
     }
     impl From<BytesError> for CellError {
@@ -88,10 +85,9 @@ pub mod cell_error {
                 CellError::MissingOutpoint => "Missing OutPoint",
                 CellError::UnknownCapacityError => "Unknown err capacity",
             };
-            write!(f, "{}",err_str)
+            write!(f, "{}", err_str)
         }
     }
-    
 }
 pub use cell_error::*;
 pub type CellResult<T> = Result<T, CellError>;
@@ -284,7 +280,11 @@ impl From<Cell> for CellOutput {
         CellOutput::new_builder()
             .capacity(cell.capacity.as_u64().pack())
             .lock(cell.lock_script.into())
-            .type_(cell.type_script.map(crate::ckb_types::packed::Script::from).pack())
+            .type_(
+                cell.type_script
+                    .map(crate::ckb_types::packed::Script::from)
+                    .pack(),
+            )
             .build()
     }
 }

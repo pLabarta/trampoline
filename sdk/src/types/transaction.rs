@@ -1,6 +1,4 @@
-use std::prelude::v1::*;
 use super::cell::CellOutputWithData;
-use ckb_jsonrpc_types::{Transaction as JsonTransaction, TransactionView as JsonTransactionView};
 use crate::ckb_types::core::cell::CellMeta;
 use crate::ckb_types::core::{TransactionBuilder, TransactionView};
 use crate::ckb_types::packed::{
@@ -8,6 +6,8 @@ use crate::ckb_types::packed::{
     TransactionViewBuilder,
 };
 use crate::ckb_types::prelude::*;
+use ckb_jsonrpc_types::{Transaction as JsonTransaction, TransactionView as JsonTransactionView};
+use std::prelude::v1::*;
 
 // core::TransactionView has Transaction, hash, and witness_hash
 // ckb_jsonrpc_types::TransactionView has Transaction and hash

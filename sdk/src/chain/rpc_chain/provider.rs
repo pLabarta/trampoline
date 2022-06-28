@@ -1,6 +1,6 @@
-use std::prelude::v1::*;
 use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap, HashSet};
+use std::prelude::v1::*;
 use std::sync::Arc;
 
 use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder};
@@ -21,7 +21,7 @@ use ckb_types::packed::{Byte32, CellOutput, OutPoint, Transaction as CkbTransact
 use ckb_types::prelude::{Pack, Unpack};
 use ckb_types::H256;
 use ckb_util::Mutex;
-use ckb_verification::{NonContextualTransactionVerifier};
+use ckb_verification::NonContextualTransactionVerifier;
 use json_types::TransactionWithStatus;
 use lru::LruCache;
 
@@ -77,8 +77,8 @@ impl RpcProvider {
         let mut inner = self.inner.lock();
         let tx = inner.rpc_client.get_transaction(hash);
         match tx {
-            Ok(tx) => return Ok(tx),
-            Err(e) => return Err(ChainError::RpcError(e)),
+            Ok(tx) => Ok(tx),
+            Err(e) => Err(ChainError::RpcError(e)),
         }
     }
 
@@ -321,11 +321,7 @@ impl TransactionProvider for RpcProvider {
             }
         };
 
-        if transaction_verifier.verify(MAX_CYCLES).is_ok() && non_contextual.verify().is_ok() {
-            return true;
-        } else {
-            return false;
-        }
+        transaction_verifier.verify(MAX_CYCLES).is_ok() && non_contextual.verify().is_ok()
     }
 }
 
@@ -421,11 +417,9 @@ impl TransactionResolver for RpcProvider {
                     .get_cell_with_data(&cell_dep.out_point())
                     .expect("Failed to get cell with data for dep");
                 let tx_info = self.get_tx_info(&cell_dep.out_point().tx_hash().unpack());
-                let mut builder = CellMetaBuilder::from_cell_output(
-                    dep_output.to_owned(),
-                    dep_data.to_vec().into(),
-                )
-                .out_point(cell_dep.out_point());
+                let mut builder =
+                    CellMetaBuilder::from_cell_output(dep_output, dep_data.to_vec().into())
+                        .out_point(cell_dep.out_point());
                 if tx_info.is_ok() {
                     builder = builder.transaction_info(tx_info.unwrap());
                 }
