@@ -2,12 +2,11 @@ use std::prelude::v1::*;
 use super::*;
 use crate::{
     chain::{CellInputs, Chain},
-    types,
 };
-use ckb_sdk::{rpc::ckb_indexer::Order, traits::CellQueryOptions, unlock::UnlockError};
+use ckb_sdk::{rpc::ckb_indexer::Order, traits::CellQueryOptions};
 use crate::ckb_types::prelude::{Builder, Entity};
 use ckb_types::packed::Script as CkbScript;
-use ckb_types::packed::{CellOutput, OutPointBuilder};
+use ckb_types::packed::CellOutput;
 use provider::RpcProvider;
 
 impl Chain for RpcChain {

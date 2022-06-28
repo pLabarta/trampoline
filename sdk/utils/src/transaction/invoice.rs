@@ -1,5 +1,5 @@
 use ckb_sdk::tx_builder::transfer::CapacityTransferBuilder;
-use ckb_types::{packed::{CellOutput, Script}, bytes::Bytes, prelude::{Entity, Pack, Builder}};
+use ckb_types::{packed::CellOutput, bytes::Bytes, prelude::{Entity, Pack, Builder}};
 
 use crate::{account::Account, lock::{Lock, SigHashAllLock}};
 

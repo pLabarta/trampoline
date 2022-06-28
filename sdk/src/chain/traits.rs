@@ -5,12 +5,10 @@ use crate::types::{bytes::Bytes, cell::Cell};
 use crate::{
     contract::{
         generator::TransactionProvider,
-        schema::{BytesConversion, JsonByteConversion, MolConversion},
-        Contract,
     },
     types::script::Script,
 };
-use ckb_sdk::{traits::CellQueryOptions, unlock::ScriptUnlocker, ScriptId};
+use ckb_sdk::{unlock::ScriptUnlocker, ScriptId};
 
 use crate::ckb_types::{
     core::TransactionView,

@@ -16,35 +16,29 @@ pub enum ChainError {
     #[error("Failed to send transaction to network")]
     TransactionSendError,
     #[error("Failed to connect to node via RPC")]
-    RpcError(RpcError),
+    RpcError(#[from] RpcError),
     #[error("Failed to get Transaction from RPC")]
     GetTransactionError(H256),
-    #[error("Transaction not included in any block yet")]
+    #[error("Transaction with hash {0}not included in any block yet")]
     TransactionNotIncluded(H256),
-    #[error("Transaction not included in any block yet")]
+    #[error("Transaction with hash {0} not included in any block yet")]
     BlockNotFound(H256),
     #[error("Failed resolving transaction due to outpoint error")]
-    TxResolveError(OutPointError),
+    TxResolveError(#[from] OutPointError),
     #[error("Genesis block not found in chain, check your chain setup")]
     GenesisBlockNotFound,
     #[error("Failed to connect to node via RPC")]
     RpcConnectionError,
     #[error("Selected lockscript not found in chain, make sure it is deployed")]
     LockScriptCellNotFound(Cell),
-    #[error("Selected lockscript not found in chain, make sure it is deployed")]
+    #[error("Cell with outpoint {0} make sure it is deployed")]
     CellNotFound(OutPoint),
     #[error("Failed to unlock transaction")]
-    TransactionUnlockError(UnlockError),
+    TransactionUnlockError(#[from] UnlockError),
     #[error("Failed to unlock deploy cell transaction, it has extra lock groups")]
     DeployCellTxHasLockedGroups,
     #[error("Failed to deploy transaction due to invalid cell inputs")]
     InvalidInputs(CellInputs),
-}
-
-impl From<RpcError> for ChainError {
-    fn from(e: RpcError) -> Self {
-        Self::RpcError(e)
-    }
 }
 
 // Most of this is taken from https://github.com/nervosnetwork/ckb-tool.

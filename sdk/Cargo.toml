@@ -53,5 +53,5 @@ std = ["no-std-compat/std", "tokio/full", "molecule/std", "ckb-always-success-sc
     "bytes", "blake2b-rs", "hex", "jsonrpc-core", "phf", "rand", "reqwest",
     "serde", "serde_json", "tokio", "toml", "includedir", "ckb-sdk", "secp256k1", "thiserror", "lru"
 ]
-
+rpc = ["std"]
 

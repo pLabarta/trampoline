@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap, HashSet};
 use std::sync::Arc;
 
-use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder, ConsensusProvider};
+use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder};
 use ckb_hash::blake2b_256;
 use ckb_jsonrpc_types as json_types;
 use ckb_script::{TransactionScriptsVerifier, TxVerifyEnv};
@@ -16,12 +16,12 @@ use ckb_types::core::cell::{
 };
 use ckb_types::core::error::OutPointError;
 use ckb_types::core::{cell::ResolvedTransaction, hardfork::HardForkSwitch, TransactionView};
-use ckb_types::core::{BlockView, EpochNumberWithFraction, HeaderView, TransactionInfo};
+use ckb_types::core::{EpochNumberWithFraction, HeaderView, TransactionInfo};
 use ckb_types::packed::{Byte32, CellOutput, OutPoint, Transaction as CkbTransaction};
 use ckb_types::prelude::{Pack, Unpack};
 use ckb_types::H256;
 use ckb_util::Mutex;
-use ckb_verification::{NonContextualTransactionVerifier, TransactionVerifier};
+use ckb_verification::{NonContextualTransactionVerifier};
 use json_types::TransactionWithStatus;
 use lru::LruCache;
 
@@ -116,7 +116,7 @@ impl RpcProvider {
     }
 
     pub fn get_tx_info(&self, tx_hash: &H256) -> Result<TransactionInfo, ChainError> {
-        let (tx, block_hash) = {
+        let (_tx, block_hash) = {
             let mut inner = self.inner.lock();
             let result = inner.rpc_client.get_transaction(tx_hash.clone());
             match result {
@@ -125,7 +125,7 @@ impl RpcProvider {
                     None => return Err(ChainError::TransactionNotIncluded(tx_hash.clone())),
                 },
                 Ok(None) => return Err(ChainError::TransactionNotIncluded(tx_hash.clone())),
-                Err(e) => return Err(ChainError::TransactionNotIncluded(tx_hash.clone())),
+                Err(_e) => return Err(ChainError::TransactionNotIncluded(tx_hash.clone())),
             }
         };
 
@@ -224,7 +224,7 @@ impl HeaderProvider for RpcProvider {
 }
 
 impl CellProvider for RpcProvider {
-    fn cell(&self, out_point: &OutPoint, eager_load: bool) -> ckb_types::core::cell::CellStatus {
+    fn cell(&self, out_point: &OutPoint, _eager_load: bool) -> ckb_types::core::cell::CellStatus {
         match self.get_transaction(&out_point.tx_hash()) {
             Ok(tx) => tx
                 .outputs()
@@ -293,10 +293,10 @@ impl TransactionProvider for RpcProvider {
 
         let packed_tx = CkbTransaction::from(tx.inner);
         let rtx = resolved_tx.unwrap();
-        let converted_tx_view = packed_tx.as_advanced_builder().build();
+        let _converted_tx_view = packed_tx.as_advanced_builder().build();
         let non_contextual = NonContextualTransactionVerifier::new(&rtx.transaction, &consensus);
         let transaction_verifier = TransactionScriptsVerifier::new(&rtx, &consensus, self, &tx_env);
-        let verifier = {
+        let _verifier = {
             let script_verif = transaction_verifier.verify(MAX_CYCLES);
             let non_context_verif = non_contextual.verify();
             match script_verif {
@@ -317,7 +317,7 @@ impl TransactionProvider for RpcProvider {
 
             match non_context_verif {
                 Ok(_) => println!("OK: Non-contextual verification passed"),
-                Err(e) => println!("ERR: Non-contextual erification error"),
+                Err(_e) => println!("ERR: Non-contextual erification error"),
             }
         };
 

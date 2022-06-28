@@ -15,11 +15,12 @@ pub mod tx_builder;
 pub use tx_builder::*;
 
 use ckb_types::{
-    core::{cell::HeaderChecker, BlockView},
+    core::BlockView,
     packed::OutPoint,
     H256,
 };
 
+#[allow(dead_code)]
 pub struct DefaultLock {
     out_point: OutPoint,
     code_hash: H256,

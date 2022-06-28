@@ -1,12 +1,10 @@
-use std::{collections::HashSet, hash::BuildHasher};
-
 use crate::types::transaction::Transaction;
 use ckb_types::{
-    core::cell::{ResolveOptions, ResolvedTransaction},
+    core::cell::ResolvedTransaction,
     packed::OutPoint,
 };
 
-use super::provider::RpcProvider;
+
 
 use thiserror::Error;
 

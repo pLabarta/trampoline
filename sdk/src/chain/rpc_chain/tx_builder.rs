@@ -1,8 +1,5 @@
 use std::prelude::v1::*;
-use ckb_sdk::traits::{
-    CellCollector, CellDepResolver, DefaultCellCollector, DefaultCellDepResolver,
-    DefaultHeaderDepResolver, HeaderDepResolver, TransactionDependencyProvider,
-};
+use ckb_sdk::traits::{DefaultCellCollector, DefaultCellDepResolver,DefaultHeaderDepResolver};
 use ckb_sdk::tx_builder::{
     balance_tx_capacity, unlock_tx, BalanceTxCapacityError, CapacityBalancer,
 };

@@ -1,5 +1,4 @@
 use ckb_sdk::{traits::{DefaultCellCollector, DefaultCellDepResolver, DefaultHeaderDepResolver, DefaultTransactionDependencyProvider}, CkbRpcClient};
-
 pub struct RpcInfo {
     pub node_url: String,
     pub indexer_url: String,
