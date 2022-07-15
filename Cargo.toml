@@ -41,6 +41,7 @@ tokio = { version = "1.17.0", features = ["full"] }
 toml = "0.5.8"
 walkdir = "2.3.2"
 trampoline-sdk = {path = "./sdk", features = ["std"], default-features = true}
+bollard = "0.13.0"
 
 
 [build-dependencies]

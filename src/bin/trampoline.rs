@@ -3,6 +3,8 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 use anyhow::Result;
+use bollard::models::PortBinding;
+use bollard::network::CreateNetworkOptions;
 use ckb_app_config::BlockAssemblerConfig;
 use ckb_hash::blake2b_256;
 
@@ -18,6 +20,9 @@ use trampoline::schema::{Schema, SchemaInitArgs};
 use trampoline::TrampolineResource;
 use trampoline::TrampolineResourceType;
 use trampoline_sdk::rpc;
+
+// use bollard::Docker;
+
 const SECP_TYPE_HASH: H256 =
     h256!("0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8");
 fn create_block_assembler_from_pkhash(hash: &[u8]) -> BlockAssemblerConfig {
@@ -32,7 +37,8 @@ fn create_block_assembler_from_pkhash(hash: &[u8]) -> BlockAssemblerConfig {
     }
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let opts = TrampolineCommand::from_args();
 
     let project = TrampolineProject::load(std::env::current_dir()?);
@@ -76,7 +82,104 @@ fn main() -> Result<()> {
         TrampolineCommand::Network { command } => {
             let project = TrampolineProject::from(project?);
             match command {
+
+
+                // TODO add --recreate flag to init
+                NetworkCommands::Init {} => {
+                    // Init network & create containers
+                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    
+                    // Configure network
+                    let network = CreateNetworkOptions {
+                        name: format!("{}-network", project.config.name),
+                        check_duplicate: true,
+                        ..Default::default()
+                    };
+                    let network_respose = docker.create_network(network).await?;
+                    let network_id = network_respose.id.unwrap();
+
+                    let mut port_bindings = ::std::collections::HashMap::new();
+                    port_bindings.insert(
+                        String::from("8114/tcp"),
+                        Some(vec![PortBinding {
+                            host_ip: Some(String::from("127.0.0.1")),
+                            host_port: Some(String::from("8114")),
+                        }]),
+                    );
+
+                    let host_config = Some(bollard::models::HostConfig {
+                        port_bindings: Some(port_bindings),
+                        network_mode: Some(network_id.clone()),
+                        ..Default::default()
+                    });
+
+                    let ckb_config = bollard::container::Config {
+                        image: Some("pablitx/ckb-testchain:latest"),
+                        host_config,
+                        ..Default::default()
+                    };
+
+                    // TODO we need some way to store and fetch the container id or name for the launch command to run the network
+                    // @pablito
+                    let id = docker.create_container::<&str, &str>(None, ckb_config).await?.id;
+                
+                    // TODO drop everything into a TrampolineNetwork type and implement Display for it
+                    // @arnur
+                    println!("New Trampoline development network created\n\
+                            Network name:{}-network\n\
+                            Network ID:{}\n\
+                            CKB node port: 8114\n\
+                            Indexer port: 8116
+                            ",
+                        project.config.name,
+                        network_id);
+                }
+
+                NetworkCommands::Stop {} => {
+                    // Stop all containers related to this project (ckb, ckb-indexer)
+                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    println!("This is the new stop method");
+                }
+
+                NetworkCommands::Reset { service: String } => {
+
+                    println!("This is the new reset method");
+                    // if service.is_some() {
+                    //     println!("you tried to run it with service {}", service.unwrap());
+                    // }
+                }
+
+                NetworkCommands::Status {} => {
+                    // Show information about running services
+                    // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
+                    println!("This is the new status method");
+                }
+
+                NetworkCommands::Delete {} => {
+                    // Remove network and all containers related to this project
+                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    println!("This is the new delete method");
+                }
+
                 NetworkCommands::Launch {} => {
+                    // todo!();
+                    // Launch the network using pablitx/ckb-testchain image
+                    // Make sure we:
+                    //  - create a network based on the project name
+                    //  - remove container
+                    //  - bind 8114 to host
+                    //  - container has a name
+                    // `docker run --rm --network ckb -p 8116:8116 --name indexer nervos/ckb-indexer
+                    // -s data -c http://172.18.0.2:8114 -l 0.0.0.0:8116`
+                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    println!("This is the new launch method");
+
+                    
+                    // TODO we need some way to store and fetch the container id or name for the launch command to run the network
+                    // docker.start_container::<String>(&id, None).await?;
+                }
+
+                NetworkCommands::LaunchOld {} => {
                     let image = DockerImage {
                         name: "tempest/trampoline-env".to_string(),
                         tag: Some("latest".to_string()),
