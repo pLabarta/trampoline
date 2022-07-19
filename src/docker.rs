@@ -426,6 +426,7 @@ pub struct Docker {
 impl Docker {
     pub fn add_service(mut self, env: VirtualEnv) -> DockerResult<Self> {
         let VirtualEnv {
+            container_id,
             host: _,
             container_port,
             local_binding,

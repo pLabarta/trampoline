@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 use anyhow::Result;
+use bollard::container::LogsOptions;
 use bollard::models::PortBinding;
 use bollard::network::CreateNetworkOptions;
 use ckb_app_config::BlockAssemblerConfig;
@@ -10,9 +11,14 @@ use ckb_hash::blake2b_256;
 
 use ckb_types::{h256, H256};
 
+use jsonrpc_core::futures_util::TryStreamExt;
 use structopt::StructOpt;
 
 use trampoline::docker::*;
+use trampoline::network::Service;
+use trampoline::network::ServiceKind;
+use trampoline::network::TrampolineNetwork;
+use trampoline::network::create_new_network;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
 use trampoline::project::*;
@@ -83,46 +89,21 @@ async fn main() -> Result<()> {
             let project = TrampolineProject::from(project?);
             match command {
 
-
                 // TODO add --recreate flag to init
                 NetworkCommands::Init {} => {
-                    // Init network & create containers
-                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
                     
-                    // Configure network
-                    let network = CreateNetworkOptions {
-                        name: format!("{}-network", project.config.name),
-                        check_duplicate: true,
-                        ..Default::default()
-                    };
-                    let network_respose = docker.create_network(network).await?;
-                    let network_id = network_respose.id.unwrap();
+                    // Set up new network
+                    let mut network = TrampolineNetwork::new(&project).await;
 
-                    let mut port_bindings = ::std::collections::HashMap::new();
-                    port_bindings.insert(
-                        String::from("8114/tcp"),
-                        Some(vec![PortBinding {
-                            host_ip: Some(String::from("127.0.0.1")),
-                            host_port: Some(String::from("8114")),
-                        }]),
-                    );
+                    // Add CKB node
+                    let node = network.add_ckb().await;
 
-                    let host_config = Some(bollard::models::HostConfig {
-                        port_bindings: Some(port_bindings),
-                        network_mode: Some(network_id.clone()),
-                        ..Default::default()
-                    });
+                    // Add Indexer
+                    let _indexer = network.add_indexer(&node).await;
+                    
+                    // Write config
+                    network.save(&project);
 
-                    let ckb_config = bollard::container::Config {
-                        image: Some("pablitx/ckb-testchain:latest"),
-                        host_config,
-                        ..Default::default()
-                    };
-
-                    // TODO we need some way to store and fetch the container id or name for the launch command to run the network
-                    // @pablito
-                    let id = docker.create_container::<&str, &str>(None, ckb_config).await?.id;
-                
                     // TODO drop everything into a TrampolineNetwork type and implement Display for it
                     // @arnur
                     println!("New Trampoline development network created\n\
@@ -131,28 +112,70 @@ async fn main() -> Result<()> {
                             CKB node port: 8114\n\
                             Indexer port: 8116
                             ",
-                        project.config.name,
-                        network_id);
+                        network.name,
+                        network.id());
                 }
 
                 NetworkCommands::Stop {} => {
                     // Stop all containers related to this project (ckb, ckb-indexer)
-                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
-                    println!("This is the new stop method");
+                    let network = TrampolineNetwork::load(&project);
+                    network.stop().await;
                 }
 
-                NetworkCommands::Reset { service: String } => {
+                NetworkCommands::Reset { service } => {
+                    let network = TrampolineNetwork::load(&project);
 
-                    println!("This is the new reset method");
-                    // if service.is_some() {
-                    //     println!("you tried to run it with service {}", service.unwrap());
-                    // }
+                    match service {
+                        None => {
+                            network.stop().await;
+                            network.run().await;
+                            println!("Trampoline network restarted");
+                        },
+                        Some(service) => {
+                            network.reset(service).await;
+                        }
+                    }
                 }
 
                 NetworkCommands::Status {} => {
                     // Show information about running services
                     // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
+
+
+
                     println!("This is the new status method");
+                }
+
+                NetworkCommands::Logs { service } => {
+
+                    let network = TrampolineNetwork::load(&project);
+
+                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+
+                    let opts = LogsOptions {
+                        tail: "all".to_string(),
+                        follow: true,
+                        stdout: true,
+                        stderr: true,
+                        ..Default::default()
+                    };
+
+                    let logs = &docker.logs(&service, Some(opts))
+                        .try_collect::<Vec<_>>()
+                        .await?;
+
+                    for log in logs {
+                        println!("{}", log);
+                    }
+                    
+                    
+
+                    // Show information about running services
+                    // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
+                    
+
+
+                    // println!("This is the new status method");
                 }
 
                 NetworkCommands::Delete {} => {
@@ -162,21 +185,8 @@ async fn main() -> Result<()> {
                 }
 
                 NetworkCommands::Launch {} => {
-                    // todo!();
-                    // Launch the network using pablitx/ckb-testchain image
-                    // Make sure we:
-                    //  - create a network based on the project name
-                    //  - remove container
-                    //  - bind 8114 to host
-                    //  - container has a name
-                    // `docker run --rm --network ckb -p 8116:8116 --name indexer nervos/ckb-indexer
-                    // -s data -c http://172.18.0.2:8114 -l 0.0.0.0:8116`
-                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
-                    println!("This is the new launch method");
-
-                    
-                    // TODO we need some way to store and fetch the container id or name for the launch command to run the network
-                    // docker.start_container::<String>(&id, None).await?;
+                    let network = TrampolineNetwork::load(&project);
+                    network.run().await;
                 }
 
                 NetworkCommands::LaunchOld {} => {
