@@ -108,16 +108,15 @@ async fn main() -> Result<()> {
 
                     // TODO drop everything into a TrampolineNetwork type and implement Display for it
                     // @arnur
-                    println!(
-                        "New Trampoline development network created\n\
-                            Network name:{}-network\n\
-                            Network ID:{}\n\
-                            CKB node port: 8114\n\
-                            Indexer port: 8116
-                            ",
-                        network.name,
-                        network.id()
-                    );
+                    println!("{}", network);
+                    // println!("New Trampoline development network created\n\
+                    //         Network name:{}-network\n\
+                    //         Network ID:{}\n\
+                    //         CKB node port: 8114\n\
+                    //         Indexer port: 8116
+                    //         ",
+                    //     network.name,
+                    //     network.id());
                 }
 
                 NetworkCommands::Stop {} => {
@@ -144,13 +143,12 @@ async fn main() -> Result<()> {
                 NetworkCommands::Status {} => {
                     // Show information about running services
                     // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
+                    let network = TrampolineNetwork::load(&project);
 
-                    println!("This is the new status method");
+                    network.status().await;
                 }
 
                 NetworkCommands::Logs { service, output } => {
-                    let network = TrampolineNetwork::load(&project);
-
                     let docker = bollard::Docker::connect_with_local_defaults()
                         .expect("Failed to connect to Docker API");
 
