@@ -50,33 +50,23 @@ pub enum NetworkCommands {
         alias = "l"
     )]
     Launch {},
-    #[structopt(
-        name = "stop",
-        about = "Stop local development network",
-        alias = "s"
-    )]
+    #[structopt(name = "stop", about = "Stop local development network", alias = "s")]
     Stop {},
-    #[structopt(
-        name = "reset",
-        about = "Reset local development network",
-        alias = "r"
-    )]
-    Reset { service: Option<String>},
-    #[structopt(
-        name = "logs",
-        about = "Reset local development network",
-    )]
-    Logs { service: String},
-    #[structopt(
-        name = "status",
-        about = "Print status of local development network",
-    )]
-    Status{},
+    #[structopt(name = "reset", about = "Reset local development network", alias = "r")]
+    Reset { service: Option<String> },
+    #[structopt(name = "logs", about = "Reset local development network")]
+    Logs {
+        service: String,
+        #[structopt(short, long)]
+        output: Option<PathBuf>,
+    },
+    #[structopt(name = "status", about = "Print status of local development network")]
+    Status {},
     #[structopt(
         name = "delete",
-        about = "Remove local development containers and network from system",
+        about = "Remove local development containers and network from system"
     )]
-    Delete{},
+    Delete {},
     #[structopt(
         name = "set-miner",
         about = "Set the miner address so blocks can be mined locally"

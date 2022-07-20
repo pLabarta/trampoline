@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::str::FromStr;
 
 use anyhow::anyhow;
@@ -6,6 +9,7 @@ use anyhow::Result;
 use bollard::container::LogsOptions;
 use bollard::models::PortBinding;
 use bollard::network::CreateNetworkOptions;
+use bytes::Bytes;
 use ckb_app_config::BlockAssemblerConfig;
 use ckb_hash::blake2b_256;
 
@@ -15,10 +19,10 @@ use jsonrpc_core::futures_util::TryStreamExt;
 use structopt::StructOpt;
 
 use trampoline::docker::*;
+use trampoline::network::create_new_network;
 use trampoline::network::Service;
 use trampoline::network::ServiceKind;
 use trampoline::network::TrampolineNetwork;
-use trampoline::network::create_new_network;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
 use trampoline::project::*;
@@ -88,10 +92,8 @@ async fn main() -> Result<()> {
         TrampolineCommand::Network { command } => {
             let project = TrampolineProject::from(project?);
             match command {
-
                 // TODO add --recreate flag to init
                 NetworkCommands::Init {} => {
-                    
                     // Set up new network
                     let mut network = TrampolineNetwork::new(&project).await;
 
@@ -100,20 +102,22 @@ async fn main() -> Result<()> {
 
                     // Add Indexer
                     let _indexer = network.add_indexer(&node).await;
-                    
+
                     // Write config
                     network.save(&project);
 
                     // TODO drop everything into a TrampolineNetwork type and implement Display for it
                     // @arnur
-                    println!("New Trampoline development network created\n\
+                    println!(
+                        "New Trampoline development network created\n\
                             Network name:{}-network\n\
                             Network ID:{}\n\
                             CKB node port: 8114\n\
                             Indexer port: 8116
                             ",
                         network.name,
-                        network.id());
+                        network.id()
+                    );
                 }
 
                 NetworkCommands::Stop {} => {
@@ -130,7 +134,7 @@ async fn main() -> Result<()> {
                             network.stop().await;
                             network.run().await;
                             println!("Trampoline network restarted");
-                        },
+                        }
                         Some(service) => {
                             network.reset(service).await;
                         }
@@ -141,46 +145,84 @@ async fn main() -> Result<()> {
                     // Show information about running services
                     // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
 
-
-
                     println!("This is the new status method");
                 }
 
-                NetworkCommands::Logs { service } => {
-
+                NetworkCommands::Logs { service, output } => {
                     let network = TrampolineNetwork::load(&project);
 
-                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    let docker = bollard::Docker::connect_with_local_defaults()
+                        .expect("Failed to connect to Docker API");
 
                     let opts = LogsOptions {
-                        tail: "all".to_string(),
+                        tail: "50".to_string(),
                         follow: true,
                         stdout: true,
                         stderr: true,
                         ..Default::default()
                     };
 
-                    let logs = &docker.logs(&service, Some(opts))
+                    let logs = &docker
+                        .logs(&service, Some(opts))
                         .try_collect::<Vec<_>>()
                         .await?;
 
-                    for log in logs {
-                        println!("{}", log);
+                    // TODO
+                    // Depending on parameters filter the logs array
+
+                    match output {
+                        None => {
+                            for line in logs {
+                                match line {
+                                    bollard::container::LogOutput::StdErr { message } => {
+                                        println!("ERR: {}", std::str::from_utf8(message).unwrap())
+                                    }
+                                    bollard::container::LogOutput::StdOut { message } => {
+                                        println!("OUT: {}", std::str::from_utf8(message).unwrap())
+                                    }
+                                    bollard::container::LogOutput::StdIn { message } => {
+                                        println!("IN: {}", std::str::from_utf8(message).unwrap())
+                                    }
+                                    bollard::container::LogOutput::Console { message } => println!(
+                                        "CONSOLE: {}",
+                                        std::str::from_utf8(message).unwrap()
+                                    ),
+                                }
+                            }
+                        }
+                        Some(path) => {
+                            let mut file = OpenOptions::new()
+                                .write(true)
+                                .append(true)
+                                .create(true)
+                                .open(path)
+                                .unwrap();
+
+                            for line in logs {
+                                match line {
+                                    bollard::container::LogOutput::StdErr { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                    bollard::container::LogOutput::StdOut { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                    bollard::container::LogOutput::StdIn { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                    bollard::container::LogOutput::Console { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                }
+                            }
+                            // Save logs to file
+                        }
                     }
-                    
-                    
-
-                    // Show information about running services
-                    // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
-                    
-
-
-                    // println!("This is the new status method");
                 }
 
                 NetworkCommands::Delete {} => {
                     // Remove network and all containers related to this project
-                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    let docker = bollard::Docker::connect_with_local_defaults()
+                        .expect("Failed to connect to Docker API");
                     println!("This is the new delete method");
                 }
 
@@ -369,4 +411,11 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn append_log_to_file(message: &Bytes, file: &mut File) {
+    let string = std::str::from_utf8(message).unwrap().to_string();
+    if let Err(e) = writeln!(file, "{}", string) {
+        eprintln!("Couldn't write to file: {}", e);
+    }
 }
