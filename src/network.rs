@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::project::TrampolineProject;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServiceKind {
     Ckb,
     CkbIndexer,
@@ -77,6 +77,13 @@ impl TrampolineNetwork {
         }
         join_all(starting_indexers).await;
         println!("Indexer should have started!");
+    }
+
+    pub async fn status(&self) {
+        for service in &self.services {
+            let service_status = ServiceStatus::from(&service).await;
+            println!("{:?}", service_status);
+        }
     }
 
     pub async fn stop(&self) {
@@ -245,11 +252,67 @@ impl TrampolineNetwork {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Service {
     pub name: String,
     pub id: String,
     pub kind: ServiceKind,
+}
+
+#[derive(Debug)]
+pub struct ServiceStatus {
+    pub service: Service,
+    pub running: bool,
+    pub created: bool,
+    pub up_time: Option<String>,
+    pub ports: String,
+}
+
+impl ServiceStatus {
+    pub async fn from(service: &Service) -> Self {
+        let docker = bollard::Docker::connect_with_local_defaults()
+            .expect("Failed to connect to Docker API");
+        let container_info = docker
+            .inspect_container(&service.name.to_string(), None)
+            .await
+            .unwrap();
+        let ports = {
+            let map = &container_info
+                .clone()
+                .network_settings
+                .unwrap()
+                .ports
+                .unwrap();
+            let mut ports_string = String::new();
+
+            for (key, value) in map {
+                match value {
+                    Some(bindings) => {
+                        let _ = bindings.iter().map(|binding| match &binding.host_port {
+                            Some(host_port) => {
+                                ports_string.push_str(&format!("{}:{} ", key, host_port))
+                            }
+                            _ => {}
+                        });
+                    }
+                    None => {}
+                }
+            }
+            ports_string
+        };
+
+        Self {
+            service: service.clone(),
+            running: container_info.clone().state.unwrap().running.unwrap(),
+            created: true,
+            up_time: Some(format!(
+                "Started at: {}",
+                container_info.state.unwrap().started_at.unwrap()
+            )),
+            ports: ports,
+        }
+        // Err(e) => panic!("Error retrieving container: {}", e),
+    }
 }
 
 pub async fn create_new_network(
