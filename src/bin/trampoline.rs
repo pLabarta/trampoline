@@ -15,10 +15,10 @@ use jsonrpc_core::futures_util::TryStreamExt;
 use structopt::StructOpt;
 
 use trampoline::docker::*;
+use trampoline::network::create_new_network;
 use trampoline::network::Service;
 use trampoline::network::ServiceKind;
 use trampoline::network::TrampolineNetwork;
-use trampoline::network::create_new_network;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
 use trampoline::project::*;
@@ -88,10 +88,8 @@ async fn main() -> Result<()> {
         TrampolineCommand::Network { command } => {
             let project = TrampolineProject::from(project?);
             match command {
-
                 // TODO add --recreate flag to init
                 NetworkCommands::Init {} => {
-                    
                     // Set up new network
                     let mut network = TrampolineNetwork::new(&project).await;
 
@@ -100,20 +98,21 @@ async fn main() -> Result<()> {
 
                     // Add Indexer
                     let _indexer = network.add_indexer(&node).await;
-                    
+
                     // Write config
                     network.save(&project);
 
                     // TODO drop everything into a TrampolineNetwork type and implement Display for it
                     // @arnur
-                    println!("New Trampoline development network created\n\
-                            Network name:{}-network\n\
-                            Network ID:{}\n\
-                            CKB node port: 8114\n\
-                            Indexer port: 8116
-                            ",
-                        network.name,
-                        network.id());
+                    println!("{}", network);
+                    // println!("New Trampoline development network created\n\
+                    //         Network name:{}-network\n\
+                    //         Network ID:{}\n\
+                    //         CKB node port: 8114\n\
+                    //         Indexer port: 8116
+                    //         ",
+                    //     network.name,
+                    //     network.id());
                 }
 
                 NetworkCommands::Stop {} => {
@@ -130,7 +129,7 @@ async fn main() -> Result<()> {
                             network.stop().await;
                             network.run().await;
                             println!("Trampoline network restarted");
-                        },
+                        }
                         Some(service) => {
                             network.reset(service).await;
                         }
@@ -141,16 +140,14 @@ async fn main() -> Result<()> {
                     // Show information about running services
                     // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
 
-
-
                     println!("This is the new status method");
                 }
 
                 NetworkCommands::Logs { service } => {
-
                     let network = TrampolineNetwork::load(&project);
 
-                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    let docker = bollard::Docker::connect_with_local_defaults()
+                        .expect("Failed to connect to Docker API");
 
                     let opts = LogsOptions {
                         tail: "all".to_string(),
@@ -160,27 +157,25 @@ async fn main() -> Result<()> {
                         ..Default::default()
                     };
 
-                    let logs = &docker.logs(&service, Some(opts))
+                    let logs = &docker
+                        .logs(&service, Some(opts))
                         .try_collect::<Vec<_>>()
                         .await?;
 
                     for log in logs {
                         println!("{}", log);
                     }
-                    
-                    
 
                     // Show information about running services
                     // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
-                    
-
 
                     // println!("This is the new status method");
                 }
 
                 NetworkCommands::Delete {} => {
                     // Remove network and all containers related to this project
-                    let docker = bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
+                    let docker = bollard::Docker::connect_with_local_defaults()
+                        .expect("Failed to connect to Docker API");
                     println!("This is the new delete method");
                 }
 
