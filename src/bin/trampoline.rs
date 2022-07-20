@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::str::FromStr;
 
 use anyhow::anyhow;
@@ -6,6 +9,7 @@ use anyhow::Result;
 use bollard::container::LogsOptions;
 use bollard::models::PortBinding;
 use bollard::network::CreateNetworkOptions;
+use bytes::Bytes;
 use ckb_app_config::BlockAssemblerConfig;
 use ckb_hash::blake2b_256;
 
@@ -143,14 +147,14 @@ async fn main() -> Result<()> {
                     println!("This is the new status method");
                 }
 
-                NetworkCommands::Logs { service } => {
+                NetworkCommands::Logs { service, output } => {
                     let network = TrampolineNetwork::load(&project);
 
                     let docker = bollard::Docker::connect_with_local_defaults()
                         .expect("Failed to connect to Docker API");
 
                     let opts = LogsOptions {
-                        tail: "all".to_string(),
+                        tail: "50".to_string(),
                         follow: true,
                         stdout: true,
                         stderr: true,
@@ -162,14 +166,56 @@ async fn main() -> Result<()> {
                         .try_collect::<Vec<_>>()
                         .await?;
 
-                    for log in logs {
-                        println!("{}", log);
+                    // TODO
+                    // Depending on parameters filter the logs array
+
+                    match output {
+                        None => {
+                            for line in logs {
+                                match line {
+                                    bollard::container::LogOutput::StdErr { message } => {
+                                        println!("ERR: {}", std::str::from_utf8(message).unwrap())
+                                    }
+                                    bollard::container::LogOutput::StdOut { message } => {
+                                        println!("OUT: {}", std::str::from_utf8(message).unwrap())
+                                    }
+                                    bollard::container::LogOutput::StdIn { message } => {
+                                        println!("IN: {}", std::str::from_utf8(message).unwrap())
+                                    }
+                                    bollard::container::LogOutput::Console { message } => println!(
+                                        "CONSOLE: {}",
+                                        std::str::from_utf8(message).unwrap()
+                                    ),
+                                }
+                            }
+                        }
+                        Some(path) => {
+                            let mut file = OpenOptions::new()
+                                .write(true)
+                                .append(true)
+                                .create(true)
+                                .open(path)
+                                .unwrap();
+
+                            for line in logs {
+                                match line {
+                                    bollard::container::LogOutput::StdErr { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                    bollard::container::LogOutput::StdOut { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                    bollard::container::LogOutput::StdIn { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                    bollard::container::LogOutput::Console { message } => {
+                                        append_log_to_file(message, &mut file)
+                                    }
+                                }
+                            }
+                            // Save logs to file
+                        }
                     }
-
-                    // Show information about running services
-                    // https://docs.rs/bollard/0.1.0/bollard/struct.Docker.html#method.logs
-
-                    // println!("This is the new status method");
                 }
 
                 NetworkCommands::Delete {} => {
@@ -364,4 +410,11 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn append_log_to_file(message: &Bytes, file: &mut File) {
+    let string = std::str::from_utf8(message).unwrap().to_string();
+    if let Err(e) = writeln!(file, "{}", string) {
+        eprintln!("Couldn't write to file: {}", e);
+    }
 }

@@ -23,7 +23,7 @@ ckb-traits = { version = "0.103.0", optional = true}
 ckb-types = { version = "0.103.0", optional = true}
 ckb-util = { version = "0.103.0", optional = true}
 ckb-verification = { version = "0.103.0", optional = true}
-ckb-sdk = {git = "https://github.com/nervosnetwork/ckb-sdk-rust", optional = true}
+ckb-sdk = {git = "https://github.com/nervosnetwork/ckb-sdk-rust", optional = true, rev="f141d9ff2af6895203ab3ab8663ab2f0be7bd3f2"}
 hex = { version = "0.4.3", optional = true}
 includedir = { version = "0.6.0", optional = true}
 jsonrpc-core = { version = "18.0.0", optional = true}
