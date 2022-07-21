@@ -1,4 +1,4 @@
-use std::future::Future;
+use std::fmt::Write;
 
 use bollard::{
     container::CreateContainerOptions, models::PortBinding, network::CreateNetworkOptions,
@@ -81,7 +81,7 @@ impl TrampolineNetwork {
 
     pub async fn status(&self) {
         for service in &self.services {
-            let service_status = ServiceStatus::from(&service).await;
+            let service_status = ServiceStatus::from(service).await;
             println!("{:?}", service_status);
         }
     }
@@ -288,11 +288,9 @@ impl ServiceStatus {
             for (key, value) in map {
                 match value {
                     Some(bindings) => {
-                        let _ = bindings.iter().map(|binding| match &binding.host_port {
-                            Some(host_port) => {
-                                ports_string.push_str(&format!("{}:{} ", key, host_port))
-                            }
-                            _ => {}
+                        let _ = bindings.iter().map(|binding| if let Some(host_port) = &binding.host_port {
+                            
+                            let _ = write!(ports_string, "{}:{} ", key, host_port);
                         });
                     }
                     None => {}
@@ -309,7 +307,7 @@ impl ServiceStatus {
                 "Started at: {}",
                 container_info.state.unwrap().started_at.unwrap()
             )),
-            ports: ports,
+            ports,
         }
         // Err(e) => panic!("Error retrieving container: {}", e),
     }
