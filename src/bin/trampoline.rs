@@ -214,9 +214,8 @@ async fn main() -> Result<()> {
 
                 NetworkCommands::Delete {} => {
                     // Remove network and all containers related to this project
-                    let docker = bollard::Docker::connect_with_local_defaults()
-                        .expect("Failed to connect to Docker API");
-                    println!("This is the new delete method");
+                    let network = TrampolineNetwork::load(&project);
+                    network.delete().await;
                 }
 
                 NetworkCommands::Launch {} => {

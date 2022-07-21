@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use bollard::{
-    container::CreateContainerOptions, models::PortBinding, network::CreateNetworkOptions,
+    container::{CreateContainerOptions, RemoveContainerOptions}, models::PortBinding, network::CreateNetworkOptions,
 };
 use jsonrpc_core::futures_util::future::join_all;
 use serde::{Deserialize, Serialize};
@@ -132,6 +132,23 @@ impl TrampolineNetwork {
         let path = project.root_dir.join("network.toml");
         let toml = toml::to_string(self).expect("Failed converting network config into TOML");
         std::fs::write(path, toml).expect("Failed to write network config to file");
+    }
+
+    pub async fn delete(self) {
+        let docker = bollard::Docker::connect_with_local_defaults()
+            .expect("Failed to connect to Docker API");
+        // Remove all associated containers and their volumes
+        let remove_opts = Some(RemoveContainerOptions {
+            v: true,
+            force: true,
+            link: false,
+        });
+        for service in self.services {
+            docker.remove_container(&service.name, remove_opts).await.expect("Failed to remove docker container");
+        }
+        
+        // Remove user defined network
+        docker.remove_network(&format!("{}-network", self.name)).await.expect("Failed to remove docker network");
     }
 
     pub fn add_service(&mut self, service: &Service) {
