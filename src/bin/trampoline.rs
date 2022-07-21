@@ -7,8 +7,6 @@ use std::str::FromStr;
 use anyhow::anyhow;
 use anyhow::Result;
 use bollard::container::LogsOptions;
-use bollard::models::PortBinding;
-use bollard::network::CreateNetworkOptions;
 use bytes::Bytes;
 use ckb_app_config::BlockAssemblerConfig;
 use ckb_hash::blake2b_256;
@@ -19,9 +17,6 @@ use jsonrpc_core::futures_util::TryStreamExt;
 use structopt::StructOpt;
 
 use trampoline::docker::*;
-use trampoline::network::create_new_network;
-use trampoline::network::Service;
-use trampoline::network::ServiceKind;
 use trampoline::network::TrampolineNetwork;
 use trampoline::opts::{NetworkCommands, SchemaCommand, TrampolineCommand};
 use trampoline::parse_hex;
