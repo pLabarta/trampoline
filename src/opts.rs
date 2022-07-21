@@ -54,7 +54,7 @@ pub enum NetworkCommands {
     Stop {},
     #[structopt(name = "reset", about = "Reset local development network", alias = "r")]
     Reset { service: Option<String> },
-    #[structopt(name = "logs", about = "Reset local development network")]
+    #[structopt(name = "logs", about = "Show logs for a particular network service")]
     Logs {
         service: String,
         #[structopt(short, long)]
