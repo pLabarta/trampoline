@@ -30,10 +30,13 @@ impl std::fmt::Display for TrampolineNetwork {
             "New Trampoline development network inititalized.\n
 Network name: {}-network\n
 Network ID: {}\n
-CKB node port: 8114\n
-Indexer port: 8116",
+Network Services: {:?}",
             self.name,
-            self.id()
+            self.id(),
+            self.services
+                .iter()
+                .map(|service| service.name.clone())
+                .collect::<Vec<String>>()
         )
     }
 }
@@ -129,8 +132,8 @@ impl TrampolineNetwork {
 
     pub async fn status(&self) {
         for service in &self.services {
-            let service_status = ServiceStatus::from(service).await;
-            println!("{:?}", service_status);
+            let service_status = ServiceStatus::from(&service).await;
+            println!("{:#?}", service_status);
         }
     }
 
@@ -363,18 +366,19 @@ impl ServiceStatus {
                 .unwrap();
             let mut ports_string = String::new();
 
-            for (key, value) in map {
-                match value {
-                    Some(bindings) => {
-                        let _ = bindings.iter().map(|binding| {
-                            if let Some(host_port) = &binding.host_port {
-                                let _ = write!(ports_string, "{}:{} ", key, host_port);
-                            }
-                        });
+            for (container_port, bindings) in map {
+                match bindings {
+                    Some(binding) => {
+                        for b in binding {
+                            let host_port = b.host_port.as_ref().unwrap();
+                            let formatted_ports = format!("{}:{}", container_port, host_port);
+                            ports_string.push_str(&formatted_ports);
+                        }
                     }
                     None => {}
                 }
             }
+
             ports_string
         };
 
@@ -388,7 +392,6 @@ impl ServiceStatus {
             )),
             ports,
         }
-        // Err(e) => panic!("Error retrieving container: {}", e),
     }
 }
 
