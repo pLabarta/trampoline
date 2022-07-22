@@ -45,6 +45,11 @@ pub enum NetworkCommands {
     )]
     Init {},
     #[structopt(
+        name = "recreate",
+        about = "Initialize new network from network.toml file"
+    )]
+    Recreate {},
+    #[structopt(
         name = "launch",
         about = "Launch local development network",
         alias = "l"

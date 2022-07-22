@@ -90,13 +90,20 @@ async fn main() -> Result<()> {
                 // TODO add --recreate flag to init
                 NetworkCommands::Init {} => {
                     // Set up new network
-                    let mut network = TrampolineNetwork::new(&project).await;
+                    let mut network = TrampolineNetwork::new(&project, false).await;
 
                     // Add CKB node
-                    let node = network.add_ckb().await;
+                    let node = network
+                        .add_ckb(
+                            &format!("{}-ckb", project.config.name),
+                            vec![("8114".to_string(), "8114".to_string())],
+                        )
+                        .await;
 
                     // Add Indexer
-                    let _indexer = network.add_indexer(&node).await;
+                    let _indexer = network
+                        .add_indexer(&node, vec![("8116".to_string(), "8116".to_string())])
+                        .await;
 
                     // Write config
                     network.save(&project);
@@ -112,6 +119,13 @@ async fn main() -> Result<()> {
                     //         ",
                     //     network.name,
                     //     network.id());
+                }
+
+                NetworkCommands::Recreate {} => {
+                    // Stop all containers related to this project (ckb, ckb-indexer)
+                    let network = TrampolineNetwork::new(&project, true).await;
+                    network.save(&project);
+                    println!("{}", network);
                 }
 
                 NetworkCommands::Stop {} => {
