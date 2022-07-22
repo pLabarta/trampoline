@@ -82,7 +82,7 @@ impl TrampolineNetwork {
     pub async fn status(&self) {
         for service in &self.services {
             let service_status = ServiceStatus::from(&service).await;
-            println!("{:?}", service_status);
+            println!("{:#?}", service_status);
         }
     }
 
@@ -285,19 +285,19 @@ impl ServiceStatus {
                 .unwrap();
             let mut ports_string = String::new();
 
-            for (key, value) in map {
-                match value {
-                    Some(bindings) => {
-                        let _ = bindings.iter().map(|binding| match &binding.host_port {
-                            Some(host_port) => {
-                                ports_string.push_str(&format!("{}:{} ", key, host_port))
-                            }
-                            _ => {}
-                        });
+            for (container_port, bindings) in map {
+                match bindings {
+                    Some(binding) => {
+                        for b in binding {
+                            let host_port = b.host_port.as_ref().unwrap();
+                            let formatted_ports = format!("{}:{}", container_port, host_port);
+                            ports_string.push_str(&formatted_ports);
+                        }
                     }
                     None => {}
                 }
             }
+
             ports_string
         };
 
@@ -311,7 +311,6 @@ impl ServiceStatus {
             )),
             ports: ports,
         }
-        // Err(e) => panic!("Error retrieving container: {}", e),
     }
 }
 
