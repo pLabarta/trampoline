@@ -464,5 +464,5 @@ pub async fn create_new_network(
         ..Default::default()
     };
     let network_respose = docker.create_network(network).await?;
-    Ok(network_respose.id.unwrap_or("default-ckb".into()))
+    Ok(network_respose.id.unwrap_or_else(|| "default-ckb".into()))
 }
