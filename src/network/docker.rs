@@ -9,6 +9,7 @@ use std::process::Command;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use ckb_jsonrpc_types::{Deserialize, Serialize};
 use thiserror::Error;
 
 use std::process::Stdio;
@@ -89,7 +90,7 @@ impl std::fmt::Display for Volume<'_> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DockerPort {
     pub host: usize,
     pub container: usize,

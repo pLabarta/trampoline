@@ -42,6 +42,7 @@ toml = "0.5.8"
 walkdir = "2.3.2"
 trampoline-sdk = {path = "./sdk", features = ["std"], default-features = true}
 bollard = "0.13.0"
+tokio-stream = "0.1.9"
 
 
 [build-dependencies]

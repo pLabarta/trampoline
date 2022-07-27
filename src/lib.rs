@@ -1,15 +1,16 @@
-pub mod docker;
+
 pub mod opts;
 pub mod project;
 pub mod schema;
 pub mod network;
 mod utils;
-
+pub use network::docker;
+pub use utils::*;
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use std::path::Path;
 use tera::{self, Tera};
-pub use utils::*;
+
 
 include!(concat!(env!("OUT_DIR"), "/templates.rs"));
 
@@ -41,7 +42,9 @@ pub enum TrampolineResourceType {
 pub trait TrampolineResource {
     type Error;
     type InitArgs;
-    fn load(path: impl AsRef<Path>) -> Result<TrampolineResourceType, Self::Error>;    fn init(args: Self::InitArgs) -> Result<TrampolineResourceType, Self::Error>;
+    fn load(path: impl AsRef<Path>) -> Result<TrampolineResourceType, Self::Error>;    
+    
+    fn init(args: Self::InitArgs) -> Result<TrampolineResourceType, Self::Error>;
 }
 
 pub fn parse_hex(mut input: &str) -> Result<Vec<u8>> {
