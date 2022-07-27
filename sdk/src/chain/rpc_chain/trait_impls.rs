@@ -1,3 +1,4 @@
+use std::prelude::v1::*;
 use super::*;
 use crate::chain::{CellInputs, Chain};
 use crate::ckb_types::prelude::{Builder, Entity};
@@ -5,7 +6,7 @@ use ckb_sdk::{rpc::ckb_indexer::Order, traits::CellQueryOptions};
 use ckb_types::packed::CellOutput;
 use ckb_types::packed::Script as CkbScript;
 use provider::RpcProvider;
-use std::prelude::v1::*;
+
 
 impl Chain for RpcChain {
     type Inner = RpcProvider;
