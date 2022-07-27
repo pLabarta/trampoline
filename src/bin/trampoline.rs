@@ -229,7 +229,7 @@ async fn main() -> Result<()> {
                 NetworkCommands::Delete {} => {
                     // Remove network and all containers related to this project
                     let network = TrampolineNetwork::load(&project);
-                    network.delete().await;
+                    network.delete().await?;
                 }
 
                 NetworkCommands::Launch {} => {

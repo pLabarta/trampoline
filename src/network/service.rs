@@ -21,6 +21,7 @@ impl AsRef<str> for Service {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ServiceStatus {
     service: Service,

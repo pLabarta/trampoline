@@ -6,12 +6,11 @@ use bollard::{
     models::PortBinding,
     network::CreateNetworkOptions,
 };
-use jsonrpc_core::futures_util::future::{join_all, join};
+use jsonrpc_core::futures_util::future::{join_all};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tokio_stream::{StreamExt, Stream};
-use std::{pin::Pin, sync::Arc};
-use std::task::{Context, Poll};
+use std::{sync::Arc};
+
 use crate::project::TrampolineProject;
 
 
@@ -66,7 +65,7 @@ impl TrampolineNetwork {
                 network.name = old_network.name.clone();
 
                 let services = old_network.services.clone();
-                old_network.delete().await;
+                old_network.delete().await.expect("Failed to delete current network");
                 network.network = create_new_network(project)
                     .await
                     .expect("Failed to create new network");
@@ -93,7 +92,7 @@ impl TrampolineNetwork {
                             Ok(ser) => {
                                 ser
                             },
-                            Err(e) => {
+                            Err(_e) => {
                                 todo!()
                             }
                         }
@@ -121,7 +120,7 @@ impl TrampolineNetwork {
                             Ok(ser) => {
                                 ser
                             },
-                            Err(e) => {
+                            Err(_e) => {
                                 todo!()
                             }
                         }
@@ -177,7 +176,7 @@ impl TrampolineNetwork {
 
     pub async fn status(&self) {
         for service in &self.services {
-            let service_status = ServiceStatus::from(&service).await;
+            let service_status = ServiceStatus::from(service).await;
             println!("{:#?}", service_status);
         }
     }
@@ -249,13 +248,13 @@ impl TrampolineNetwork {
             let dock = Arc::clone(&docker);
             let task = tokio::spawn(async move {
                 let lock = dock.lock().await;
-                lock.remove_container(&service_name, remove_opts.clone()).await
+                lock.remove_container(&service_name, remove_opts).await
              
             });
             service_removals.push(task);
             
         }
-        join_all(service_removals);
+        join_all(service_removals).await;
         
         // Remove user defined network
         docker.lock().await
@@ -318,13 +317,13 @@ impl TrampolineNetwork {
             .expect("Failed creating Indexer container");
         let indexer_id = indexer_container.id;
 
-        let indexer_service = Service {
+        
+        Service {
             name: opts.name,
             id: indexer_id,
             kind: ServiceKind::CkbIndexer,
             ports,
-        };
-        indexer_service
+        }
     }
 
     
@@ -375,15 +374,15 @@ impl TrampolineNetwork {
             .expect("Failed creating CKB container");
         let ckb_id = ckb_container.id;
 
-        let ckb_service = Service {
+        
+
+        
+        Service {
             name: opts.name.to_string(),
             id: ckb_id,
             kind: ServiceKind::Ckb,
             ports,
-        };
-
-        
-        ckb_service
+        }
     }
 
     pub async fn add_ckb(&mut self, name: &str, ports: Vec<(String, String)>) -> Service {
