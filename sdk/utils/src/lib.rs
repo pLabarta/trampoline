@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 pub mod account;
-pub mod transaction;
+mod error;
+pub mod hex;
 pub mod lock;
 pub mod rpc;
-pub mod hex;
-mod error;
+pub mod transaction;
