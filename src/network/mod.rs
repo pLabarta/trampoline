@@ -1,25 +1,24 @@
-mod service;
 pub mod docker;
-use service::{Service, ServiceStatus, ServiceKind};
+mod service;
 use bollard::{
     container::{CreateContainerOptions, RemoveContainerOptions},
     models::PortBinding,
     network::CreateNetworkOptions,
 };
-use jsonrpc_core::futures_util::future::{join_all};
+use jsonrpc_core::futures_util::future::join_all;
 use serde::{Deserialize, Serialize};
+use service::{Service, ServiceKind, ServiceStatus};
+use std::sync::Arc;
 use thiserror::Error;
-use std::{sync::Arc};
 
 use crate::project::TrampolineProject;
-
 
 #[derive(Debug, Error)]
 pub enum NetworkError {
     #[error(transparent)]
     DockerError(#[from] docker::DockerError),
     #[error(transparent)]
-    BollardError(#[from] bollard::errors::Error)
+    BollardError(#[from] bollard::errors::Error),
 }
 
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -30,8 +29,6 @@ pub struct TrampolineNetwork {
     pub network: String,
     pub services: Vec<Service>,
 }
-
-
 
 impl std::fmt::Display for TrampolineNetwork {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -65,7 +62,10 @@ impl TrampolineNetwork {
                 network.name = old_network.name.clone();
 
                 let services = old_network.services.clone();
-                old_network.delete().await.expect("Failed to delete current network");
+                old_network
+                    .delete()
+                    .await
+                    .expect("Failed to delete current network");
                 network.network = create_new_network(project)
                     .await
                     .expect("Failed to create new network");
@@ -75,28 +75,25 @@ impl TrampolineNetwork {
                     .filter(|&service| matches!(&service.kind, ServiceKind::Ckb))
                     .collect();
 
-                
                 let mut ckb_nets = vec![];
                 for node in &nodes {
                     let node = node.to_owned();
                     let id = node.id.clone();
-                    let fut = TrampolineNetwork::spawn_ckb_service(id, node.clone(), node.ports.clone());
-                    let spawn_ckb_net = tokio::spawn(async move{
-                        fut.await
-                    });
-                    ckb_nets.push(spawn_ckb_net);   
+                    let fut =
+                        TrampolineNetwork::spawn_ckb_service(id, node.clone(), node.ports.clone());
+                    let spawn_ckb_net = tokio::spawn(async move { fut.await });
+                    ckb_nets.push(spawn_ckb_net);
                 }
                 let ckb_services = join_all(ckb_nets)
-                    .await.into_iter().map(|s| {
-                        match s {
-                            Ok(ser) => {
-                                ser
-                            },
-                            Err(_e) => {
-                                todo!()
-                            }
+                    .await
+                    .into_iter()
+                    .map(|s| match s {
+                        Ok(ser) => ser,
+                        Err(_e) => {
+                            todo!()
                         }
-                    }).collect::<Vec<_>>();
+                    })
+                    .collect::<Vec<_>>();
 
                 network.services.extend(ckb_services);
                 // Then indexers
@@ -108,23 +105,24 @@ impl TrampolineNetwork {
 
                 for indexer in &indexers {
                     let id = indexer.id.clone();
-                    let fut = TrampolineNetwork::spawn_indexer(id, indexer.name.clone(), indexer.ports.clone());
-                    let spawn_indexer_net = tokio::spawn(async move {
-                        fut.await
-                    });
-                   idx_nets.push(spawn_indexer_net);
+                    let fut = TrampolineNetwork::spawn_indexer(
+                        id,
+                        indexer.name.clone(),
+                        indexer.ports.clone(),
+                    );
+                    let spawn_indexer_net = tokio::spawn(async move { fut.await });
+                    idx_nets.push(spawn_indexer_net);
                 }
-                let indexer_services = join_all(idx_nets).await
-                    .into_iter().map(|i| {
-                        match i {
-                            Ok(ser) => {
-                                ser
-                            },
-                            Err(_e) => {
-                                todo!()
-                            }
+                let indexer_services = join_all(idx_nets)
+                    .await
+                    .into_iter()
+                    .map(|i| match i {
+                        Ok(ser) => ser,
+                        Err(_e) => {
+                            todo!()
                         }
-                    }).collect::<Vec<_>>();
+                    })
+                    .collect::<Vec<_>>();
                 network.services.extend(indexer_services);
 
                 network
@@ -231,8 +229,10 @@ impl TrampolineNetwork {
 
     pub async fn delete(self) -> Result<String> {
         let id = self.id();
-        let docker = Arc::new(tokio::sync::Mutex::new(bollard::Docker::connect_with_local_defaults()?));
-       
+        let docker = Arc::new(tokio::sync::Mutex::new(
+            bollard::Docker::connect_with_local_defaults()?,
+        ));
+
         // Remove all associated containers and their volumes
         let remove_opts = Some(RemoveContainerOptions {
             v: true,
@@ -240,27 +240,25 @@ impl TrampolineNetwork {
             link: false,
         });
         let mut service_removals = vec![];
-        
-        for service in self.services {
 
-           
+        for service in self.services {
             let service_name = service.name.clone();
             let dock = Arc::clone(&docker);
             let task = tokio::spawn(async move {
                 let lock = dock.lock().await;
                 lock.remove_container(&service_name, remove_opts).await
-             
             });
             service_removals.push(task);
-            
         }
         join_all(service_removals).await;
-        
+
         // Remove user defined network
-        docker.lock().await
+        docker
+            .lock()
+            .await
             .remove_network(&format!("{}-network", self.name))
             .await?;
-        
+
         Ok(id)
     }
 
@@ -270,16 +268,23 @@ impl TrampolineNetwork {
         }
     }
 
-    pub async fn add_indexer(&mut self, node_name: impl AsRef<str>, ports: Vec<(String, String)>) -> Service {
+    pub async fn add_indexer(
+        &mut self,
+        node_name: impl AsRef<str>,
+        ports: Vec<(String, String)>,
+    ) -> Service {
         let indexer_service = TrampolineNetwork::spawn_indexer(self.id(), node_name, ports).await;
         self.add_service(&indexer_service);
         indexer_service
     }
 
-
-    pub async fn spawn_indexer(id: String, node_name: impl AsRef<str>, ports: Vec<(String, String)>) -> Service {
+    pub async fn spawn_indexer(
+        id: String,
+        node_name: impl AsRef<str>,
+        ports: Vec<(String, String)>,
+    ) -> Service {
         let docker = bollard::Docker::connect_with_local_defaults()
-        .expect("Failed to connect to Docker API");
+            .expect("Failed to connect to Docker API");
 
         let mut port_bindings = ::std::collections::HashMap::new();
 
@@ -317,7 +322,6 @@ impl TrampolineNetwork {
             .expect("Failed creating Indexer container");
         let indexer_id = indexer_container.id;
 
-        
         Service {
             name: opts.name,
             id: indexer_id,
@@ -326,18 +330,26 @@ impl TrampolineNetwork {
         }
     }
 
-    
-    pub async fn spawn_service(id: String, name: impl AsRef<str>, ports: Vec<(String, String)>, kind: ServiceKind) -> Service {
+    pub async fn spawn_service(
+        id: String,
+        name: impl AsRef<str>,
+        ports: Vec<(String, String)>,
+        kind: ServiceKind,
+    ) -> Service {
         match kind {
             ServiceKind::Ckb => {
                 TrampolineNetwork::spawn_ckb_service(id, name.as_ref(), ports).await
-            },
+            }
             ServiceKind::CkbIndexer => {
                 TrampolineNetwork::spawn_indexer(id, name.as_ref(), ports).await
             }
         }
     }
-    pub async fn spawn_ckb_service(id: String, name: impl AsRef<str>, ports: Vec<(String, String)>) -> Service {
+    pub async fn spawn_ckb_service(
+        id: String,
+        name: impl AsRef<str>,
+        ports: Vec<(String, String)>,
+    ) -> Service {
         let name = name.as_ref();
         let docker = bollard::Docker::connect_with_local_defaults()
             .expect("Failed to connect to Docker API");
@@ -374,9 +386,6 @@ impl TrampolineNetwork {
             .expect("Failed creating CKB container");
         let ckb_id = ckb_container.id;
 
-        
-
-        
         Service {
             name: opts.name.to_string(),
             id: ckb_id,
@@ -452,10 +461,7 @@ impl TrampolineNetwork {
     }
 }
 
-
-pub async fn create_new_network(
-    project: &TrampolineProject,
-) -> Result<String> {
+pub async fn create_new_network(project: &TrampolineProject) -> Result<String> {
     let docker =
         bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
     let network = CreateNetworkOptions {

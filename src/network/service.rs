@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServiceKind {
@@ -6,13 +6,12 @@ pub enum ServiceKind {
     CkbIndexer,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Service {
-   pub name: String,
-   pub id: String,
-   pub kind: ServiceKind,
-   pub ports: Vec<(String, String)>,
+    pub name: String,
+    pub id: String,
+    pub kind: ServiceKind,
+    pub ports: Vec<(String, String)>,
 }
 
 impl AsRef<str> for Service {
