@@ -17,7 +17,7 @@ use anyhow::anyhow;
 use std::string::ToString;
 
 pub const DOCKER_BIN: &str = "docker";
-pub const IMAGE_NAME: &str = "iamm/trampoline-env:latest";
+pub const IMAGE_NAME: &str = "tempest/trampoline-env:latest";
 
 #[derive(Debug, Error)]
 pub enum DockerError {

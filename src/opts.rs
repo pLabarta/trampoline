@@ -29,6 +29,11 @@ pub enum TrampolineCommand {
         #[structopt(flatten)]
         command: SchemaCommand,
     },
+    #[structopt(
+        name = "check",
+        about = "Check a local trampoline project for issues & repair them"
+    )]
+    Check,
     // #[structopt(name = "account", about = "Manage addresses and keys")]
     // Account {
     //     #[structopt(flatten)]

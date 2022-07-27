@@ -78,7 +78,7 @@ fn main() -> Result<()> {
             match command {
                 NetworkCommands::Launch {} => {
                     let image = DockerImage {
-                        name: "iamm/trampoline-env".to_string(),
+                        name: "tempest/trampoline-env".to_string(),
                         tag: Some("latest".to_string()),
                         file_path: Some("./".to_string()),
                         host_mappings: vec![],
@@ -169,7 +169,7 @@ fn main() -> Result<()> {
                 }
                 NetworkCommands::Indexer {} => {
                     let image = DockerImage {
-                        name: "iamm/trampoline-indexer".to_string(),
+                        name: "tempest/trampoline-indexer".to_string(),
                         tag: Some("latest".to_string()),
                         file_path: Some("./".to_string()),
                         host_mappings: vec![],
@@ -237,19 +237,47 @@ fn main() -> Result<()> {
                 }
                 NetworkCommands::Rpc { hash } => {
                     let hash = H256::from_str(hash.as_str())?;
-                    let mut rpc_client = rpc::RpcClient::new();
+                    //let mut rpc_client = rpc::RpcClient::new();
                     let url = format!(
                         "{}:{}",
                         project.config.env.as_ref().unwrap().chain.host,
                         project.config.env.as_ref().unwrap().chain.host_port
                     );
-                    let result = rpc_client.get_transaction(hash, url)?;
+                    let mut rpc_client = rpc::blocking::CkbRpcClient::new(url.as_str());
+                    let result = rpc_client.get_transaction(hash)?;
                     println!("Transaction with status: {}", serde_json::json!(result));
                 }
                 _ => {
                     println!("Command not yet implemented!");
                     std::process::exit(0);
                 }
+            }
+        }
+        TrampolineCommand::Check => {
+            let project = TrampolineProject::from(project?);
+            let has_env = project.has_env_file();
+            let has_private_dir = project.has_trampoline_db_dir();
+
+            if !has_env || !has_private_dir {
+                println!("Missing files or directories:\n");
+            }
+
+            if !has_env {
+                println!("- trampoline-env.toml\n");
+            }
+
+            if !has_private_dir {
+                println!("- .trampoline/\n")
+            }
+
+            if !has_env || !has_private_dir {
+                let regen_res = project.init_private_dirs();
+                match regen_res {
+                    Ok(_) => println!("Successfully regenerated files."),
+                    Err(e) => println!("Error regenerating files: {}", e),
+                }
+            } else {
+                println!("0 issues found");
             }
         }
     }
