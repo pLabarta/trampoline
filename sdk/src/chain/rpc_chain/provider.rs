@@ -441,8 +441,8 @@ impl TransactionResolver for RpcProvider {
                 let mut builder =
                     CellMetaBuilder::from_cell_output(dep_output, dep_data.to_vec().into())
                         .out_point(cell_dep.out_point());
-                if tx_info.is_ok() {
-                    builder = builder.transaction_info(tx_info.unwrap());
+                if let Ok(tx_info) = tx_info {
+                    builder = builder.transaction_info(tx_info);
                 }
                 builder.build()
             })
