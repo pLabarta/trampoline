@@ -53,9 +53,10 @@ fn gen_nft_contract() -> TrampolineNFTContract {
 
     let path_to_nft_bin = Path::new(&out_dir).join("trampoline-nft");
     let bin = ContractSource::load_from_path(path_to_nft_bin).unwrap();
-    let mut contract = TrampolineNFTContract::default();
-    contract.code = Some(JsonBytes::from_bytes(bin));
-    contract
+    TrampolineNFTContract {
+        code: Some(JsonBytes::from_bytes(bin)),
+        ..Default::default()
+    }
 }
 
 fn _gen_tnft_cell_output(contract: &TrampolineNFTContract) -> CellOutput {
