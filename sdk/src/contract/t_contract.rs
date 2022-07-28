@@ -251,15 +251,11 @@ where
         {
             Ok(dep) => Ok(dep),
             Err(_) => {
-                if let Some(src) = &self.source {
-                    if let ContractSource::Chain(outp) = src {
-                        Ok(packed::CellDep::new_builder()
-                            .out_point(outp.clone().into())
-                            .dep_type(ckb_types::core::DepType::Code.into())
-                            .build())
-                    } else {
-                        Err(TContractError::MissingOutpointOnCellDep)
-                    }
+                if let Some(ContractSource::Chain(outp)) = &self.source {
+                    Ok(packed::CellDep::new_builder()
+                        .out_point(outp.clone().into())
+                        .dep_type(ckb_types::core::DepType::Code.into())
+                        .build())
                 } else {
                     Err(TContractError::MissingOutpointOnCellDep)
                 }
