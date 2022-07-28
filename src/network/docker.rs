@@ -2,6 +2,7 @@ use crate::docker;
 use crate::project::VirtualEnv;
 use std::collections::HashMap;
 use std::fmt::Formatter;
+use std::fmt::Write as _;
 use std::io::Write;
 use std::marker::PhantomData;
 use std::process::Command;
@@ -164,7 +165,12 @@ impl std::fmt::Display for DockerImage {
             fmt_string.push_str(self.file_path.as_ref().unwrap());
         }
         if self.tag.is_some() {
-            fmt_string.push_str(&format!(" -t {}:{}", self.name, self.tag.as_ref().unwrap()));
+            let _ = write!(
+                fmt_string,
+                " -t {}:{}",
+                self.name,
+                self.tag.as_ref().unwrap()
+            );
         } else {
             fmt_string.push_str(&self.name.to_string());
         }
