@@ -77,7 +77,7 @@ fn generate_always_success_lock(
     let data_hash = H256::from(blake2b_256(data.to_vec().as_slice()));
     ckb_types::packed::Script::default()
         .as_builder()
-        .args(args.unwrap_or([0u8].pack()))
+        .args(args.unwrap_or_else(|| [0u8].pack()))
         .code_hash(data_hash.pack())
         .hash_type(ckb_types::core::ScriptHashType::Data1.into())
         .build()
@@ -86,7 +86,7 @@ fn generate_simple_udt_cell(sudt_contract: &SudtContract) -> CellOutput {
     let lock = sudt_contract
         .lock
         .clone()
-        .unwrap_or(generate_always_success_lock(None).into());
+        .unwrap_or_else(|| generate_always_success_lock(None).into());
     CellOutput::new_builder()
         .capacity(100_u64.pack())
         .type_(
