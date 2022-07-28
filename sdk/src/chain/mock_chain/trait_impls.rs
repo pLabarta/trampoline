@@ -210,7 +210,7 @@ impl Chain for MockChain {
 
     fn deploy_cells(
         &mut self,
-        cells: &Vec<Cell>,
+        cells: &[Cell],
         _unlockers: Unlockers,
         _inputs: &CellInputs,
     ) -> ChainResult<Vec<OutPoint>> {

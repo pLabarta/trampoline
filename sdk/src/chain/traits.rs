@@ -59,7 +59,7 @@ pub trait Chain {
     ) -> ChainResult<OutPoint>;
     fn deploy_cells(
         &mut self,
-        cells: &Vec<Cell>,
+        cells: &[Cell],
         unlockers: Unlockers,
         inputs: &CellInputs,
     ) -> ChainResult<Vec<OutPoint>>;

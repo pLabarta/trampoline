@@ -51,7 +51,7 @@ impl Chain for RpcChain {
 
     fn deploy_cells(
         &mut self,
-        cells: &Vec<crate::types::cell::Cell>,
+        cells: &[crate::types::cell::Cell],
         unlockers: crate::chain::Unlockers,
         inputs: &crate::chain::CellInputs,
     ) -> crate::chain::ChainResult<Vec<OutPoint>> {
@@ -63,7 +63,7 @@ impl Chain for RpcChain {
         };
 
         let mut builder = TransactionBuilder::default();
-        builder = builder.add_outputs(cells.clone());
+        builder = builder.add_outputs(cells.to_vec());
         builder
             .balance(inputs_script.clone().into(), None, self)
             .expect("Failed to balance transaction");
