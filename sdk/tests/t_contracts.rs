@@ -57,11 +57,11 @@ fn _generate_simple_udt_cell(sudt_contract: &SudtTrampolineContract) -> CellOutp
 }
 
 fn generate_mock_tx(outputs: Vec<Cell>) -> TransactionView {
-    let outputs_data = outputs.iter().map(|c| c.data()).collect::<Vec<_>>();
+    let outputs_data = outputs.iter().map(|c| c.data());
     let outputs = outputs.iter().map(CellOutput::from).collect::<Vec<_>>();
     TransactionBuilder::default()
         .outputs(outputs)
-        .outputs_data(outputs_data.into_iter().map(|b| b.into()))
+        .outputs_data(outputs_data.map(|b| b.into()))
         .build()
 }
 
