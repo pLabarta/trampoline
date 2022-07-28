@@ -556,7 +556,7 @@ mod tests {
         let _genesis_scripts = GenesisScripts::default();
 
         // Run genesis event on the mockchain with the scripts
-        let _scripts = genesis_event(&mut chain);
+        genesis_event(&mut chain);
 
         // Generate genesis block
         let genesis_block = genesis_block_from_chain(&mut chain);

@@ -317,7 +317,7 @@ impl TransactionProvider for RpcProvider {
         let _converted_tx_view = packed_tx.as_advanced_builder().build();
         let non_contextual = NonContextualTransactionVerifier::new(&rtx.transaction, &consensus);
         let transaction_verifier = TransactionScriptsVerifier::new(&rtx, &consensus, self, &tx_env);
-        let _verifier = {
+        {
             let script_verif = transaction_verifier.verify(MAX_CYCLES);
             let non_context_verif = non_contextual.verify();
             match script_verif {
