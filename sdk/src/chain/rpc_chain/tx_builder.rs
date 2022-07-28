@@ -91,7 +91,7 @@ impl TransactionBuilder {
         let mut collector =
             DefaultCellCollector::new(chain.indexer_url.as_str(), chain.ckb_url.as_str());
 
-        let mut provider = chain.inner();
+        let provider = chain.inner();
 
         let cell_dep_resolver =
             DefaultCellDepResolver::from_genesis(&chain.genesis_block().unwrap())
@@ -103,7 +103,7 @@ impl TransactionBuilder {
             &self.inner.clone().build(),
             &balancer,
             &mut collector,
-            &mut provider,
+            &provider,
             &cell_dep_resolver,
             &header_dep_resolver,
         );
