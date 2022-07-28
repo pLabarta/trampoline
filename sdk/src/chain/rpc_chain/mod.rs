@@ -4,6 +4,7 @@ use std::prelude::v1::*;
 use super::{Chain, ChainError};
 
 use ckb_jsonrpc_types::{ScriptHashType, TransactionWithStatus};
+#[allow(unused_imports)]
 use ckb_sdk::IndexerRpcClient;
 pub use provider::*;
 pub use trait_impls::*;
@@ -64,5 +65,13 @@ impl RpcChain {
 
     pub fn default_lock(&self) -> Option<OutPoint> {
         self.default_lock.clone()
+    }
+
+    pub fn reset(&self) -> Result<(), ChainError> {
+        self.inner().rollback(0)
+    }
+
+    pub fn mine_once(&self) -> Result<H256, ChainError> {
+        self.inner().mine_once()
     }
 }

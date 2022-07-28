@@ -1,10 +1,8 @@
-use std::prelude::v1::*;
 use super::genesis_info::genesis_event;
 use crate::chain::mock_chain::MAX_CYCLES;
 use crate::chain::*;
 use crate::contract::generator::{QueryProvider, TransactionProvider};
 use crate::query::{CellQuery, CellQueryAttribute, QueryStatement};
-
 
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
@@ -190,10 +188,10 @@ impl Chain for MockChain {
         Ok(self.deploy_cell_output(data, outp))
     }
 
-    fn set_default_lock(&mut self, lock: Cell) -> Result<(), ChainError> {
-        let (outp, data) = (lock.clone().into(), lock.data());
-        let outpoint = self.deploy_cell_output(data.into(), outp);
-        self.default_lock = Some(outpoint);
+    fn set_default_lock(&mut self, lock: OutPoint) -> Result<(), ChainError> {
+        // let (outp, data) = (lock.clone().into(), lock.data());
+        // let outpoint = self.deploy_cell_output(data.into(), outp);
+        self.default_lock = Some(lock);
         Ok(())
     }
 
