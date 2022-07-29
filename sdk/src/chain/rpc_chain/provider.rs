@@ -303,14 +303,6 @@ impl TransactionProvider for RpcProvider {
         }
         println!("Resolved TX: Ok");
 
-        let tx_env = {
-            let epoch = EpochNumberWithFraction::new(300, 0, 1);
-            let header = HeaderView::new_advanced_builder()
-                .epoch(epoch.pack())
-                .build();
-            TxVerifyEnv::new_commit(&header)
-        };
-
         let packed_tx = CkbTransaction::from(tx.inner);
         let rtx = resolved_tx.unwrap();
         let _converted_tx_view = packed_tx.as_advanced_builder().build();

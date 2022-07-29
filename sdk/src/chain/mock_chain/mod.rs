@@ -340,8 +340,6 @@ impl MockChain {
         &self,
         tx: &TransactionView,
         max_cycles: u64,
-        consensus: &Consensus,
-        tx_env: &TxVerifyEnv,
     ) -> Result<Cycle, CKBError> {
         self.verify_tx_consensus(tx)?;
         let resolved_tx = self.build_resolved_tx(tx);
@@ -369,29 +367,7 @@ impl MockChain {
     ///   - use HardForkSwitch to set `rfc_0032` field to 200 (means enable VM selection feature after epoch 200)
     ///   - use TxVerifyEnv to set currently transaction `epoch` number to 300
     pub fn verify_tx(&self, tx: &TransactionView, max_cycles: u64) -> Result<Cycle, CKBError> {
-        let consensus = {
-            let hardfork_switch = HardForkSwitch::new_builder()
-                .rfc_0028(0)
-                .rfc_0029(0)
-                .rfc_0030(0)
-                .rfc_0031(0)
-                .rfc_0032(0)
-                .rfc_0036(0)
-                .rfc_0038(0)
-                .build()
-                .unwrap();
-            ConsensusBuilder::default()
-                .hardfork_switch(hardfork_switch)
-                .build()
-        };
-        let tx_env = {
-            let epoch = EpochNumberWithFraction::new(300, 0, 1);
-            let header = HeaderView::new_advanced_builder()
-                .epoch(epoch.pack())
-                .build();
-            TxVerifyEnv::new_commit(&header)
-        };
-        self.verify_tx_by_context(tx, max_cycles, &consensus, &tx_env)
+        self.verify_tx_by_context(tx, max_cycles)
     }
 
     pub fn receive_tx(&mut self, tx: &TransactionView) -> Result<Byte32, CKBError> {
