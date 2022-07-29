@@ -11,8 +11,7 @@ use ckb_sdk::traits::{TransactionDependencyError, TransactionDependencyProvider}
 use ckb_sdk::CkbRpcClient;
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{
-    resolve_transaction_with_options, CellMeta, CellMetaBuilder, CellProvider, CellStatus,
-    HeaderChecker, ResolveOptions,
+    resolve_transaction, CellMeta, CellMetaBuilder, CellProvider, CellStatus, HeaderChecker,
 };
 use ckb_types::core::error::OutPointError;
 use ckb_types::core::{cell::ResolvedTransaction, hardfork::HardForkSwitch, TransactionView};
@@ -316,7 +315,7 @@ impl TransactionProvider for RpcProvider {
         let rtx = resolved_tx.unwrap();
         let _converted_tx_view = packed_tx.as_advanced_builder().build();
         let non_contextual = NonContextualTransactionVerifier::new(&rtx.transaction, &consensus);
-        let transaction_verifier = TransactionScriptsVerifier::new(&rtx, &consensus, self, &tx_env);
+        let transaction_verifier = TransactionScriptsVerifier::new(&rtx, self);
         {
             let script_verif = transaction_verifier.verify(MAX_CYCLES);
             let non_context_verif = non_contextual.verify();
@@ -367,11 +366,7 @@ impl CellDataProvider for RpcProvider {
 // }
 
 pub fn dummy_consensus() -> Consensus {
-    let hardfork_switch = HardForkSwitch::new_without_any_enabled()
-        .as_builder()
-        .rfc_0032(200)
-        .build()
-        .unwrap();
+    let hardfork_switch = HardForkSwitch::new_builder().rfc_0032(200).build().unwrap();
     ConsensusBuilder::default()
         .hardfork_switch(hardfork_switch)
         .build()
@@ -465,13 +460,7 @@ impl RpcProvider {
         let transaction = tx.into();
         let mut seen_inputs: HashSet<ckb_types::packed::OutPoint, _> = HashSet::new();
 
-        let rtx = resolve_transaction_with_options(
-            transaction,
-            &mut seen_inputs,
-            self,
-            self,
-            ResolveOptions::default(),
-        );
+        let rtx = resolve_transaction(transaction, &mut seen_inputs, self, self);
 
         match rtx {
             Ok(rtx) => Ok(rtx),
@@ -494,9 +483,14 @@ impl RpcProvider {
             }
         };
 
-        let hardfork_switch = HardForkSwitch::new_without_any_enabled()
-            .as_builder()
-            .rfc_0032(200)
+        let hardfork_switch = HardForkSwitch::new_builder()
+            .rfc_0028(0)
+            .rfc_0029(0)
+            .rfc_0030(0)
+            .rfc_0031(0)
+            .rfc_0032(0)
+            .rfc_0036(0)
+            .rfc_0038(0)
             .build()
             .unwrap();
 

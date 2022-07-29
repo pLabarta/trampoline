@@ -345,7 +345,7 @@ impl MockChain {
     ) -> Result<Cycle, CKBError> {
         self.verify_tx_consensus(tx)?;
         let resolved_tx = self.build_resolved_tx(tx);
-        let mut verifier = TransactionScriptsVerifier::new(&resolved_tx, consensus, self, tx_env);
+        let mut verifier = TransactionScriptsVerifier::new(&resolved_tx, self);
         if self.debug {
             let captured_messages = self.messages.clone();
             verifier.set_debug_printer(move |id, message| {
@@ -370,9 +370,14 @@ impl MockChain {
     ///   - use TxVerifyEnv to set currently transaction `epoch` number to 300
     pub fn verify_tx(&self, tx: &TransactionView, max_cycles: u64) -> Result<Cycle, CKBError> {
         let consensus = {
-            let hardfork_switch = HardForkSwitch::new_without_any_enabled()
-                .as_builder()
-                .rfc_0032(200)
+            let hardfork_switch = HardForkSwitch::new_builder()
+                .rfc_0028(0)
+                .rfc_0029(0)
+                .rfc_0030(0)
+                .rfc_0031(0)
+                .rfc_0032(0)
+                .rfc_0036(0)
+                .rfc_0038(0)
                 .build()
                 .unwrap();
             ConsensusBuilder::default()

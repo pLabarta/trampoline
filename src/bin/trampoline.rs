@@ -39,6 +39,10 @@ fn create_block_assembler_from_pkhash(hash: &[u8]) -> BlockAssemblerConfig {
         args: JsonBytes::from_bytes(bytes::Bytes::copy_from_slice(hash)),
         message: JsonBytes::default(),
         binary_version: "".to_string(),
+        update_interval_millis: 800,
+        notify: vec![],
+        notify_scripts: vec![],
+        notify_timeout_millis: 800,
     }
 }
 

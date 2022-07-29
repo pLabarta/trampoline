@@ -6,43 +6,43 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = { version = "1.0.56", optional = true }
+anyhow = { version = "1.0.58", optional = true }
 blake2b-rs = { version = "0.2.0", optional = true }
-bytes = { version = "1.1.0", optional = true }
+bytes = { version = "1.2.0", optional = true }
 ckb-always-success-script = { version = "0.0.1", optional = true }
 blake2b-ref = { version = "0.3.0", optional = true }
-ckb-chain-spec = { version = "0.103.0", optional = true }
-ckb-crypto = { version = "0.103.0", features = ["secp"], optional = true }
-ckb-error = { version = "0.103.0", optional = true }
-ckb-hash = { version = "0.103.0", optional = true }
-ckb-jsonrpc-types = { version = "0.103.0", optional = true }
-ckb-resource = { version = "0.103.0", optional = true }
-ckb-script = { version = "0.103.0", optional = true }
+ckb-chain-spec = { version = "0.104.0", optional = true }
+ckb-crypto = { version = "0.104.0", features = ["secp"], optional = true }
+ckb-error = { version = "0.104.0", optional = true }
+ckb-hash = { version = "0.104.0", optional = true }
+ckb-jsonrpc-types = { version = "0.104.0", optional = true }
+ckb-resource = { version = "0.104.0", optional = true }
+ckb-script = { version = "0.104.0", optional = true }
 ckb-system-scripts = { version = "0.5.4", optional = true }
-ckb-traits = { version = "0.103.0", optional = true }
-ckb-types = { version = "0.103.0", optional = true }
-ckb-util = { version = "0.103.0", optional = true }
-ckb-verification = { version = "0.103.0", optional = true }
-ckb-sdk = { git = "https://github.com/nervosnetwork/ckb-sdk-rust", rev = "fa6b9b56d6a29fe7fe6d4fd50900b06ca3797639", optional = true }
+ckb-traits = { version = "0.104.0", optional = true }
+ckb-types = { version = "0.104.0", optional = true }
+ckb-util = { version = "0.104.0", optional = true }
+ckb-verification = { version = "0.104.0", optional = true }
+ckb-sdk = { version = "1.1.0", optional = true }
 hex = { version = "0.4.3", optional = true }
 includedir = { version = "0.6.0", optional = true }
 jsonrpc-core = { version = "18.0.0", optional = true }
-molecule = { version = "0.7.2", default-features = false }
-phf = { version = "0.10.1", optional = true }
+molecule = { version = "0.7.3", default-features = false }
+phf = { version = "0.11.0", optional = true }
 rand = { version = "0.8.5", optional = true }
-reqwest = { version = "0.11.10", features = [
+reqwest = { version = "0.11.11", features = [
     "json",
     "blocking",
 ], optional = true }
-serde = { version = "1.0.136", features = ["derive"], optional = true }
-serde_json = { version = "1.0.79", optional = true }
-thiserror = { version = "1.0.30", optional = true }
-tokio = { version = "1.17.0", features = ["full"], optional = true }
-toml = { version = "0.5.8", optional = true }
+serde = { version = "1.0.140", features = ["derive"], optional = true }
+serde_json = { version = "1.0.82", optional = true }
+thiserror = { version = "1.0.31", optional = true }
+tokio = { version = "1.20.1", features = ["full"], optional = true }
+toml = { version = "0.5.9", optional = true }
 ckb-standalone-types = { version = "0.1.2", default-features = false, optional = true }
-secp256k1 = { version = "0.20", features = ["recovery"], optional = true }
+secp256k1 = { version = "=0.20.0", features = ["recovery"], optional = true }
 no-std-compat = { version = "0.4.1", features = ["alloc"] }
-lru = { version = "0.7.6", optional = true }
+lru = { version = "0.7.8", optional = true }
 
 [dev-dependencies]
 serial_test = "0.8.0"
