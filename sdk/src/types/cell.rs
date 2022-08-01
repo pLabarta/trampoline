@@ -92,6 +92,9 @@ pub mod cell_error {
 pub use cell_error::*;
 pub type CellResult<T> = Result<T, CellError>;
 
+/// Cells are the primary state units in CKB and assets owned by users.
+///
+/// They must follow associated validation rules specified by scripts.
 #[cfg_attr(all(feature = "std", not(feature = "script")), derive(Debug))]
 #[derive(Clone, Default)]
 pub struct Cell {
@@ -115,6 +118,7 @@ pub struct Cell {
 // }
 
 impl Cell {
+    /// Create a new Cell with a data field from bytes.
     pub fn with_data(data: impl Into<Bytes>) -> Self {
         let data: Bytes = data.into();
 
@@ -131,6 +135,7 @@ impl Cell {
         cell
     }
 
+    /// Create a new Cell with a specific lock.
     pub fn with_lock(script: impl Borrow<Script>) -> Self {
         Self {
             data: Default::default(),
@@ -141,6 +146,7 @@ impl Cell {
         }
     }
 
+    /// Returns the capacity required for the cell to hold itself
     pub fn required_capacity(&self) -> CellResult<Capacity> {
         let type_script_size = match &self.type_script {
             Some(script) => {
@@ -159,8 +165,7 @@ impl Cell {
             .safe_add(capacity_field_req)?;
         Ok(total_size)
     }
-    /// Ensure the total cell size <= min required capacity
-    /// Ensure that the capacity in the cell >= min required capacity
+    /// Ensure the total cell size <= min required capacity and that the capacity in the cell >= min required capacity
     pub fn validate(&self) -> CellResult<Capacity> {
         match &self.type_script {
             Some(script) => {
@@ -172,10 +177,12 @@ impl Cell {
         self.required_capacity()
     }
 
+    /// Get the cell's lock hash
     pub fn lock_hash(&self) -> CellResult<H256> {
         self.lock_script.validate().map_err(CellError::ScriptError)
     }
 
+    /// Get the cell's type hash
     pub fn type_hash(&self) -> CellResult<Option<H256>> {
         if let Some(script) = &self.type_script {
             script.validate().map_err(CellError::ScriptError).map(Some)
@@ -184,48 +191,60 @@ impl Cell {
         }
     }
 
+    /// Get the cell's type script, if it has one
     pub fn type_script(&self) -> CellResult<Option<Script>> {
         Ok(self.type_script.clone())
     }
 
+    /// Get the cell's lock script
     pub fn lock_script(&self) -> CellResult<Script> {
         Ok(self.lock_script.clone())
     }
+
+    /// Get the cell's capacity
     pub fn capacity(&self) -> Capacity {
         self.capacity
     }
 
+    /// Get the cell's data size in bytes
     pub fn data_size(&self) -> usize {
         self.data.len()
     }
 
+    /// Get the cell's outpoint, if it was included in a transaction
     pub fn outpoint(&self) -> Option<OutPoint> {
         self.outpoint.clone()
     }
 
+    /// Get the cell's data hash
     pub fn data_hash(&self) -> H256 {
         self.data.hash_256()
     }
 
+    /// Get the cell's data as bytes
     pub fn data(&self) -> Bytes {
         self.data.clone()
     }
 
+    /// Set the cell's lock script
     pub fn set_lock_script(&mut self, script: impl Into<Script>) -> CellResult<()> {
         self.lock_script = script.into();
         Ok(())
     }
 
+    /// Set the cell's type script
     pub fn set_type_script(&mut self, script: impl Into<Script>) -> CellResult<()> {
         self.type_script = Some(script.into());
         Ok(())
     }
 
+    /// Set the arguments for the cell's lock script
     pub fn set_lock_args(&mut self, bytes: impl Into<Bytes>) -> CellResult<()> {
         self.lock_script.set_args(bytes);
         Ok(())
     }
 
+    /// Set the arguments for the cell's type script
     pub fn set_type_args(&mut self, bytes: impl Into<Bytes>) -> CellResult<()> {
         if let Some(script) = &mut self.type_script {
             script.set_args(bytes);
@@ -234,27 +253,31 @@ impl Cell {
             Err(CellError::MissingTypeScript)
         }
     }
-
+    /// Set the cell's data field
     pub fn set_data(&mut self, data: impl Into<Bytes>) -> CellResult<()> {
         self.data = data.into();
         Ok(())
     }
 
+    /// Set the cell's outpoint
     pub fn set_outpoint(&mut self, outp: OutPoint) -> CellResult<()> {
         self.outpoint = Some(outp);
         Ok(())
     }
 
+    /// Set the cell's capacity in CKB (1 CKB equals to 10**8 shannons)
     pub fn set_capacity_ckbytes(&mut self, capacity: u64) -> CellResult<()> {
         self.capacity = Capacity::bytes(capacity as usize)?;
         Ok(())
     }
 
+    /// Set the cell's capacity in Shannons (1 CKB equals to 10**8 shannons)
     pub fn set_capacity_shannons(&mut self, capacity: u64) -> CellResult<()> {
         self.capacity = Capacity::shannons(capacity);
         Ok(())
     }
 
+    /// Build the cell as a CellDep to be used in transactions without being consumed
     pub fn as_cell_dep(&self, _dep_type: DepType) -> CellResult<CellDep> {
         if let Some(outp) = self.outpoint() {
             Ok(CellDep::new_builder()
