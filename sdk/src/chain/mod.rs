@@ -1,8 +1,9 @@
-use std::prelude::v1::*;
-mod error;
-mod mock_chain;
+pub mod mock_chain;
 pub mod rpc_chain;
+
+mod error;
 mod traits;
+
 pub use error::*;
 pub use mock_chain::*;
 pub use rpc_chain::*;
@@ -11,6 +12,7 @@ pub use traits::*;
 use crate::types::cell::{Cell, CellOutputWithData};
 use ckb_types::{core::TransactionView, packed::Byte32, prelude::*};
 use ckb_verification::TransactionError;
+use std::prelude::v1::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {

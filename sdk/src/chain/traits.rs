@@ -25,10 +25,16 @@ impl From<Script> for CellInputs {
 
 use super::{ChainError, ChainResult};
 use ckb_jsonrpc_types::TransactionView as JsonTransaction;
-// Modify trait TransactionProvider to be more flexible about input type
-// Then define TransactionProviderError to use in Chain trait
-// This way, anything that accepts TransactionProvider trait can accept chain trait
+
+/// Universal API for interacting with CKB blockchains
+///
+/// This trait is implemented by [`RpcChain`] and [`MockChain`]. It provides
+/// a standard interface for verifying and sending transactions, deploying cells
+/// and specifying the default lock these methods should use.
 pub trait Chain {
+    // Modify trait TransactionProvider to be more flexible about input type
+    // Then define TransactionProviderError to use in Chain trait
+    // This way, anything that accepts TransactionProvider trait can accept chain trait
     type Inner: TransactionProvider;
 
     fn inner(&self) -> Self::Inner;
