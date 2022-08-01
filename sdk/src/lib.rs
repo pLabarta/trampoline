@@ -1,3 +1,54 @@
+#![warn(missing_docs)]
+
+//! # Trampoline SDK
+//!
+//! Welcome to Trampoline SDK documentation!
+//!
+//! Trampoline is a Software Development Kit for
+//! creating full-stack decentralized applications
+//! on Nervos Network's Common Knowledge Base blockchain.
+//!
+//! ## Usage
+//!
+//! Depends on `trampoline-sdk` in `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! trampoline-sdk = { git = "https://github.com/Tempest-Protocol/trampoline", path = "sdk", branch = "develop" }
+//! ```
+//! <small>Please note that Trampoline is in early stages and under active
+//! development. The API can change drastically.</small>
+//!
+//! Here is an example of how to simulate deploying a cell
+//! on a CKB blockchain:
+//!
+//! ```rust,no_run
+//! use trampoline_sdk::chain::{Chain,MockChain};
+//! use trampoline_sdk::cell::Cell;
+//!
+//! let chain = MockChain::default();
+//! let cell = Cell::default();
+//! let outpoint = chain.deploy_cell(cell).expect("Failed to deploy cell");
+//! ```
+//!
+//! ## Features
+//!
+//! Trampoline is intended to be used in projects with a variety of
+//! compile targets and provides different features for each one:
+//!
+//! | Feature   | Description                                             |
+//! |-----------|---------------------------------------------------------|
+//! | `std` | Standard set of features for non-contract development. |
+//! | `script` | Reduced set of features for creating CKB on-chain scripts.                |
+//! | `rpc`    | Support for interacting with CKB nodes and indexers through RPC.          |
+//!
+//! Disabled features can be selectively enabled in `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! rocket = trampoline-sdk = { git = "https://github.com/Tempest-Protocol/trampoline", path = "sdk", branch = "develop", features = ["rpc"] }
+//! ```
+
 // allow unused imports for now since many unused imports are present
 // because they'll be used in the near future
 #![allow(unused_imports)]
