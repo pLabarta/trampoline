@@ -1,3 +1,5 @@
+//! Hashes and default configs for CKB
+
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub use ckb_sdk::constants::*;
 

@@ -103,6 +103,7 @@ macro_rules! impl_std_convert {
     };
 }
 
+/// Types and methods for handling Blake2b hashes
 #[cfg(feature = "script")]
 pub mod ckb_hash {
     use crate::ckb_types::bytes::Bytes;
@@ -144,10 +145,14 @@ pub mod ckb_hash {
         result
     }
 }
+
+/// Types and methods for handling Blake2b hashes
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub mod ckb_hash {
     pub use ckb_hash::*;
 }
+
+/// Types from the official CKB types lib
 pub mod ckb_types {
     #[cfg(feature = "script")]
     pub use ckb_standalone_types::prelude::{Builder, Entity, Pack, PackVec, Reader, Unpack};
@@ -476,6 +481,7 @@ pub mod ckb_types {
     pub use ckb_types::*;
 }
 
+/// Precompiled contracts for creating standard and non-fungible tokens
 pub mod precompiled {
     pub const SUDT: &[u8] = include_bytes!("../binaries/simple_udt");
     pub const TNFT: &[u8] = include_bytes!("../binaries/trampoline-nft");

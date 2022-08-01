@@ -1,4 +1,4 @@
-// Modules usable within on-chain scripts
+//! Modules usable within on-chain scripts
 pub mod schema;
 pub use schema::*;
 pub mod builtins;

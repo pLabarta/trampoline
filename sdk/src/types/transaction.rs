@@ -1,3 +1,5 @@
+//! Types for handling and creating CKB transactions
+
 use super::cell::CellOutputWithData;
 use crate::ckb_types::core::cell::CellMeta;
 use crate::ckb_types::core::{TransactionBuilder, TransactionView};

@@ -1,3 +1,4 @@
+//! Types for handling CKB cells
 use crate::ckb_types::{
     core::{Capacity, DepType},
     packed::{CellDep, CellOutput, OutPoint},

@@ -1,3 +1,5 @@
+//! Types for handling CKB scripts
+
 use std::prelude::v1::*;
 
 #[cfg(all(feature = "std", not(feature = "script")))]

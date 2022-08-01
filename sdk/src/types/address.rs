@@ -1,3 +1,5 @@
+//! Types for handling CKB addresses
+
 use std::fmt;
 use std::prelude::v1::*;
 use std::str::FromStr;

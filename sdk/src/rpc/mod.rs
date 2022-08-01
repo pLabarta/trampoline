@@ -1,3 +1,5 @@
+//! Clients for interacting with CKB services
+
 // use std::cell::RefCell;
 
 // use ckb_sdk::{IndexerRpcClient, CkbRpcClient};

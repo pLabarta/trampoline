@@ -1,3 +1,5 @@
+//! Types for creating custom queries for CKB Indexer
+
 use ckb_jsonrpc_types::{Byte32, Capacity, Script};
 use std::prelude::v1::*;
 

@@ -1,3 +1,5 @@
+//! Types and Traits for interacting with CKB blockchains
+
 pub mod mock_chain;
 pub mod rpc_chain;
 

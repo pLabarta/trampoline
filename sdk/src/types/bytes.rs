@@ -1,3 +1,5 @@
+//! Wrapper for different kind of Bytes objects
+
 use std::prelude::v1::*;
 
 // When in no-std mode, both CKBytes and PackedBytes are the same
