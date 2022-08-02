@@ -1,0 +1,62 @@
+name: Build Docs
+
+on:
+  push:
+    branches:
+      - docs-ci
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: master
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Build Docs
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --no-deps --manifest-path sdk/Cargo.toml
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: docs
+          path: target/doc
+
+  commit-build:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repo
+        uses: actions/checkout@v2
+        with:
+          ref: docs-build
+
+      - name: Configure Git
+        run: |
+          git config --global user.email ${GITHUB_ACTOR}@gmail.com
+          git config --global user.name ${GITHUB_ACTOR}
+
+      - name: Download docs build
+        uses: actions/download-artifact@v1
+        with:
+          name: docs
+          path: docs
+
+      - name: Commit and Push
+        run: |
+          if [ $(git status --porcelain=v1 2>/dev/null | wc -l) != "0" ] ; then
+            git add -f public
+            git commit -m "gh-actions deployed a new website build"
+            git push --force https://${GITHUB_ACTOR}:$@github.com/${GITHUB_REPOSITORY}.git HEAD:website-build
+          fi
