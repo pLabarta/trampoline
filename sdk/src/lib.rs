@@ -23,12 +23,17 @@
 //! on a CKB blockchain:
 //!
 //! ```rust,no_run
-//! use trampoline_sdk::chain::{Chain,MockChain};
+//! use std::collections::HashMap;
 //! use trampoline_sdk::cell::Cell;
+//! use trampoline_sdk::chain::{CellInputs, Chain, MockChain};
 //!
-//! let chain = MockChain::default();
-//! let cell = Cell::default();
-//! let outpoint = chain.deploy_cell(cell).expect("Failed to deploy cell");
+//! fn test_this() {
+//!     let mut chain = MockChain::default();
+//!     let cell = Cell::default();
+//!     let outpoint = chain
+//!         .deploy_cell(&cell, HashMap::new(), &CellInputs::Empty)
+//!         .expect("Failed to deploy cell");
+//! }
 //! ```
 //!
 //! ## Features
