@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["OutPointError","Errors due to the fact that the out-point rules are not respected."],["TransactionError","The error types to transactions."],["TransactionErrorSource","Enum represent transaction relate error source"]]});

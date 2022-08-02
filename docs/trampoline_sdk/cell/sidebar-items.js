@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CellError",""]],"mod":[["cell_error",""]],"struct":[["Cell","Cells are the primary state units in CKB and assets owned by users."]],"type":[["CellOutputWithData",""],["CellResult",""]]});

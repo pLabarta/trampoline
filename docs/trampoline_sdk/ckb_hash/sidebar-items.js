@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["BLAKE2B_LEN","Output digest size."],["BLANK_HASH","The hash output on empty input."],["CKB_HASH_PERSONALIZATION","Blake2b personalization."]],"fn":[["blake2b_256","Hashes the slice of binary and returns the digest."],["new_blake2b","Creates a new hasher."]],"struct":[["Blake2b",""],["Blake2bBuilder",""]]});

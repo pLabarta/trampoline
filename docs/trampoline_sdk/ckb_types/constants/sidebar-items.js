@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["BLOCK_VERSION","Current block version."],["TX_VERSION","Current transaction version."]]});

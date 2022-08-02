@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["trampoline_sdk"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.62.1/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"trampoline_sdk/address/struct.Address.html\" title=\"struct trampoline_sdk::address::Address\">Address</a>","synthetic":false,"types":["trampoline_sdk::types::address::Address"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Reject","TX reject message"],["TxStatus","Tx-pool transaction status"]],"struct":[["TxEntryInfo","Tx-pool entry info"],["TxPoolEntryInfo","All in-pool transaction entry info"],["TxPoolIds","Array of transaction ids"]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["DEFAULT_CHANNEL_SIZE","Default channel size to send messages."],["SIGNAL_CHANNEL_SIZE","Default channel size to send control signals."]],"struct":[["PoolTransactionEntry","Notify pool transaction entry"],["Request","Synchronous request sent to the service."]]});
