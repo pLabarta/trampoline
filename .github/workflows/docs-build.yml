@@ -58,5 +58,5 @@ jobs:
           if [ $(git status --porcelain=v1 2>/dev/null | wc -l) != "0" ] ; then
             git add -f docs
             git commit -m "gh-actions deployed a new docs build"
-            git push --force https://${GITHUB_ACTOR}:$@github.com/${GITHUB_REPOSITORY}.git HEAD:docs-build
+            git push --force https://github.com/${GITHUB_REPOSITORY} HEAD:docs-build
           fi
