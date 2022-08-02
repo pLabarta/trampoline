@@ -12,7 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
-          ref: master
+          ref: docs-ci
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
