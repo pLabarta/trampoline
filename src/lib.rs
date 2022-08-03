@@ -98,6 +98,7 @@ pub use utils::*;
 include!(concat!(env!("OUT_DIR"), "/templates.rs"));
 
 lazy_static! {
+    /// This creates the template files for a trampoline project.
     pub static ref TEMPLATES: Tera = {
         let mut tera = Tera::default();
         for path in DAPP_FILES.file_names() {

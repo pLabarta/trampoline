@@ -57,7 +57,7 @@ pub enum TrampolineProjectError {
 }
 
 /// Wrap standard library Result to ProjectResult type.
-pub type ProjectResult<T> = std::result::Result<T, TrampolineProjectError>;
+type ProjectResult<T> = std::result::Result<T, TrampolineProjectError>;
 
 /// Configure virtual environment for trampoline project.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -176,7 +176,7 @@ impl TrampolineProject {
     }
 
     /// Create trampoline database directory containing accounts, cache, network, and indexer.
-    pub fn create_trampoline_db_dir(&self) -> Result<()> {
+    fn create_trampoline_db_dir(&self) -> Result<()> {
         let mut project_dir = self.root_dir.clone();
         project_dir.push(".trampoline");
         fs::create_dir(&project_dir)?;
