@@ -204,10 +204,7 @@ impl TrampolineNetwork {
 
     /// Reset the network services, i.e. restart running docker containers.
     pub async fn reset(&self, service_name: String) {
-        let service = self
-            .services
-            .iter()
-            .find(|service| service.name == service_name);
+        let service = self.get_service(service_name);
         match service {
             None => {
                 println!("Service not found in current network config")
@@ -228,7 +225,7 @@ impl TrampolineNetwork {
         }
     }
 
-    /// Load network configuration from the `network.toml` file.
+    /// Generate a new TrampolineNetwork configuration from the `network.toml` file.
     pub fn load(project: &TrampolineProject) -> Self {
         let path = project.root_dir.join("network.toml");
         let toml = std::fs::read_to_string(path).expect("Unable to read network config from file");
@@ -285,7 +282,7 @@ impl TrampolineNetwork {
         }
     }
 
-    /// Add an indexer to the network.
+    /// Add an indexer to the network. Requires an exisitng CKB node.
     pub async fn add_indexer(
         &mut self,
         node_name: impl AsRef<str>,
@@ -296,8 +293,7 @@ impl TrampolineNetwork {
         indexer_service
     }
 
-    /// Spawn an indexer.
-    pub async fn spawn_indexer(
+    async fn spawn_indexer(
         id: String,
         node_name: impl AsRef<str>,
         ports: Vec<(String, String)>,
@@ -350,7 +346,7 @@ impl TrampolineNetwork {
     }
 
     /// Spawn a service.
-    pub async fn spawn_service(
+    async fn spawn_service(
         id: String,
         name: impl AsRef<str>,
         ports: Vec<(String, String)>,
@@ -366,8 +362,8 @@ impl TrampolineNetwork {
         }
     }
 
-    /// Spwan a CKB service.
-    pub async fn spawn_ckb_service(
+    /// Spawn a CKB service.
+    async fn spawn_ckb_service(
         id: String,
         name: impl AsRef<str>,
         ports: Vec<(String, String)>,
@@ -464,8 +460,8 @@ impl TrampolineNetwork {
         ckb_service
     }
 
-    /// Check whether service belong to the given container.
-    pub fn contains(&self, container_id: &String) -> bool {
+    /// Check whether a docker container belongs to the network.
+    fn contains(&self, container_id: &String) -> bool {
         for service in &self.services {
             if &service.id == container_id {
                 return true;
@@ -475,7 +471,7 @@ impl TrampolineNetwork {
     }
 
     /// Get a service by name.
-    pub fn get_service(&self, service_name: String) -> Option<&Service> {
+    fn get_service(&self, service_name: String) -> Option<&Service> {
         self.services
             .iter()
             .find(|service| service.name == service_name)
@@ -488,7 +484,7 @@ impl TrampolineNetwork {
 }
 
 /// Create a new network for a trampoline project.
-pub async fn create_new_network(project: &TrampolineProject) -> Result<String> {
+async fn create_new_network(project: &TrampolineProject) -> Result<String> {
     let docker =
         bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
     let network = CreateNetworkOptions {
