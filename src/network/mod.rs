@@ -1,3 +1,5 @@
+//! Types for managing a local network
+
 pub mod docker;
 mod service;
 use bollard::{
@@ -13,20 +15,26 @@ use thiserror::Error;
 
 use crate::project::TrampolineProject;
 
+/// Type for enumerating network errors
 #[derive(Debug, Error)]
 pub enum NetworkError {
     #[error(transparent)]
     DockerError(#[from] docker::DockerError),
+    /// Error for [bollard](https://docs.rs/bollard/latest/bollard/) crate
     #[error(transparent)]
     BollardError(#[from] bollard::errors::Error),
 }
 
 type Result<T> = std::result::Result<T, NetworkError>;
 
+/// Trampoline network manager
 #[derive(Serialize, Deserialize, Default)]
 pub struct TrampolineNetwork {
+    /// Name of the network
     pub name: String,
+    /// Network's id
     pub network: String,
+    /// A vector of network services
     pub services: Vec<Service>,
 }
 
@@ -49,6 +57,7 @@ Network Services: {:?}",
 }
 
 impl TrampolineNetwork {
+    /// Create a new trampoline network
     pub async fn new(project: &TrampolineProject, from_config: bool) -> Self {
         match from_config {
             true => {
@@ -141,6 +150,7 @@ impl TrampolineNetwork {
         }
     }
 
+    /// Run network services, i.e. run docker containers containing network nodes and indexers.
     pub async fn run(&self) {
         let docker = bollard::Docker::connect_with_local_defaults()
             .expect("Failed to connect to Docker API");
@@ -172,6 +182,7 @@ impl TrampolineNetwork {
         println!("Indexer should have started!");
     }
 
+    /// Check network's status, i.e. display running services.
     pub async fn status(&self) {
         for service in &self.services {
             let service_status = ServiceStatus::from(service).await;
@@ -179,6 +190,7 @@ impl TrampolineNetwork {
         }
     }
 
+    /// Stop all running services on the network, i.e. stop the docker containers.
     pub async fn stop(&self) {
         let docker = bollard::Docker::connect_with_local_defaults()
             .expect("Failed to connect to Docker API");
@@ -190,6 +202,7 @@ impl TrampolineNetwork {
         println!("Trampoline Network stopped")
     }
 
+    /// Reset the network services, i.e. restart running docker containers.
     pub async fn reset(&self, service_name: String) {
         let service = self
             .services
@@ -215,18 +228,21 @@ impl TrampolineNetwork {
         }
     }
 
+    /// Load network configuration from the `network.toml` file.
     pub fn load(project: &TrampolineProject) -> Self {
         let path = project.root_dir.join("network.toml");
         let toml = std::fs::read_to_string(path).expect("Unable to read network config from file");
         toml::from_str(&toml).expect("Failed parsing network config file")
     }
 
+    /// Save network configuration to the `network.toml` file.
     pub fn save(&self, project: &TrampolineProject) {
         let path = project.root_dir.join("network.toml");
         let toml = toml::to_string(self).expect("Failed converting network config into TOML");
         std::fs::write(path, toml).expect("Failed to write network config to file");
     }
 
+    /// Delete all associated docker containers along with their volumes.
     pub async fn delete(self) -> Result<String> {
         let id = self.id();
         let docker = Arc::new(tokio::sync::Mutex::new(
@@ -262,12 +278,14 @@ impl TrampolineNetwork {
         Ok(id)
     }
 
+    /// Add a service to the network.
     pub fn add_service(&mut self, service: &Service) {
         if !self.contains(&service.id) {
             self.services.push(service.clone());
         }
     }
 
+    /// Add an indexer to the network.
     pub async fn add_indexer(
         &mut self,
         node_name: impl AsRef<str>,
@@ -278,6 +296,7 @@ impl TrampolineNetwork {
         indexer_service
     }
 
+    /// Spawn an indexer.
     pub async fn spawn_indexer(
         id: String,
         node_name: impl AsRef<str>,
@@ -330,6 +349,7 @@ impl TrampolineNetwork {
         }
     }
 
+    /// Spawn a service.
     pub async fn spawn_service(
         id: String,
         name: impl AsRef<str>,
@@ -345,6 +365,8 @@ impl TrampolineNetwork {
             }
         }
     }
+
+    /// Spwan a CKB service.
     pub async fn spawn_ckb_service(
         id: String,
         name: impl AsRef<str>,
@@ -394,6 +416,7 @@ impl TrampolineNetwork {
         }
     }
 
+    /// Add a CKB service to the network.
     pub async fn add_ckb(&mut self, name: &str, ports: Vec<(String, String)>) -> Service {
         let docker = bollard::Docker::connect_with_local_defaults()
             .expect("Failed to connect to Docker API");
@@ -441,6 +464,7 @@ impl TrampolineNetwork {
         ckb_service
     }
 
+    /// Check whether service belong to the given container.
     pub fn contains(&self, container_id: &String) -> bool {
         for service in &self.services {
             if &service.id == container_id {
@@ -450,17 +474,20 @@ impl TrampolineNetwork {
         false
     }
 
+    /// Get a service by name.
     pub fn get_service(&self, service_name: String) -> Option<&Service> {
         self.services
             .iter()
             .find(|service| service.name == service_name)
     }
 
+    /// Get the network's id.
     pub fn id(&self) -> String {
         self.network.clone()
     }
 }
 
+/// Create a new network for a trampoline project.
 pub async fn create_new_network(project: &TrampolineProject) -> Result<String> {
     let docker =
         bollard::Docker::connect_with_local_defaults().expect("Failed to connect to Docker API");
