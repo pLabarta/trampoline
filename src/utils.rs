@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 
-// Adapted from HexParser in ckb-cli/utils/arg_parser
+/// Convert a hex to a string. Adapted from HexParser in ckb-cli/utils/arg_parser
 pub fn hex_string(src: &[u8]) -> String {
     let mut buffer = vec![0; src.len() * 2];
     hex_encode(src, &mut buffer)
@@ -8,6 +8,7 @@ pub fn hex_string(src: &[u8]) -> String {
         .expect("hex_string")
 }
 
+/// Encode hex
 pub fn hex_encode(src: &[u8], dst: &mut [u8]) -> Result<()> {
     let len = src.len().checked_mul(2).unwrap();
     if dst.len() < len {
@@ -22,6 +23,7 @@ pub fn hex_encode(src: &[u8], dst: &mut [u8]) -> Result<()> {
     Ok(())
 }
 
+/// Decode hex
 pub fn hex_decode(src: &[u8], dst: &mut [u8]) -> Result<()> {
     if src.is_empty() {
         return Err(anyhow!("Invalid length in dst {}", dst.len()));
