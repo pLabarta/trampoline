@@ -1,3 +1,5 @@
+//! Types for managing trampoline projects
+
 use crate::{TrampolineResource, TrampolineResourceType, TEMPLATES};
 use anyhow::Result;
 use ckb_app_config::CKBAppConfig;
@@ -14,44 +16,65 @@ use tera::Context as TeraContext;
 use thiserror::Error;
 use toml;
 
+/// Trampoline project configuration file.
 pub const TRAMPOLINE_ROOT_CONFIG: &str = "trampoline.toml";
+/// Trampoline project folder.
 pub const TRAMPOLINE_FOLDER: &str = ".trampoline";
+/// Trampoline schemas.
 pub const TRAMPOLINE_SCHEMAS: &str = "schemas";
+/// Trampoline project cache.
 pub const TRAMPOLINE_ROOT_DB_DIR: &str = "cache";
 
+/// Enumeration of possible trampoline project errors.
 #[derive(Debug, Error)]
 pub enum TrampolineProjectError {
+    /// Error loading CKB configuration file.
     #[error("Error loading CKB Configuration File: {0:?}")]
     CkbAppConfig(ckb_app_config::ExitCode),
+    /// IO error.
     #[error(transparent)]
     Io(#[from] std::io::Error),
-
+    /// Tera error.
     #[error(transparent)]
     Tera(#[from] tera::Error),
+    /// Error deserializing `.toml` object
     #[error(transparent)]
     DeserializeToml(#[from] toml::de::Error),
-
+    /// Error serializing `.toml` object
     #[error(transparent)]
     SerializeToml(#[from] toml::ser::Error),
-
+    /// Project not found error.
     #[error("No Trampoline project found within directory {0}")]
     ProjectNotFound(String),
-
+    /// Project already exists error.
     #[error("Invalid initialization: Project {} already exists at {}", .name, .path)]
-    ProjectAlreadyExists { path: String, name: String },
+    ProjectAlreadyExists {
+        /// Path where project exists.
+        path: String,
+        /// Name of the project.
+        name: String,
+    },
 }
 
-pub type ProjectResult<T> = std::result::Result<T, TrampolineProjectError>;
+/// Wrap standard library Result to ProjectResult type.
+type ProjectResult<T> = std::result::Result<T, TrampolineProjectError>;
 
+/// Configure virtual environment for trampoline project.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct VirtualEnv {
+    /// Docker container id.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub container_id: Option<String>,
+    /// Host address.
     pub host: String,
+    /// Docker container port.
     pub container_port: usize,
+    /// Host port.
     pub host_port: usize,
+    /// Local path binding.
     pub local_binding: PathBuf,
+    /// Container mount location.
     pub container_mount: String,
 }
 
@@ -66,22 +89,33 @@ impl std::fmt::Display for VirtualEnv {
         )
     }
 }
+
+/// Configure trampoline container environments.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct TrampolineEnv {
+    /// Virtual environment for a chain.
     pub chain: VirtualEnv,
+    /// Virtual environment for a miner.
     pub miner: VirtualEnv,
+    /// Virtual environment for an indexer.
     pub indexer: VirtualEnv,
 }
 
+/// Configure trampoline project environment.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct TrampolineConfig {
+    /// Name of the environment.
     pub name: String,
+    /// Trampoline environment option type.
     pub env: Option<TrampolineEnv>,
 }
 
+/// Configure trampoline project.
 #[derive(Debug, Clone, Default)]
 pub struct TrampolineProject {
+    /// Project configuration.
     pub config: TrampolineConfig,
+    /// Root directory of the project.
     pub root_dir: PathBuf,
 }
 
@@ -102,6 +136,7 @@ impl From<TrampolineResourceType> for TrampolineProject {
 }
 
 impl TrampolineProject {
+    /// Initialize trampoline project private directories.
     pub fn init_private_dirs(&self) -> Result<()> {
         let trampoline_db_dir = self.root_dir.join(".trampoline");
         let trampoline_env_file = self.root_dir.join("trampoline-env.toml");
@@ -128,17 +163,20 @@ impl TrampolineProject {
         Ok(())
     }
 
+    /// Check whether `trampoline-env.toml` file exists.
     pub fn has_env_file(&self) -> bool {
         let trampoline_env_file = self.root_dir.join("trampoline-env.toml");
         trampoline_env_file.exists()
     }
 
+    /// Check whether trampoline database directory exists.
     pub fn has_trampoline_db_dir(&self) -> bool {
         let trampoline_db_dir = self.root_dir.join(".trampoline");
         trampoline_db_dir.exists() && trampoline_db_dir.is_dir()
     }
 
-    pub fn create_trampoline_db_dir(&self) -> Result<()> {
+    /// Create trampoline database directory containing accounts, cache, network, and indexer.
+    fn create_trampoline_db_dir(&self) -> Result<()> {
         let mut project_dir = self.root_dir.clone();
         project_dir.push(".trampoline");
         fs::create_dir(&project_dir)?;
@@ -274,6 +312,7 @@ impl TrampolineResource for TrampolineProject {
 // TO DO: This requires that the ckb node is not running.
 // Need to check it is shut down first
 impl TrampolineProject {
+    /// Load CKB configuration from `ckb.toml` file.
     pub fn load_ckb_config(&self) -> ProjectResult<CKBAppConfig> {
         let ckb_toml_path = self.path_to_ckb_config()?;
 
@@ -282,6 +321,7 @@ impl TrampolineProject {
             .map_err(TrampolineProjectError::CkbAppConfig)
     }
 
+    /// Save CKB configuration to `trampoline-env.toml` file.
     pub fn save_ckb_config(&self, c: CKBAppConfig) -> ProjectResult<()> {
         let config_toml = toml::Value::try_from(c)?;
         let config_string = toml::to_string(&config_toml)?;
@@ -297,6 +337,7 @@ impl TrampolineProject {
         Ok(())
     }
 
+    /// Find the path to `ckb.toml` file.
     pub fn path_to_ckb_config(&self) -> ProjectResult<PathBuf> {
         let path_to_conf = fs::read_to_string(self.root_dir.join("trampoline-env.toml"))?;
 

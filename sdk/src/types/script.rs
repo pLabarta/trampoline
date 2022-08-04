@@ -7,13 +7,17 @@ mod script_error {
     use super::*;
     use crate::ckb_types::{core::CapacityError, H256};
     use thiserror::Error;
+    /// Errors for the Script type
     #[derive(Debug, Error)]
     pub enum ScriptError {
+        /// Failed to calculate capacity required by the script
         #[error(transparent)]
         ScriptCapacityError(#[from] CapacityError),
+        /// Calculated script hash does not match stored script hash
         #[error("Calculated script hash {0} does not match stored script hash {1}")]
         MismatchedScriptHash(H256, H256),
     }
+    /// Result type for Script methods
     pub type ScriptResult<T> = Result<T, ScriptError>;
 }
 
@@ -41,6 +45,8 @@ mod script_error {
 pub use script_error::*;
 mod core_script {
     use super::*;
+
+    /// Standard size for hashed code data
     pub const CODE_HASH_SIZE_BYTES: usize = 32;
 
     use crate::{bytes::Bytes, cell::Cell};
@@ -52,6 +58,7 @@ mod core_script {
     use crate::ckb_types::{bytes::Bytes as CkBytes, H256};
 
     #[cfg_attr(all(feature = "std", not(feature = "script")), derive(Debug))]
+    /// Type for handling on-chain scripts
     #[derive(Clone)]
     pub struct Script {
         pub(crate) args: Bytes,
@@ -69,16 +76,19 @@ mod core_script {
         }
     }
     impl Script {
+        /// Sets the script's arguments
         pub fn set_args(&mut self, args: impl Into<Bytes>) {
             self.args = args.into();
         }
-
+        /// Sets the script's hash type
         pub fn set_hash_type(&mut self, typ: impl Into<ScriptHashType>) {
             self.hash_type = typ.into();
         }
+        /// Sets the script's code hash
         pub fn set_code_hash(&mut self, code_hash: impl Into<[u8; 32]>) {
             self.code_hash = code_hash.into();
         }
+        /// Calculates the script's size for being stored on-chain
         pub fn size_bytes(&self) -> usize {
             // Args bytes size + code_hash + hash_type (which is one byte)
             // script_hash is not included in this calculation since it is not present
@@ -108,21 +118,26 @@ mod core_script {
                 Ok(calc_hash)
             }
         }
+
+        /// Calculates the required capacity for storing the script on-chain
         pub fn required_capacity(&self) -> ScriptResult<Capacity> {
             Capacity::bytes(self.size_bytes()).map_err(ScriptError::ScriptCapacityError)
         }
+        /// Returns the script's code hash
         pub fn code_hash(&self) -> H256 {
             self.code_hash.into()
         }
-
+        /// Returns the script's raw hash type
         pub fn hash_type_raw(&self) -> ScriptHashType {
             self.hash_type
         }
 
+        /// Returns the script's args as Bytes
         pub fn args(&self) -> Bytes {
             self.args.clone()
         }
 
+        /// Returns the script's args as CkBytes
         pub fn args_raw(&self) -> CkBytes {
             self.args.clone().into()
         }
@@ -131,6 +146,7 @@ mod core_script {
         // molecule::bytes::Bytes is either a Bytes(Vec<u8>) wrapper struct (in no_std) OR
         // bytes::Bytes (from bytes crate) in std (even though bytes::Bytes is no_std compatible)
         // PackedBytes of course implemented ckb_types::packed::prelude::Entity
+        /// Returns the script's args as packed bytes
         pub fn args_packed(&self) -> PackedBytes {
             self.args.clone().into()
         }
@@ -192,14 +208,15 @@ mod core_script {
         };
 
         impl Script {
+            /// Returns the script's hash type using the JSON type
             pub fn hash_type_json(&self) -> JsonScriptHashType {
                 self.hash_type.into()
             }
-
+            /// Returns the script's args using the JSON type
             pub fn args_json(&self) -> JsonBytes {
                 self.args.clone().into()
             }
-
+            /// Returns the calculated packed script's hash
             pub fn calc_script_hash(&self) -> H256 {
                 let packed: PackedScript = self.clone().into();
                 packed.calc_script_hash().unpack()

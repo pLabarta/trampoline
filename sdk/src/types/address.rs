@@ -11,16 +11,19 @@ use ckb_sdk::NetworkType;
 use ckb_sdk::{Address as CKBAddress, AddressPayload};
 use secp256k1::PublicKey;
 
+/// Wrapper for CKBAddress
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
     inner: CKBAddress,
 }
 
 impl Address {
+    /// Create a new Address from a CKBAddress
     pub fn new(data: impl Into<CKBAddress>) -> Self {
         Self { inner: data.into() }
     }
 
+    /// Access the inner CKBAddress object
     pub fn inner(&self) -> &CKBAddress {
         &self.inner
     }

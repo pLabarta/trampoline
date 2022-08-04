@@ -1,3 +1,5 @@
+//! Types for managing schemas
+
 use crate::project::TrampolineProject;
 use crate::{TrampolineResource, TrampolineResourceType};
 use anyhow::Result;
@@ -10,14 +12,18 @@ use thiserror::Error;
 
 type SchemaResult<T> = std::result::Result<T, SchemaError>;
 
+/// Enumeration of possible schema related errors.
 #[derive(Debug, Error)]
 pub enum SchemaError {
+    /// IO error from standard library.
     #[error("Error occurred: {0:?}")]
     Io(#[from] std::io::Error),
+    /// Molecule schema file compilation error.
     #[error("Error compiling molecule schema file:\n {0}")]
     Molecule(String),
 }
 
+/// Create and manage schemas for on-chain data.
 #[derive(Debug, Clone, Default)]
 pub struct Schema {
     _name: String,
@@ -30,6 +36,7 @@ impl From<Schema> for TrampolineResourceType {
     }
 }
 
+/// A tuple type containing init args for schema generation.
 pub type SchemaInitArgs = (TrampolineProject, String, Option<String>);
 
 impl TrampolineResource for Schema {
@@ -109,6 +116,7 @@ impl TrampolineResource for Schema {
 //
 // }
 
+/// Generate schema bindings.
 pub fn gen_bindings(input: impl Into<PathBuf>, output: impl Into<PathBuf>) -> SchemaResult<()> {
     let mut compiler = Compiler::new();
     compiler.input_schema_file(input.into().as_path());

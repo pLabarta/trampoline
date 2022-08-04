@@ -23,17 +23,16 @@
 //! on a CKB blockchain:
 //!
 //! ```rust,no_run
-//! use std::collections::HashMap;
+//! use trampoline_sdk::chain::{Chain,MockChain,CellInputs};
 //! use trampoline_sdk::cell::Cell;
-//! use trampoline_sdk::chain::{CellInputs, Chain, MockChain};
+//! use std::collections::HashMap;
 //!
-//! fn test_this() {
-//!     let mut chain = MockChain::default();
-//!     let cell = Cell::default();
-//!     let outpoint = chain
-//!         .deploy_cell(&cell, HashMap::new(), &CellInputs::Empty)
-//!         .expect("Failed to deploy cell");
-//! }
+//! let unlockers = HashMap::new();
+//! let inputs = CellInputs::Empty;
+//!
+//! let mut chain = MockChain::default();
+//! let cell = Cell::default();
+//! let outpoint = chain.deploy_cell(&cell,unlockers, &inputs).expect("Failed to deploy cell");
 //! ```
 //!
 //! ## Features
@@ -51,7 +50,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rocket = trampoline-sdk = { git = "https://github.com/Tempest-Protocol/trampoline", path = "sdk", branch = "develop", features = ["rpc"] }
+//! trampoline-sdk = { git = "https://github.com/Tempest-Protocol/trampoline", path = "sdk", branch = "develop", features = ["rpc"] }
 //! ```
 
 // allow unused imports for now since many unused imports are present
@@ -488,7 +487,9 @@ pub mod ckb_types {
 
 /// Precompiled contracts for creating standard and non-fungible tokens
 pub mod precompiled {
+    /// Simple User Define Token script binary
     pub const SUDT: &[u8] = include_bytes!("../binaries/simple_udt");
+    /// Experimental Trampoline NFT script binary
     pub const TNFT: &[u8] = include_bytes!("../binaries/trampoline-nft");
 }
 

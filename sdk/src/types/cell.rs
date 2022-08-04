@@ -12,8 +12,12 @@ use no_std_compat::borrow::Borrow;
 use crate::bytes::Bytes;
 use crate::script::Script;
 
+/// Pair of CellOutput and Bytes objects
+///
+/// Mostly used as a return type when getting a cell from a chain
 pub type CellOutputWithData = (CellOutput, crate::ckb_types::bytes::Bytes);
 
+/// Error module for the Cell type
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub mod cell_error {
 
@@ -21,20 +25,29 @@ pub mod cell_error {
     use crate::{bytes::BytesError, script::ScriptError};
     use std::io::Error as IoError;
     use thiserror::Error;
+
+    /// Error variants for the Cell type methods
     #[derive(Debug, Error)]
     pub enum CellError {
+        /// Capacity not enough for cell size
         #[error("Capacity not enough for cell size")]
         CapacityNotEnough,
+        /// Failed to calculate required capacity for a cell
         #[error(transparent)]
         CapacityCalcError(#[from] CapacityError),
+        /// Failed to validate either type or lock scripts
         #[error(transparent)]
         ScriptError(#[from] ScriptError),
+        /// Error caused by an operation on the cell's bytes
         #[error(transparent)]
         BytesError(#[from] BytesError),
+        /// Error type for I/O operations
         #[error(transparent)]
         IoError(#[from] IoError),
+        /// Type script is currently None
         #[error("Type script is currently None")]
         MissingTypeScript,
+        /// Cannot convert cell to CellDep due to a missing outpoint
         #[error("Cannot convert cell to CellDep: no outpoint")]
         MissingOutpoint,
     }
@@ -91,6 +104,7 @@ pub mod cell_error {
     }
 }
 pub use cell_error::*;
+/// Result type for Cell methods
 pub type CellResult<T> = Result<T, CellError>;
 
 /// Cells are the primary state units in CKB and assets owned by users.
