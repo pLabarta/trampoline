@@ -25,7 +25,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --no-deps --manifest-path sdk/Cargo.toml
+          args: --no-deps --package trampoline --package trampoline-sdk
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
