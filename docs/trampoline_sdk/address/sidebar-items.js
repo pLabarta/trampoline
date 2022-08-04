@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Address",""]]});
+initSidebarItems({"struct":[["Address","Wrapper for CKBAddress"]]});

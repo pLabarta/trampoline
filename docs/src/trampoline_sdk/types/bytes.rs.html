@@ -201,6 +201,15 @@
 <span id="196">196</span>
 <span id="197">197</span>
 <span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Wrapper for different kind of Bytes objects</span>
 
 <span class="kw">use</span> <span class="ident">std::prelude::v1</span>::<span class="kw-2">*</span>;
@@ -225,12 +234,15 @@
 <span class="comment">//    ckb_types::packed::Bytes = Bytes(Molecule::bytes::Bytes)</span>
 <span class="comment">//    ckb_types::bytes::Bytes = bytes::Bytes = Molecule::bytes::Bytes</span>
 
+<span class="doccomment">/// Errors for the Bytes module</span>
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;script&quot;</span>)))]</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">bytes_error</span> {
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
     <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
+    <span class="doccomment">/// Error variants for the Bytes type</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
     <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BytesError</span> {
+        <span class="doccomment">/// Failed to calculate required capacity for a cell</span>
         <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
         <span class="ident">CapacityCalcError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">CapacityError</span>),
     }
@@ -261,6 +273,7 @@
 }
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">bytes_error</span>::<span class="kw-2">*</span>;
+<span class="doccomment">/// Result type for Bytes methods</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">BytesResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">BytesError</span><span class="op">&gt;</span>;
 
 <span class="kw">mod</span> <span class="ident">core_bytes</span> {
@@ -275,24 +288,29 @@
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::contract::schema</span>::{<span class="ident">BytesConversion</span>, <span class="ident">SchemaPrimitiveType</span>};
 
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="doccomment">/// Universal Bytes type that converts to other implementations</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Bytes</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>);
 
     <span class="kw">impl</span> <span class="ident">Bytes</span> {
+        <span class="doccomment">/// Returns H256 hash of the byte array</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">hash_256</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">H256</span> {
             <span class="kw">let</span> <span class="ident">raw_bytes</span>: <span class="ident">CkBytes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
             <span class="ident">H256</span>(<span class="ident">blake2b_256</span>(<span class="ident">raw_bytes</span>))
         }
 
+        <span class="doccomment">/// Returns lenght of the byte array when packed</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
             <span class="kw">let</span> <span class="ident">packed</span> <span class="op">=</span> <span class="ident">PackedBytes::from</span>(<span class="self">self</span>.<span class="ident">clone</span>());
             <span class="ident">packed</span>.<span class="ident">len</span>()
         }
 
+        <span class="doccomment">/// Checks if the byte array is empty</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
             <span class="self">self</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">0</span>
         }
 
+        <span class="doccomment">/// Returns the Capacity required by a Cell to hold this Bytes</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">required_capacity</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">BytesResult</span><span class="op">&lt;</span><span class="ident">Capacity</span><span class="op">&gt;</span> {
             <span class="ident">Capacity::bytes</span>(<span class="self">self</span>.<span class="ident">len</span>()).<span class="ident">map_err</span>(<span class="ident">BytesError::CapacityCalcError</span>)
         }

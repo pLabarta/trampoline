@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["SchemaError","Enumeration of possible schema related errors."]],"fn":[["gen_bindings","Generate schema bindings."]],"struct":[["Schema","Create and manage schemas for on-chain data."]],"type":[["SchemaInitArgs","A tuple type containing init args for schema generation."]]});

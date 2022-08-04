@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["trampoline_sdk"];
+window.ALL_CRATES = ["trampoline","trampoline_sdk"];

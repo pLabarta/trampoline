@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["CellMetaTransaction",""],["Transaction",""]]});
+initSidebarItems({"struct":[["CellMetaTransaction","Type that combines a TX and input cells used by the generator"],["Transaction","Wrapper for the JsonTransaction type"]]});

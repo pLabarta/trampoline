@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["CellError",""]]});
+initSidebarItems({"enum":[["CellError","Error variants for the Cell type methods"]]});

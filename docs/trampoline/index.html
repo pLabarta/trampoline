@@ -1,0 +1,133 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Trampoline CLI"><meta name="keywords" content="rust, rustlang, rust-lang, trampoline"><title>trampoline - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><script defer src="../main.js"></script>
+    <noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../trampoline/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../trampoline/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Crate trampoline</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 0.1.0</li><li><a id="all-types" href="all.html">All Items</a></li></div></ul><section><div class="block"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#statics">Statics</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li></ul></div></section><div id="sidebar-vars" data-name="trampoline" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../trampoline/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">trampoline</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/trampoline/lib.rs.html#1-209">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="trampoline-cli"><a href="#trampoline-cli">Trampoline CLI</a></h2>
+<p>Welcome to Trampoline CLI documentation!</p>
+<p>Trampoline CLI is a command-line interface that provides a host of capabilities
+for running &amp; configuring a local development environment, creating
+and managing projects, and testing smart contracts.
+Trampoline currently provides the following features:</p>
+<ul>
+<li>Quickly generate new dapp projects</li>
+<li>Launch local nodes, miners, and chain indexers</li>
+<li>Generate custom schemas for on-chain data</li>
+</ul>
+<h3 id="installation"><a href="#installation">Installation</a></h3>
+<p>Currently, Trampoline has only been tested on Linux environments.</p>
+<p>Trampoline uses docker for running chain services like nodes and miners,
+so it is recommended to <a href="https://docs.docker.com/get-docker/">install docker</a> before moving on.</p>
+<p>To install trampoline crate run: (currently not supported)</p>
+<div class="example-wrap"><pre class="language-bash"><code>cargo install trampoline</code></pre></div>
+<p>To install from github run:</p>
+<div class="example-wrap"><pre class="language-bash"><code>cargo install --git https://github.com/Tempest-Protocol/trampoline --branch develop</code></pre></div><h3 id="usage"><a href="#usage">Usage</a></h3>
+<p><small>Please note that Trampoline is in early stages and under active development.
+The API can change drastically.</small></p>
+<div class="example-wrap"><pre class="language-bash"><code>USAGE:
+    trampoline &lt;SUBCOMMAND&gt;
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+SUBCOMMANDS:
+    help       Prints this message or the help of the given subcommand(s)
+    network    Manage local development chain
+    new        Create a new Trampoline project
+    schema     Manage custom on chain structures</code></pre></div><h3 id="quick-start"><a href="#quick-start">Quick Start</a></h3>
+<p>After installation, use the commands below to create a new trampoline project and manage a local network.</p>
+<div class="example-wrap"><pre class="language-bash"><code>trampoline new example</code></pre></div><details>
+<summary>Click here to see the output.</summary>
+<br>
+{{#markdown}}
+```bash
+PATH: generators/Cargo.toml
+PATH: schemas/src/lib.rs
+PATH: DockerIndexer
+PATH: schemas/Cargo.toml
+PATH: trampoline.toml
+PATH: generators/src/lib.rs
+PATH: src/lib.rs
+PATH: Cargo.toml
+PATH: Dockerfile.template
+PATH: trampoline-env.toml
+[+] Building 0.9s (5/5) FINISHED
+ => [internal] load build definition from Dockerfile                                                                                                                                                 0.0s
+ => => transferring dockerfile: 84B                                                                                                                                                                  0.0s
+ => [internal] load .dockerignore                                                                                                                                                                    0.0s
+ => => transferring context: 2B                                                                                                                                                                      0.0s
+ => [internal] load metadata for docker.io/nervos/ckb:v0.103.0                                                                                                                                       0.8s
+ => CACHED [1/1] FROM docker.io/nervos/ckb:v0.103.0@sha256:a4ca46fee4f19ee383270def46044055dbcca1373eb2e1075eba821d090635cd                                                                          0.0s
+ => exporting to image                                                                                                                                                                               0.0s
+ => => exporting layers                                                                                                                                                                              0.0s
+ => => writing image sha256:5069d16d6a48b181e4a8a9b898ef7cf701c1e16a63c490c0bb0ede12eb01165c                                                                                                         0.0s
+ => => naming to docker.io/tempest/trampoline-env:latest                                                                                                                                             0.0s
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
+```
+{{/markdown}}
+</details>
+<div class="example-wrap"><pre class="language-bash"><code>cd example</code></pre></div><div class="example-wrap"><pre class="language-bash"><code>trampoline network init</code></pre></div><details>
+<summary>Click here to see the output.</summary>
+<br>
+{{#markdown}}
+```bash
+New Trampoline development network inititalized.
+Network name: example-network
+Network ID: 6ad5c643b79d582cc40694541cc9a426bc43c3e9b54265f5bd39668ffdf61494
+Network Services: ["example-ckb", "example-ckb-indexer"]
+```
+{{/markdown}}
+</details>
+<div class="example-wrap"><pre class="language-bash"><code>trampoline network launch</code></pre></div><details>
+<summary>Click here to see the output.</summary>
+<br>
+{{#markdown}}
+```bash
+Nodes should have started!
+Indexer should have started!
+```
+{{/markdown}}
+</details>
+<h3 id="project-layout"><a href="#project-layout">Project Layout</a></h3>
+<ul>
+<li><code>trampoline.toml</code> - Trampoline project configuration file</li>
+<li><code>network.toml</code> - Network services configuration file</li>
+<li><code>generators</code> - Transaction generator directory</li>
+<li><code>schemas</code> - Custom cell schema directory</li>
+<li><code>scripts</code> - Smart contracts directory</li>
+<li><code>.trampoline</code> - Directory for caching local chain &amp; indexer data</li>
+</ul>
+<h3 id="manage-local-network"><a href="#manage-local-network">Manage Local Network</a></h3>
+<ul>
+<li><code>trampoline network init</code> - Initialize a new network</li>
+<li><code>trampoline network launch</code> - Launch the network</li>
+<li><code>trampoline network miner</code> - Start the miner</li>
+<li><code>trampoline network indexer</code> - Start an indexer</li>
+</ul>
+<h3 id="manage-schemas"><a href="#manage-schemas">Manage Schemas</a></h3>
+<p>Schemas use the <a href="https://github.com/nervosnetwork/molecule">molecule</a> encoding &amp; serialization format.</p>
+<ul>
+<li><code>trampoline schema new &lt;schema_file&gt;</code> - Create a new schema</li>
+<li><code>trampoline schema new byte_10_arr &quot;array my_array [byte;10]&quot;</code> - Optionally, pass a schema definition (in Molecule)</li>
+<li><code>trampoline schema build &lt;schema_name&gt;</code> - Generate rust bindings to build and decode schema</li>
+</ul>
+</div></details><h2 id="reexports" class="small-section-header"><a href="#reexports">Re-exports</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left import-item" id="reexport.docker"><code>pub use network::<a class="mod" href="network/docker/index.html" title="mod trampoline::network::docker">docker</a>;</code></div><div class="item-right docblock-short"></div></div></div><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="network/index.html" title="trampoline::network mod">network</a></div><div class="item-right docblock-short"><p>Types for managing a local network</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="opts/index.html" title="trampoline::opts mod">opts</a></div><div class="item-right docblock-short"><p>Definitions for command line interface</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="project/index.html" title="trampoline::project mod">project</a></div><div class="item-right docblock-short"><p>Types for managing trampoline projects</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="schema/index.html" title="trampoline::schema mod">schema</a></div><div class="item-right docblock-short"><p>Types for managing schemas</p>
+</div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.TEMPLATES.html" title="trampoline::TEMPLATES struct">TEMPLATES</a></div><div class="item-right docblock-short"><p>This creates the template files for a trampoline project.</p>
+</div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.TrampolineResourceType.html" title="trampoline::TrampolineResourceType enum">TrampolineResourceType</a></div><div class="item-right docblock-short"><p>Enumeration of a trampoline project and schema.</p>
+</div></div></div><h2 id="statics" class="small-section-header"><a href="#statics">Statics</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="static" href="static.DAPP_FILES.html" title="trampoline::DAPP_FILES static">DAPP_FILES</a></div><div class="item-right docblock-short"></div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.TrampolineResource.html" title="trampoline::TrampolineResource trait">TrampolineResource</a></div><div class="item-right docblock-short"><p>Interface for TrampolineResource.</p>
+</div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.hex_decode.html" title="trampoline::hex_decode fn">hex_decode</a></div><div class="item-right docblock-short"><p>Decode hex</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.hex_encode.html" title="trampoline::hex_encode fn">hex_encode</a></div><div class="item-right docblock-short"><p>Encode hex</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.hex_string.html" title="trampoline::hex_string fn">hex_string</a></div><div class="item-right docblock-short"><p>Convert a hex to a string. Adapted from HexParser in ckb-cli/utils/arg_parser</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.parse_hex.html" title="trampoline::parse_hex fn">parse_hex</a></div><div class="item-right docblock-short"><p>Parse a hex string to a vector</p>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="trampoline" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
+</body></html>

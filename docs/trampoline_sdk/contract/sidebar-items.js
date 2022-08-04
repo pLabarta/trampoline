@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["auxiliary_types",""],["builtins",""],["generator",""],["schema",""],["t_contract",""]],"struct":[["Contract",""]]});
+initSidebarItems({"mod":[["auxiliary_types",""],["builtins",""],["generator","Types for defining transaction generation pipelines"],["schema",""],["t_contract",""]],"struct":[["Contract",""]]});

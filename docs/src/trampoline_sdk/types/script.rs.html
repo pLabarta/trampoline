@@ -246,6 +246,23 @@
 <span id="241">241</span>
 <span id="242">242</span>
 <span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types for handling CKB scripts</span>
 
 <span class="kw">use</span> <span class="ident">std::prelude::v1</span>::<span class="kw-2">*</span>;
@@ -255,13 +272,17 @@
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ckb_types</span>::{<span class="ident">core::CapacityError</span>, <span class="ident">H256</span>};
     <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
+    <span class="doccomment">/// Errors for the Script type</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
     <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ScriptError</span> {
+        <span class="doccomment">/// Failed to calculate capacity required by the script</span>
         <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
         <span class="ident">ScriptCapacityError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">CapacityError</span>),
+        <span class="doccomment">/// Calculated script hash does not match stored script hash</span>
         <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Calculated script hash {0} does not match stored script hash {1}&quot;</span>)]</span>
         <span class="ident">MismatchedScriptHash</span>(<span class="ident">H256</span>, <span class="ident">H256</span>),
     }
+    <span class="doccomment">/// Result type for Script methods</span>
     <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ScriptResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">ScriptError</span><span class="op">&gt;</span>;
 }
 
@@ -289,6 +310,8 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">script_error</span>::<span class="kw-2">*</span>;
 <span class="kw">mod</span> <span class="ident">core_script</span> {
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+
+    <span class="doccomment">/// Standard size for hashed code data</span>
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CODE_HASH_SIZE_BYTES</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">32</span>;
 
     <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">bytes::Bytes</span>, <span class="ident">cell::Cell</span>};
@@ -300,6 +323,7 @@
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ckb_types</span>::{<span class="ident">bytes::Bytes</span> <span class="kw">as</span> <span class="ident">CkBytes</span>, <span class="ident">H256</span>};
 
     <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;script&quot;</span>)), <span class="ident">derive</span>(<span class="ident">Debug</span>))]</span>
+    <span class="doccomment">/// Type for handling on-chain scripts</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Script</span> {
         <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">args</span>: <span class="ident">Bytes</span>,
@@ -317,16 +341,19 @@
         }
     }
     <span class="kw">impl</span> <span class="ident">Script</span> {
+        <span class="doccomment">/// Sets the script&#39;s arguments</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_args</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">args</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span>) {
             <span class="self">self</span>.<span class="ident">args</span> <span class="op">=</span> <span class="ident">args</span>.<span class="ident">into</span>();
         }
-
+        <span class="doccomment">/// Sets the script&#39;s hash type</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_hash_type</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">typ</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ScriptHashType</span><span class="op">&gt;</span>) {
             <span class="self">self</span>.<span class="ident">hash_type</span> <span class="op">=</span> <span class="ident">typ</span>.<span class="ident">into</span>();
         }
+        <span class="doccomment">/// Sets the script&#39;s code hash</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_code_hash</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">code_hash</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span>[<span class="ident">u8</span>; <span class="number">32</span>]<span class="op">&gt;</span>) {
             <span class="self">self</span>.<span class="ident">code_hash</span> <span class="op">=</span> <span class="ident">code_hash</span>.<span class="ident">into</span>();
         }
+        <span class="doccomment">/// Calculates the script&#39;s size for being stored on-chain</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">size_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
             <span class="comment">// Args bytes size + code_hash + hash_type (which is one byte)</span>
             <span class="comment">// script_hash is not included in this calculation since it is not present</span>
@@ -356,21 +383,26 @@
                 <span class="prelude-val">Ok</span>(<span class="ident">calc_hash</span>)
             }
         }
+
+        <span class="doccomment">/// Calculates the required capacity for storing the script on-chain</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">required_capacity</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ScriptResult</span><span class="op">&lt;</span><span class="ident">Capacity</span><span class="op">&gt;</span> {
             <span class="ident">Capacity::bytes</span>(<span class="self">self</span>.<span class="ident">size_bytes</span>()).<span class="ident">map_err</span>(<span class="ident">ScriptError::ScriptCapacityError</span>)
         }
+        <span class="doccomment">/// Returns the script&#39;s code hash</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">code_hash</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">H256</span> {
             <span class="self">self</span>.<span class="ident">code_hash</span>.<span class="ident">into</span>()
         }
-
+        <span class="doccomment">/// Returns the script&#39;s raw hash type</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">hash_type_raw</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ScriptHashType</span> {
             <span class="self">self</span>.<span class="ident">hash_type</span>
         }
 
+        <span class="doccomment">/// Returns the script&#39;s args as Bytes</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">args</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bytes</span> {
             <span class="self">self</span>.<span class="ident">args</span>.<span class="ident">clone</span>()
         }
 
+        <span class="doccomment">/// Returns the script&#39;s args as CkBytes</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">args_raw</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">CkBytes</span> {
             <span class="self">self</span>.<span class="ident">args</span>.<span class="ident">clone</span>().<span class="ident">into</span>()
         }
@@ -379,6 +411,7 @@
         <span class="comment">// molecule::bytes::Bytes is either a Bytes(Vec&lt;u8&gt;) wrapper struct (in no_std) OR</span>
         <span class="comment">// bytes::Bytes (from bytes crate) in std (even though bytes::Bytes is no_std compatible)</span>
         <span class="comment">// PackedBytes of course implemented ckb_types::packed::prelude::Entity</span>
+        <span class="doccomment">/// Returns the script&#39;s args as packed bytes</span>
         <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">args_packed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">PackedBytes</span> {
             <span class="self">self</span>.<span class="ident">args</span>.<span class="ident">clone</span>().<span class="ident">into</span>()
         }
@@ -440,14 +473,15 @@
         };
 
         <span class="kw">impl</span> <span class="ident">Script</span> {
+            <span class="doccomment">/// Returns the script&#39;s hash type using the JSON type</span>
             <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">hash_type_json</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">JsonScriptHashType</span> {
                 <span class="self">self</span>.<span class="ident">hash_type</span>.<span class="ident">into</span>()
             }
-
+            <span class="doccomment">/// Returns the script&#39;s args using the JSON type</span>
             <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">args_json</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">JsonBytes</span> {
                 <span class="self">self</span>.<span class="ident">args</span>.<span class="ident">clone</span>().<span class="ident">into</span>()
             }
-
+            <span class="doccomment">/// Returns the calculated packed script&#39;s hash</span>
             <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">calc_script_hash</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">H256</span> {
                 <span class="kw">let</span> <span class="ident">packed</span>: <span class="ident">PackedScript</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
                 <span class="ident">packed</span>.<span class="ident">calc_script_hash</span>().<span class="ident">unpack</span>()

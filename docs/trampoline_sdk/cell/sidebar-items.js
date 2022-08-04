@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["CellError",""]],"mod":[["cell_error",""]],"struct":[["Cell","Cells are the primary state units in CKB and assets owned by users."]],"type":[["CellOutputWithData",""],["CellResult",""]]});
+initSidebarItems({"enum":[["CellError","Error variants for the Cell type methods"]],"mod":[["cell_error","Error module for the Cell type"]],"struct":[["Cell","Cells are the primary state units in CKB and assets owned by users."]],"type":[["CellOutputWithData","Pair of CellOutput and Bytes objects"],["CellResult","Result type for Cell methods"]]});

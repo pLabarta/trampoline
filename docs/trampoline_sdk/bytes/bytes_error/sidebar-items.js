@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["BytesError",""]]});
+initSidebarItems({"enum":[["BytesError","Error variants for the Bytes type"]]});

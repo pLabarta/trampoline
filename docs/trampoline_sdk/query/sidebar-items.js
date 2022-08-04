@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["CellQueryAttribute",""],["QueryStatement",""]],"struct":[["CellQuery",""]]});
+initSidebarItems({"enum":[["CellQueryAttribute","Query attributes used to define QueryStatements"],["QueryStatement","Statement used to filter cells from a collection"]],"struct":[["CellQuery","Query type that containts a statement and an amount of cells"]]});

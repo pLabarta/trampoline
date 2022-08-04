@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["BytesError",""]],"mod":[["bytes_error",""]],"struct":[["Bytes",""]],"type":[["BytesResult",""]]});
+initSidebarItems({"enum":[["BytesError","Error variants for the Bytes type"]],"mod":[["bytes_error","Errors for the Bytes module"]],"struct":[["Bytes","Universal Bytes type that converts to other implementations"]],"type":[["BytesResult","Result type for Bytes methods"]]});
