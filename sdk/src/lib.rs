@@ -488,7 +488,9 @@ pub mod ckb_types {
 
 /// Precompiled contracts for creating standard and non-fungible tokens
 pub mod precompiled {
+    /// Simple User Define Token script binary
     pub const SUDT: &[u8] = include_bytes!("../binaries/simple_udt");
+    /// Experimental Trampoline NFT script binary
     pub const TNFT: &[u8] = include_bytes!("../binaries/trampoline-nft");
 }
 
