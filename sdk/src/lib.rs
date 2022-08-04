@@ -23,12 +23,17 @@
 //! on a CKB blockchain:
 //!
 //! ```rust,no_run
-//! use trampoline_sdk::chain::{Chain,MockChain};
+//! use trampoline_sdk::chain::{Chain,MockChain,CellInputs};
 //! use trampoline_sdk::cell::Cell;
+//! use std::collections::HashMap;
 //!
-//! let chain = MockChain::default();
+//!
+//! let unlockers = HashMap::new();
+//! let inputs = CellInputs::Empty;
+//!
+//! let mut chain = MockChain::default();
 //! let cell = Cell::default();
-//! let outpoint = chain.deploy_cell(cell).expect("Failed to deploy cell");
+//! let outpoint = chain.deploy_cell(&cell,unlockers, &inputs).expect("Failed to deploy cell");
 //! ```
 //!
 //! ## Features
