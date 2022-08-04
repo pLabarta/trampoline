@@ -51,7 +51,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rocket = trampoline-sdk = { git = "https://github.com/Tempest-Protocol/trampoline", path = "sdk", branch = "develop", features = ["rpc"] }
+//! trampoline-sdk = { git = "https://github.com/Tempest-Protocol/trampoline", path = "sdk", branch = "develop", features = ["rpc"] }
 //! ```
 
 // allow unused imports for now since many unused imports are present
