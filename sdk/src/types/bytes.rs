@@ -22,12 +22,15 @@ use crate::ckb_types::core::CapacityError;
 //    ckb_types::packed::Bytes = Bytes(Molecule::bytes::Bytes)
 //    ckb_types::bytes::Bytes = bytes::Bytes = Molecule::bytes::Bytes
 
+/// Errors for the Bytes module
 #[cfg(all(feature = "std", not(feature = "script")))]
 pub mod bytes_error {
     use super::*;
     use thiserror::Error;
+    /// Error variants for the Bytes type
     #[derive(Debug, Error)]
     pub enum BytesError {
+        /// Failed to calculate required capacity for a cell
         #[error(transparent)]
         CapacityCalcError(#[from] CapacityError),
     }
@@ -58,6 +61,7 @@ pub mod bytes_error {
 }
 
 pub use bytes_error::*;
+/// Result type for Bytes methods
 pub type BytesResult<T> = Result<T, BytesError>;
 
 mod core_bytes {
@@ -72,24 +76,29 @@ mod core_bytes {
     use crate::contract::schema::{BytesConversion, SchemaPrimitiveType};
 
     use super::*;
+    /// Universal Bytes type that converts to other implementations
     #[derive(Clone, Debug, Default)]
     pub struct Bytes(pub(crate) Vec<u8>);
 
     impl Bytes {
+        /// Returns H256 hash of the byte array
         pub fn hash_256(&self) -> H256 {
             let raw_bytes: CkBytes = self.clone().into();
             H256(blake2b_256(raw_bytes))
         }
 
+        /// Returns lenght of the byte array when packed
         pub fn len(&self) -> usize {
             let packed = PackedBytes::from(self.clone());
             packed.len()
         }
 
+        /// Checks if the byte array is empty
         pub fn is_empty(&self) -> bool {
             self.len() == 0
         }
 
+        /// Returns the Capacity required by a Cell to hold this Bytes
         pub fn required_capacity(&self) -> BytesResult<Capacity> {
             Capacity::bytes(self.len()).map_err(BytesError::CapacityCalcError)
         }
