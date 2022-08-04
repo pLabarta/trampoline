@@ -1,3 +1,5 @@
+//! Types for defining transaction generation pipelines
+
 use ckb_jsonrpc_types::{Byte32, OutPoint, TransactionView as JsonTransaction};
 use ckb_types::packed::CellDepBuilder;
 use std::prelude::v1::*;
