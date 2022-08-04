@@ -30,12 +30,6 @@
 //! ```
 //!
 //! ## Usage
-//! Depends on `trampoline` in `Cargo.toml`:
-//!
-//! ```toml
-//! [dependencies]
-//! trampoline = { git = "https://github.com/Tempest-Protocol/trampoline", path = "src", branch = "develop" }
-//! ```
 //! <small>Please note that Trampoline is in early stages and under active development.
 //! The API can change drastically.</small>
 //!
@@ -57,14 +51,77 @@
 //!  
 //! ```bash
 //! trampoline new example
+//! ```
+//! <details>
+//! <summary>Click here to see the output.</summary>
+//! <br>
+//! {{#markdown}}
+//! ```bash
+//! PATH: generators/Cargo.toml
+//! PATH: schemas/src/lib.rs
+//! PATH: DockerIndexer
+//! PATH: schemas/Cargo.toml
+//! PATH: trampoline.toml
+//! PATH: generators/src/lib.rs
+//! PATH: src/lib.rs
+//! PATH: Cargo.toml
+//! PATH: Dockerfile.template
+//! PATH: trampoline-env.toml
+//! [+] Building 0.9s (5/5) FINISHED
+//!  => [internal] load build definition from Dockerfile                                                                                                                                                 0.0s
+//!  => => transferring dockerfile: 84B                                                                                                                                                                  0.0s
+//!  => [internal] load .dockerignore                                                                                                                                                                    0.0s
+//!  => => transferring context: 2B                                                                                                                                                                      0.0s
+//!  => [internal] load metadata for docker.io/nervos/ckb:v0.103.0                                                                                                                                       0.8s
+//!  => CACHED [1/1] FROM docker.io/nervos/ckb:v0.103.0@sha256:a4ca46fee4f19ee383270def46044055dbcca1373eb2e1075eba821d090635cd                                                                          0.0s
+//!  => exporting to image                                                                                                                                                                               0.0s
+//!  => => exporting layers                                                                                                                                                                              0.0s
+//!  => => writing image sha256:5069d16d6a48b181e4a8a9b898ef7cf701c1e16a63c490c0bb0ede12eb01165c                                                                                                         0.0s
+//!  => => naming to docker.io/tempest/trampoline-env:latest                                                                                                                                             0.0s
+//! Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
+//! ```
+//! {{/markdown}}
+//! </details>
+//!
+//! ```bash
 //! cd example
+//! ```
+//!
+//! ```bash
 //! trampoline network init
+//! ```
+//!
+//! <details>
+//! <summary>Click here to see the output.</summary>
+//! <br>
+//! {{#markdown}}
+//! ```bash
+//! New Trampoline development network inititalized.
+//! Network name: example-network
+//! Network ID: 6ad5c643b79d582cc40694541cc9a426bc43c3e9b54265f5bd39668ffdf61494
+//! Network Services: ["example-ckb", "example-ckb-indexer"]
+//! ```
+//! {{/markdown}}
+//! </details>
+//!
+//! ```bash
 //! trampoline network launch
 //! ```
 //!
+//! <details>
+//! <summary>Click here to see the output.</summary>
+//! <br>
+//! {{#markdown}}
+//! ```bash
+//! Nodes should have started!
+//! Indexer should have started!
+//! ```
+//! {{/markdown}}
+//! </details>
+//!
 //! ## Project Layout
 //! * `trampoline.toml` - Trampoline project configuration file
-//! * `trampoline-env.toml` - Network services configuration file
+//! * `network.toml` - Network services configuration file
 //! * `generators` - Transaction generator directory
 //! * `schemas` - Custom cell schema directory
 //! * `scripts` - Smart contracts directory
@@ -73,7 +130,6 @@
 //! ## Manage Local Network
 //! * `trampoline network init` - Initialize a new network
 //! * `trampoline network launch` - Launch the network
-//! * `trampoline network set-miner [lock_arg | pubkey]` - Set a miner
 //! * `trampoline network miner` - Start the miner
 //! * `trampoline network indexer` - Start an indexer
 //!
