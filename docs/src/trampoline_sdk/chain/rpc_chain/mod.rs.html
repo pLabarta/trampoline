@@ -80,6 +80,18 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::{<span class="ident">cell::Cell</span>, <span class="ident">script::Script</span>};
 <span class="kw">use</span> <span class="ident">std::prelude::v1</span>::<span class="kw-2">*</span>;
 
@@ -91,29 +103,32 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">provider</span>::<span class="kw-2">*</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">trait_impls</span>::<span class="kw-2">*</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">provider</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">resolve</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">trait_impls</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">resolve</span>::<span class="kw-2">*</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tx_builder</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tx_builder</span>::<span class="kw-2">*</span>;
 
 <span class="kw">use</span> <span class="ident">ckb_types</span>::{<span class="ident">core::BlockView</span>, <span class="ident">packed::OutPoint</span>, <span class="ident">H256</span>};
 
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DefaultLock</span> {
+<span class="kw">struct</span> <span class="ident">DefaultLock</span> {
     <span class="ident">out_point</span>: <span class="ident">OutPoint</span>,
     <span class="ident">code_hash</span>: <span class="ident">H256</span>,
     <span class="ident">hash_type</span>: <span class="ident">ScriptHashType</span>,
 }
 
+<span class="doccomment">/// Chain interface for a pair of CKB node and indexer</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RpcChain</span> {
     <span class="ident">ckb_url</span>: <span class="ident">String</span>,
     <span class="ident">indexer_url</span>: <span class="ident">String</span>,
-    <span class="kw">pub</span> <span class="ident">default_lock</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OutPoint</span><span class="op">&gt;</span>,
+    <span class="ident">default_lock</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OutPoint</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">RpcChain</span> {
+    <span class="doccomment">/// Create a new RPC chain from a pair of CKB node and indexer</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Default lock will be set to the lock</span>
+    <span class="doccomment">/// defined by the genesis block</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">ckb_url</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">indexer_url</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="self">Self</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">temp</span> <span class="op">=</span> <span class="self">Self</span> {
             <span class="ident">ckb_url</span>: <span class="ident">ckb_url</span>.<span class="ident">into</span>(),
@@ -126,33 +141,42 @@
         <span class="ident">temp</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_sighash_all_as_default_lock</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
+    <span class="kw">fn</span> <span class="ident">set_sighash_all_as_default_lock</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="comment">// Try setting SigHashAll lock script as default</span>
         <span class="kw">let</span> <span class="ident">consensus</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>().<span class="ident">get_consensus</span>();
         <span class="kw">let</span> <span class="ident">tx_hash</span> <span class="op">=</span> <span class="ident">consensus</span>.<span class="ident">genesis_block</span>().<span class="ident">tx_hashes</span>()[<span class="number">0</span>].<span class="ident">clone</span>();
         <span class="kw">let</span> <span class="ident">lock_outpoint</span> <span class="op">=</span> <span class="ident">OutPoint::new</span>(<span class="ident">tx_hash</span>, <span class="number">1</span>); <span class="comment">// Default location for sighashall lock cell</span>
         <span class="self">self</span>.<span class="ident">default_lock</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">lock_outpoint</span>);
     }
+
+    <span class="doccomment">/// Get the last block&#39;s header</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_tip</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ckb_jsonrpc_types::HeaderView</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">inner</span>().<span class="ident">get_tip</span>()
     }
 
+    <span class="doccomment">/// Get a transaction from the chain</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Transaction status may vary, it may be pending, proposed, commited or rejected</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_tx</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">hash</span>: <span class="ident">H256</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">TransactionWithStatus</span><span class="op">&gt;</span>, <span class="ident">ChainError</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">inner</span>().<span class="ident">get_tx</span>(<span class="ident">hash</span>)
     }
 
+    <span class="doccomment">/// Get the genesis block from the chain</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">genesis_block</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BlockView</span>, <span class="ident">ChainError</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">inner</span>().<span class="ident">genesis_block</span>()
     }
 
+    <span class="doccomment">/// Get the default lock as an [`OutPoint`]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_lock</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OutPoint</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">default_lock</span>.<span class="ident">clone</span>()
     }
 
+    <span class="doccomment">/// Reset the chain to its genesis block. Only available for devchains.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reset</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ChainError</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">inner</span>().<span class="ident">rollback</span>(<span class="number">0</span>)
     }
 
+    <span class="doccomment">/// Mine a block with all pending transactions. Only available for devchains.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mine_once</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">H256</span>, <span class="ident">ChainError</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">inner</span>().<span class="ident">mine_once</span>()
     }

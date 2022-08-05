@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["dummy_consensus",""]],"struct":[["RpcProvider",""]]});
+initSidebarItems({"struct":[["RpcProvider","Main data provider type for RpcChain"]]});

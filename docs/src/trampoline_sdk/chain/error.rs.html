@@ -51,6 +51,19 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">ckb_sdk</span>::{<span class="ident">unlock::UnlockError</span>, <span class="ident">RpcError</span>};
 <span class="kw">use</span> <span class="ident">ckb_types</span>::{<span class="ident">core::error::OutPointError</span>, <span class="ident">packed::OutPoint</span>, <span class="ident">H256</span>};
 <span class="kw">use</span> <span class="ident">ckb_verification::TransactionError</span>;
@@ -60,44 +73,57 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::cell::Cell</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::CellInputs</span>;
+
+<span class="doccomment">/// Error types for Chain methods</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ChainError</span> {
+    <span class="doccomment">/// Malformed transaction</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">TransactionError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">TransactionError</span>),
+    <span class="doccomment">/// Failed to verify transaction</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Cannot verify transaction&quot;</span>)]</span>
     <span class="ident">TransactionVerificationError</span>,
+    <span class="doccomment">/// Failed to publish transaction to the network</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed to send transaction to network&quot;</span>)]</span>
     <span class="ident">TransactionSendError</span>,
+    <span class="doccomment">/// Failed to connect to node via RPC</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed to connect to node via RPC&quot;</span>)]</span>
     <span class="ident">RpcError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">RpcError</span>),
+    <span class="doccomment">/// Failed ton get transaction from node</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed to get Transaction from RPC&quot;</span>)]</span>
     <span class="ident">GetTransactionError</span>(<span class="ident">H256</span>),
+    <span class="doccomment">/// Transaction not included in any block</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Transaction with hash {0}not included in any block yet&quot;</span>)]</span>
     <span class="ident">TransactionNotIncluded</span>(<span class="ident">H256</span>),
+    <span class="doccomment">/// Block not found in chain</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Transaction with hash {0} not included in any block yet&quot;</span>)]</span>
     <span class="ident">BlockNotFound</span>(<span class="ident">H256</span>),
+    <span class="doccomment">/// Block with number has not been mined yet</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Block with number {0} was not mined yet&quot;</span>)]</span>
     <span class="ident">BlockNumberNotFound</span>(<span class="ident">u64</span>),
+    <span class="doccomment">/// Failed to resolve transaction due to outpoint error</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed resolving transaction due to outpoint error&quot;</span>)]</span>
     <span class="ident">TxResolveError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">OutPointError</span>),
+    <span class="doccomment">/// Genesis block not found</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Genesis block not found in chain, check your chain setup&quot;</span>)]</span>
     <span class="ident">GenesisBlockNotFound</span>,
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed to connect to node via RPC&quot;</span>)]</span>
-    <span class="ident">RpcConnectionError</span>,
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Selected lockscript not found in chain, make sure it is deployed&quot;</span>)]</span>
-    <span class="ident">LockScriptCellNotFound</span>(<span class="ident">Cell</span>),
+    <span class="doccomment">/// Failed to get cell with specified outpoint</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Cell with outpoint {0} make sure it is deployed&quot;</span>)]</span>
     <span class="ident">CellNotFound</span>(<span class="ident">OutPoint</span>),
+    <span class="doccomment">/// Failed to unlock transaction</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed to unlock transaction&quot;</span>)]</span>
     <span class="ident">TransactionUnlockError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">UnlockError</span>),
+    <span class="doccomment">/// Transaction cannot be deployed, still has unlocked inputs</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed to unlock deploy cell transaction, it has extra lock groups&quot;</span>)]</span>
     <span class="ident">DeployCellTxHasLockedGroups</span>,
+    <span class="doccomment">/// Transaction has invalid cell inputs</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Failed to deploy transaction due to invalid cell inputs&quot;</span>)]</span>
     <span class="ident">InvalidInputs</span>(<span class="ident">CellInputs</span>),
 }
 
 <span class="comment">// Most of this is taken from https://github.com/nervosnetwork/ckb-tool.</span>
 <span class="comment">// Reimplementation here due to slight changes in the API &amp; version conflicts</span>
+<span class="doccomment">/// Result type for Chain methods</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ChainResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">ChainError</span><span class="op">&gt;</span>;
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="trampoline_sdk" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>

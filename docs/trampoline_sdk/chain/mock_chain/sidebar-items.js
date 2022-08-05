@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["random_hash",""],["random_out_point",""]],"mod":[["genesis_info",""]],"struct":[["MockChain",""],["MockChainTxProvider",""]],"type":[["CellOutputWithData",""]]});
+initSidebarItems({"mod":[["genesis","Module for initializing a MockChain and creating genesis blocks"]],"struct":[["MockChain","Simulated CKB chain for development and testing"],["MockChainTxProvider",""]],"type":[["CellOutputWithData","Alias for CellOutput and Bytes pair"]]});
