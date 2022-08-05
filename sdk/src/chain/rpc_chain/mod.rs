@@ -9,16 +9,14 @@ use ckb_sdk::IndexerRpcClient;
 pub use provider::*;
 pub use trait_impls::*;
 pub mod provider;
-pub mod resolve;
 pub mod trait_impls;
-pub use resolve::*;
 pub mod tx_builder;
 pub use tx_builder::*;
 
 use ckb_types::{core::BlockView, packed::OutPoint, H256};
 
 #[allow(dead_code)]
-pub struct DefaultLock {
+struct DefaultLock {
     out_point: OutPoint,
     code_hash: H256,
     hash_type: ScriptHashType,

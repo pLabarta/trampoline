@@ -1,3 +1,5 @@
+//! Inner data provider type for RpcChain
+
 use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap, HashSet};
 use std::prelude::v1::*;
@@ -29,7 +31,7 @@ use ckb_types::bytes::Bytes;
 use crate::types::transaction::Transaction;
 
 use super::RpcChain;
-use crate::chain::{ChainError, TransactionResolver, TransactionResolverError};
+use crate::chain::ChainError;
 use crate::contract::generator::TransactionProvider;
 
 const MAX_CYCLES: u64 = 500_0000;
