@@ -1,10 +1,12 @@
+//! Module for initializing a MockChain and creating genesis blocks
+
 use ckb_system_scripts::BUNDLED_CELL;
 use ckb_types::core::{BlockBuilder, BlockView, TransactionBuilder};
 use ckb_types::{bytes::Bytes, packed::Byte32, prelude::*};
 use std::prelude::v1::*;
 
 use super::MockChain;
-pub struct GenesisScripts {
+pub(super) struct GenesisScripts {
     secp256k1_data: Bytes,
     secp256k1_blake160_sighash_all: Bytes,
     secp256k1_blake160_multisig_all: Bytes,
@@ -34,7 +36,7 @@ impl Default for GenesisScripts {
 }
 
 // Deploy every system script from a genesis script to a MockChain
-pub fn genesis_event(chain: &mut MockChain) {
+pub(super) fn genesis_event(chain: &mut MockChain) {
     // Deploy scripts
     deploy_genesis_scripts(chain, None);
     // Create genesis block
@@ -43,7 +45,7 @@ pub fn genesis_event(chain: &mut MockChain) {
     chain.insert_header(block.header());
 }
 
-pub fn deploy_genesis_scripts(chain: &mut MockChain, scripts: Option<GenesisScripts>) {
+fn deploy_genesis_scripts(chain: &mut MockChain, scripts: Option<GenesisScripts>) {
     // Generate default scripts if no scripts were passed
     let scripts = scripts.unwrap_or_default();
 
@@ -54,7 +56,7 @@ pub fn deploy_genesis_scripts(chain: &mut MockChain, scripts: Option<GenesisScri
     chain.deploy_cell_with_data(scripts.dao);
 }
 
-pub fn genesis_block_from_chain(chain: &mut MockChain) -> BlockView {
+pub(super) fn genesis_block_from_chain(chain: &mut MockChain) -> BlockView {
     let block: BlockBuilder = BlockBuilder::default();
 
     let tx = TransactionBuilder::default();

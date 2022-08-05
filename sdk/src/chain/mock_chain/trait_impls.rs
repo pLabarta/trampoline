@@ -1,4 +1,4 @@
-use super::genesis_info::genesis_event;
+use super::genesis::genesis_event;
 use crate::chain::mock_chain::MAX_CYCLES;
 use crate::chain::*;
 use crate::contract::generator::{QueryProvider, TransactionProvider};
