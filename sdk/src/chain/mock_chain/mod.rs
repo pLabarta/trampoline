@@ -1,4 +1,4 @@
-pub mod genesis_info;
+pub mod genesis;
 mod trait_impls;
 pub use trait_impls::*;
 
@@ -28,34 +28,35 @@ use std::sync::{Arc, Mutex};
 
 const MAX_CYCLES: u64 = 500_0000;
 
-pub fn random_hash() -> Byte32 {
-    let mut rng = thread_rng();
-    let mut buf = [0u8; 32];
-    rng.fill(&mut buf);
-    buf.pack()
-}
-
-pub fn random_out_point() -> OutPoint {
-    OutPoint::new_builder().tx_hash(random_hash()).build()
-}
-
+/// Alias for CellOutput and Bytes pair
 pub type CellOutputWithData = (CellOutput, Bytes);
 
+/// Simulated CKB chain for development and testing
 #[derive(Clone, Debug)]
 pub struct MockChain {
+    /// Collection of all deployed cells
     pub cells: HashMap<OutPoint, CellOutputWithData>,
+    /// Collection of transaction information for each cell outpoint
     pub outpoint_txs: HashMap<OutPoint, TransactionInfo>,
+    /// Collection of all added block headers
     pub headers: HashMap<Byte32, HeaderView>,
+    /// Collection of all epochs
     pub epoches: HashMap<Byte32, EpochExt>,
+    /// Collection of all deployed cells that have data
     pub cells_by_data_hash: HashMap<Byte32, OutPoint>,
+    /// Collection of all deployed cells by lock hash
     pub cells_by_lock_hash: HashMap<Byte32, Vec<OutPoint>>,
+    /// Collection of all deployed cells by type hash
     pub cells_by_type_hash: HashMap<Byte32, Vec<OutPoint>>,
+    /// Current default lock used by Mockchain methods
     pub default_lock: Option<OutPoint>,
+    /// Debug flag
     pub debug: bool,
     messages: Arc<Mutex<Vec<Message>>>,
 }
 
 impl MockChain {
+    /// Deploys a cell with given data
     pub fn deploy_cell_with_data(&mut self, data: Bytes) -> OutPoint {
         let data_hash = CellOutput::calc_data_hash(&data);
         if let Some(out_point) = self.cells_by_data_hash.get(&data_hash) {
@@ -80,6 +81,7 @@ impl MockChain {
         out_point
     }
 
+    /// Deploy a cell output to the mockchain
     pub fn deploy_cell_output(&mut self, data: Bytes, output: CellOutput) -> OutPoint {
         match data.len() {
             0 => {}
@@ -97,10 +99,12 @@ impl MockChain {
         out_point
     }
 
+    /// Get the outpoint for the current default script
     pub fn get_default_script_outpoint(&self) -> OutPoint {
         self.default_lock.clone().unwrap()
     }
 
+    /// Deploy a cell with specified capacity using the default lock
     pub fn deploy_random_cell_with_default_lock(
         &mut self,
         capacity: usize,
@@ -123,10 +127,13 @@ impl MockChain {
         self.create_cell_with_outpoint(out_point.clone(), cell, Bytes::default());
         out_point
     }
+
+    /// Add a block's header to the mockchain
     pub fn insert_header(&mut self, header: HeaderView) {
         self.headers.insert(header.hash(), header);
     }
 
+    /// Link a cell with a particular block already in the chain
     pub fn link_cell_with_block(&mut self, outp: OutPoint, hash: Byte32, tx_idx: usize) {
         let header = self.headers.get(&hash).expect("can't find the header");
         self.outpoint_txs.insert(
@@ -135,16 +142,19 @@ impl MockChain {
         );
     }
 
+    /// Get a deployed cell matching a data hash
     pub fn get_cell_by_data_hash(&self, data_hash: &Byte32) -> Option<OutPoint> {
         self.cells_by_data_hash.get(data_hash).cloned()
     }
 
+    /// Deploy a cell to the chain
     pub fn create_cell(&mut self, cell: CellOutput, data: Bytes) -> OutPoint {
         let outpoint = random_out_point();
         self.create_cell_with_outpoint(outpoint.clone(), cell, data);
         outpoint
     }
 
+    /// Deploy a cell with an specific outpoint to the chain
     pub fn create_cell_with_outpoint(&mut self, outp: OutPoint, cell: CellOutput, data: Bytes) {
         let data_hash = CellOutput::calc_data_hash(&data);
         self.cells_by_data_hash.insert(data_hash, outp.clone());
@@ -172,10 +182,12 @@ impl MockChain {
         }
     }
 
+    /// Get a deployed cell from the chain
     pub fn get_cell(&self, out_point: &OutPoint) -> Option<CellOutputWithData> {
         self.cells.get(out_point).cloned()
     }
 
+    /// Build a Script from an outpoint and arguments
     pub fn build_script_with_hash_type(
         &self,
         outp: &OutPoint,
@@ -193,18 +205,22 @@ impl MockChain {
         )
     }
 
+    /// Get all cells that match a lock hash
     pub fn get_cells_by_lock_hash(&self, hash: Byte32) -> Option<Vec<OutPoint>> {
         self.cells_by_lock_hash.get(&hash).cloned()
     }
 
+    /// Get all cells that match a type hash
     pub fn get_cells_by_type_hash(&self, hash: Byte32) -> Option<Vec<OutPoint>> {
         self.cells_by_type_hash.get(&hash).cloned()
     }
 
+    /// Build a Script with HashType Data from outpoint and args
     pub fn build_script(&self, outp: &OutPoint, args: Bytes) -> Option<Script> {
         self.build_script_with_hash_type(outp, ScriptHashType::Data1, args)
     }
 
+    /// Get CellDep from a Script
     pub fn find_cell_dep_for_script(&self, script: &Script) -> CellDep {
         if script.hash_type() != ScriptHashType::Data.into()
             && script.hash_type() != ScriptHashType::Data1.into()
@@ -226,6 +242,7 @@ impl MockChain {
             .build()
     }
 
+    // Review code before documenting or removing
     pub fn complete_tx(&mut self, tx: TransactionView) -> TransactionView {
         let mut cell_deps: LinkedHashSet<CellDep> = LinkedHashSet::new();
 
@@ -233,39 +250,14 @@ impl MockChain {
             cell_deps.insert(cell_dep);
         }
 
-        // for i in tx.input_pts_iter() {
-        //     if let Some((cell, _data)) = self.cells.get(&i) {
-        //         let dep = self.find_cell_dep_for_script(&cell.lock());
-        //         cell_deps.insert(dep);
-
-        //         if let Some(script) = cell.type_().to_opt() {
-        //             if script.code_hash() != TYPE_ID_CODE_HASH.pack()
-        //                 || script.hash_type() != ScriptHashType::Type.into()
-        //             {
-        //                 let dep = self.find_cell_dep_for_script(&script);
-        //                 cell_deps.insert(dep);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // for (cell, _data) in tx.outputs_with_data_iter() {
-        //     if let Some(script) = cell.type_().to_opt() {
-        //         if script.code_hash() != TYPE_ID_CODE_HASH.pack()
-        //             || script.hash_type() != ScriptHashType::Type.into()
-        //         {
-        //             let dep = self.find_cell_dep_for_script(&script);
-        //             cell_deps.insert(dep);
-        //         }
-        //     }
-        // }
-
         tx.as_advanced_builder()
             .set_cell_deps(Vec::new())
             .cell_deps(cell_deps.into_iter().collect::<Vec<_>>().pack())
             .build()
     }
 
+    // TODO: Can this be replaced by the resolve_tx method from ckb_sdk?
+    /// Resolve a Transaction by dereferencing the pointers to cells
     pub fn build_resolved_tx(&self, tx: &TransactionView) -> ResolvedTransaction {
         let input_cells = tx
             .inputs()
@@ -316,6 +308,7 @@ impl MockChain {
         Ok(())
     }
 
+    /// Returns true if debug is on
     pub fn capture_debug(&self) -> bool {
         self.debug
     }
@@ -370,6 +363,7 @@ impl MockChain {
         self.verify_tx_by_context(tx, max_cycles)
     }
 
+    /// Deploy each cell in a Transaction to the moockchain
     pub fn receive_tx(&mut self, tx: &TransactionView) -> Result<Byte32, CKBError> {
         match self.verify_tx(tx, MAX_CYCLES) {
             Ok(_) => {
@@ -411,7 +405,7 @@ impl MockChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use genesis_info::*;
+    use genesis::*;
 
     fn mockchain_setup() -> (mock_chain::MockChain, ckb_types::core::BlockView) {
         // Create a new mockchain
@@ -545,4 +539,15 @@ mod tests {
         // Check if genesis block has number 0
         assert_eq!(genesis_block.header().number(), 0);
     }
+}
+
+fn random_hash() -> Byte32 {
+    let mut rng = thread_rng();
+    let mut buf = [0u8; 32];
+    rng.fill(&mut buf);
+    buf.pack()
+}
+
+fn random_out_point() -> OutPoint {
+    OutPoint::new_builder().tx_hash(random_hash()).build()
 }

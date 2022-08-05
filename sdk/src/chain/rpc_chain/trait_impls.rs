@@ -1,3 +1,5 @@
+//! Chain trait implementations for RpcChain
+
 use super::*;
 use crate::chain::{CellInputs, Chain};
 use crate::ckb_types::prelude::{Builder, Entity};

@@ -22,15 +22,18 @@ pub struct Message {
     pub message: String,
 }
 
+/// Type for verifying transaction outputs and its data
 pub struct OutputsDataVerifier<'a> {
     transaction: &'a TransactionView,
 }
 
 impl<'a> OutputsDataVerifier<'a> {
+    /// Creates a new verifier from a transaction
     pub fn new(transaction: &'a TransactionView) -> Self {
         Self { transaction }
     }
 
+    /// Verify the transaction cell outputs match its data outputs
     pub fn verify(&self) -> Result<(), TransactionError> {
         let outputs_len = self.transaction.outputs().len();
         let outputs_data_len = self.transaction.outputs_data().len();

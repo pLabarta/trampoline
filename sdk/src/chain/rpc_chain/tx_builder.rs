@@ -1,3 +1,5 @@
+//! Helper for transaction building & signing operations
+
 use ckb_sdk::traits::{DefaultCellCollector, DefaultCellDepResolver, DefaultHeaderDepResolver};
 use ckb_sdk::tx_builder::{
     balance_tx_capacity, unlock_tx, BalanceTxCapacityError, CapacityBalancer,
@@ -17,7 +19,7 @@ use super::RpcChain;
 
 const DEFAULT_FEE_RATE: u64 = 1200_u64;
 
-pub struct TransactionBuilder {
+pub(crate) struct TransactionBuilder {
     inner: CkbTxBuilder,
 }
 
@@ -68,6 +70,7 @@ impl TransactionBuilder {
         builder
     }
 
+    #[allow(dead_code)]
     pub fn add_input(self, cell: CellInput) -> Self {
         Self {
             inner: self.inner.input(cell),
