@@ -34,7 +34,7 @@ use crate::contract::generator::TransactionProvider;
 
 const MAX_CYCLES: u64 = 500_0000;
 
-// RpcChain Transaction provider type
+/// Main data provider type for RpcChain
 pub struct RpcProvider {
     chain: RefCell<RpcChain>,
     inner: Arc<Mutex<RpcProviderInner>>,
@@ -57,6 +57,7 @@ struct RpcProviderInner {
 }
 
 impl RpcProvider {
+    /// Creates a new RpcProvider from a RpcChain
     pub fn new(chain: RpcChain) -> Self {
         let ref_chain = RefCell::new(chain);
         let inner = RpcProviderInner {
@@ -72,6 +73,9 @@ impl RpcProvider {
         }
     }
 
+    /// Get a transaction by its hash, return it with its status
+    ///
+    /// Transaction status may vary, it may be pending, proposed, commited or rejected
     pub fn get_tx(&self, hash: H256) -> Result<Option<TransactionWithStatus>, ChainError> {
         let mut inner = self.inner.lock();
         let tx = inner.rpc_client.get_transaction(hash);
@@ -81,6 +85,7 @@ impl RpcProvider {
         }
     }
 
+    /// Truncate the Chain to a previous block height. Only available for devchains.
     pub fn rollback(&self, previous_block: u64) -> Result<(), ChainError> {
         let mut inner = self.inner.lock();
         let block_hash = inner.rpc_client.get_header_by_number(previous_block.into());
@@ -94,6 +99,7 @@ impl RpcProvider {
         }
     }
 
+    /// Gell a pair of CellOutput and Bytes from the chain
     pub fn get_cell_with_data(
         &self,
         out_point: &OutPoint,
@@ -121,56 +127,14 @@ impl RpcProvider {
         Ok((output, output_data))
     }
 
+    /// Get the last block's header
     pub fn get_tip(&self) -> Option<json_types::HeaderView> {
         let mut inner = self.inner.lock();
         let tip = inner.rpc_client.get_tip_header();
         Some(tip.unwrap())
     }
 
-    pub fn get_tx_info(&self, tx_hash: &H256) -> Result<TransactionInfo, ChainError> {
-        let (_tx, block_hash) = {
-            let mut inner = self.inner.lock();
-            let result = inner.rpc_client.get_transaction(tx_hash.clone());
-            match result {
-                Ok(Some(tx)) => match tx.tx_status.block_hash {
-                    Some(block_hash) => (tx.transaction.unwrap(), block_hash),
-                    None => return Err(ChainError::TransactionNotIncluded(tx_hash.clone())),
-                },
-                Ok(None) => return Err(ChainError::TransactionNotIncluded(tx_hash.clone())),
-                Err(_e) => return Err(ChainError::TransactionNotIncluded(tx_hash.clone())),
-            }
-        };
-
-        let block = {
-            let mut inner = self.inner.lock();
-            let block = inner.rpc_client.get_block(block_hash.clone());
-            match block {
-                Ok(Some(block)) => block,
-                Ok(None) => return Err(ChainError::BlockNotFound(block_hash)),
-                Err(e) => {
-                    return Err(ChainError::RpcError(e));
-                }
-            }
-        };
-
-        let index = {
-            let finding = block
-                .transactions
-                .into_iter()
-                .enumerate()
-                .find(|tx| tx.1.hash == tx_hash.clone());
-            // Unwrap is safe because TX must exist in Block
-            finding.unwrap().0
-        };
-
-        Ok(TransactionInfo {
-            block_hash: block.header.hash.pack(),
-            block_number: block.header.inner.number.into(),
-            block_epoch: EpochNumberWithFraction::from_full_value(block.header.inner.epoch.into()),
-            index,
-        })
-    }
-
+    /// Get the chain's genesis block
     pub fn genesis_block(&self) -> Result<ckb_types::core::BlockView, ChainError> {
         let mut inner = self.inner.lock();
         match inner.rpc_client.get_block_by_number(0.into()) {
@@ -180,6 +144,7 @@ impl RpcProvider {
         }
     }
 
+    /// Mine a block with all pending transactions. Only available for devchains.
     pub fn mine_once(&self) -> Result<H256, ChainError> {
         let mut inner = self.inner.lock();
         match inner.rpc_client.generate_block(None, None) {
@@ -297,7 +262,7 @@ impl TransactionProvider for RpcProvider {
         let transaction = Transaction::from(tx.inner.clone());
 
         println!("Starting to resolve TX");
-        let resolved_tx = self.resolve_tx_alt(transaction);
+        let resolved_tx = self.resolve_tx(transaction);
         if resolved_tx.is_err() {
             return false;
         }
@@ -349,106 +314,9 @@ impl CellDataProvider for RpcProvider {
     }
 }
 
-// impl CellProvider for RpcProvider {
-//     fn cell(&self, out_point: &ckb_types::packed::OutPoint, eager_load: bool) -> ckb_types::core::cell::CellStatus {
-//         let chain = self.chain.borrow_mut();
-//         let client = chain.client.lock();
-//         let cell = client.ckb.get_live_cell(out_point.unpack().into())
-//     }
-// }
-
-pub fn dummy_consensus() -> Consensus {
-    let hardfork_switch = HardForkSwitch::new_builder().rfc_0032(200).build().unwrap();
-    ConsensusBuilder::default()
-        .hardfork_switch(hardfork_switch)
-        .build()
-}
-
-impl TransactionResolver for RpcProvider {
-    fn resolve_tx(&self, tx: Transaction) -> Result<ResolvedTransaction, TransactionResolverError> {
-        // let inner_tx = CkbTransaction::from(tx.inner);
-        let transaction = TransactionView::from(tx);
-
-        let mut resolved_cells: HashMap<(OutPoint, bool), CellMeta> = HashMap::new();
-
-        let mut seen_inputs = HashSet::new();
-
-        // Taken from ckb::util::types::cell
-        let mut resolve_cell = |out_point: &OutPoint,
-                                eager_load: bool|
-         -> Result<CellMeta, TransactionResolverError> {
-            if seen_inputs.contains(out_point) {
-                return Err(TransactionResolverError::DeadOutPoint(out_point.clone()));
-            }
-
-            match resolved_cells.entry((out_point.clone(), eager_load)) {
-                Entry::Occupied(entry) => Ok(entry.get().clone()),
-                Entry::Vacant(entry) => {
-                    let cell_status = self.cell(out_point, eager_load);
-                    match cell_status {
-                        CellStatus::Dead => {
-                            Err(TransactionResolverError::DeadOutPoint(out_point.clone()))
-                        }
-                        CellStatus::Unknown => {
-                            Err(TransactionResolverError::UnknownOutPoint(out_point.clone()))
-                        }
-                        CellStatus::Live(cell_meta) => {
-                            entry.insert(cell_meta.clone());
-                            seen_inputs.insert(out_point.clone());
-                            Ok(cell_meta)
-                        }
-                    }
-                }
-            }
-        };
-
-        let mut current_inputs = HashSet::new();
-
-        let resolved_inputs = {
-            let mut inputs = Vec::with_capacity(transaction.inputs().len());
-            if !transaction.is_cellbase() {
-                for out_point in transaction.input_pts_iter() {
-                    if !current_inputs.insert(out_point.to_owned()) {
-                        return Err(TransactionResolverError::DeadOutPoint(out_point));
-                    }
-                    inputs.push(resolve_cell(&out_point, false)?);
-                }
-            }
-            inputs
-        };
-
-        let resolved_cell_deps = transaction
-            .cell_deps()
-            .into_iter()
-            .map(|cell_dep| {
-                let (dep_output, dep_data) = self
-                    .get_cell_with_data(&cell_dep.out_point())
-                    .expect("Failed to get cell with data for dep");
-                let tx_info = self.get_tx_info(&cell_dep.out_point().tx_hash().unpack());
-                let mut builder =
-                    CellMetaBuilder::from_cell_output(dep_output, dep_data.to_vec().into())
-                        .out_point(cell_dep.out_point());
-                if let Ok(tx_info) = tx_info {
-                    builder = builder.transaction_info(tx_info);
-                }
-                builder.build()
-            })
-            .collect();
-
-        let result: Result<ResolvedTransaction, TransactionResolverError> =
-            Ok(ResolvedTransaction {
-                transaction,
-                resolved_inputs,
-                resolved_cell_deps,
-                resolved_dep_groups: vec![],
-            });
-
-        result
-    }
-}
-
 impl RpcProvider {
-    pub fn resolve_tx_alt(&self, tx: Transaction) -> Result<ResolvedTransaction, ChainError> {
+    /// Creates a ResolvedTransaction by dereferencing its outpoints
+    pub fn resolve_tx(&self, tx: Transaction) -> Result<ResolvedTransaction, ChainError> {
         let transaction = tx.into();
         let mut seen_inputs: HashSet<ckb_types::packed::OutPoint, _> = HashSet::new();
 
@@ -462,6 +330,7 @@ impl RpcProvider {
 }
 
 impl RpcProvider {
+    /// Get Consensus object from chain
     pub fn get_consensus(&self) -> Consensus {
         let mut inner = self.inner.lock();
         let genesis_block = {
